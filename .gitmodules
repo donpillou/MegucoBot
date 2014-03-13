@@ -1,0 +1,9 @@
+[submodule "Ext/mare"]
+	path = Ext/mare
+	url = https://github.com/craflin/mare.git
+[submodule "Ext/curl"]
+	path = Ext/curl
+	url = https://github.com/bagder/curl.git
+[submodule "Ext/libnstd"]
+	path = Ext/libnstd
+	url = https://github.com/craflin/libnstd.git
