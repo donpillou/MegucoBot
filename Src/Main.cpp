@@ -13,8 +13,8 @@
 #include <nstd/Directory.h>
 #include <nstd/Error.h>
 
-//#include "Tools/Server.h"
-//#include "ServerHandler.h"
+#include "Tools/Server.h"
+#include "ServerHandler.h"
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -83,29 +83,27 @@ int_t main(int_t argc, char_t* argv[])
   }
 #endif
 
-  Console::printf("Hello World\n", port);
+  Console::printf("Starting relay server...\n", port);
 
-//  Console::printf("Starting relay server...\n", port);
-//
-//  // initialize listen server
-//  Server server;
-//  ServerHandler serverHandler(port);
-//  server.setListener(&serverHandler);
-//
-//  // run listen server
-//  if(!server.listen(port))
-//  {
-//    Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getLastErrorString());
-//    return -1;
-//  }
-//
-//  Console::printf("Listening on port %hu.\n", port);
-//
-//  if(!server.process())
-//  {
-//    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getLastErrorString());
-//    return -1;
-//  }
+  // initialize listen server
+  Server server;
+  ServerHandler serverHandler(port);
+  server.setListener(&serverHandler);
+
+  // run listen server
+  if(!server.listen(port))
+  {
+    Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getLastErrorString());
+    return -1;
+  }
+
+  Console::printf("Listening on port %hu.\n", port);
+
+  if(!server.process())
+  {
+    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getLastErrorString());
+    return -1;
+  }
   return 0;
 }
 
