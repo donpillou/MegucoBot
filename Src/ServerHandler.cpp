@@ -22,3 +22,8 @@ void_t ServerHandler::closedClient(Server::Client& client)
   clients.remove(clientHandler->getId());
   delete clientHandler;
 }
+
+User* ServerHandler::findUser(const String& userName)
+{
+  return 0; // todo
+}

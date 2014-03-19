@@ -6,13 +6,15 @@
 #include "Tools/Server.h"
 
 class ClientHandler;
-class SinkClient;
+class User;
 
 class ServerHandler : public Server::Listener
 {
 public:
   ServerHandler(uint16_t port) : port(port), nextClientId(1) {}
   ~ServerHandler();
+
+  User* findUser(const String& userName);
 
 private:
   uint16_t port;
