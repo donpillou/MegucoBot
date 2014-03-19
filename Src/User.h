@@ -1,11 +1,12 @@
 
+#pragma once
 
 #include <nstd/String.h>
 
 class User
 {
 public:
-  String username;
+  String userName;
   byte_t key[64];
   byte_t pwhmac[64];
 };

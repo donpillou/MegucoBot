@@ -4,9 +4,9 @@
 #include <nstd/HashMap.h>
 
 #include "Tools/Server.h"
+#include "User.h"
 
 class ClientHandler;
-class User;
 
 class ServerHandler : public Server::Listener
 {
@@ -14,12 +14,14 @@ public:
   ServerHandler(uint16_t port) : port(port), nextClientId(1) {}
   ~ServerHandler();
 
+  bool_t addUser(const String& userName, const String& password);
   User* findUser(const String& userName);
 
 private:
   uint16_t port;
   uint64_t nextClientId;
   HashMap<uint64_t, ClientHandler*> clients;
+  HashMap<String, User> users;
 
   virtual void_t acceptedClient(Server::Client& client, uint32_t addr, uint16_t port);
   virtual void_t closedClient(Server::Client& client);

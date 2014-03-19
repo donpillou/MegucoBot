@@ -1,4 +1,6 @@
 
+#include "Tools/Math.h"
+#include "Tools/Sha256.h"
 #include "ServerHandler.h"
 #include "ClientHandler.h"
 
@@ -23,7 +25,22 @@ void_t ServerHandler::closedClient(Server::Client& client)
   delete clientHandler;
 }
 
+bool_t ServerHandler::addUser(const String& userName, const String& password)
+{
+  if(findUser(userName))
+    return false;
+  User& user = users.append(userName, User());
+  user.userName = userName;
+  for(uint32_t* p = (uint32_t*)user.key, * end = (uint32_t*)(user.key + 64); p < end; ++p)
+    *p = Math::random();
+  Sha256::hmac(user.key, 64, (const byte_t*)(const char_t*)password, password.length(), user.pwhmac);
+  return true;
+}
+
 User* ServerHandler::findUser(const String& userName)
 {
-  return 0; // todo
+  HashMap<String, User>::Iterator it = users.find(userName);
+  if(it == users.end())
+    return 0;
+  return &*it;
 }
