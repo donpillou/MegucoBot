@@ -17,6 +17,11 @@ public:
     createSimSessionResponse,
     createSessionRequest,
     createSessionResponse,
+    //simSessionMessage,
+    //simSessionRemoveMessage,
+    //sessionMessage,
+    //sessionRemoveMessage,
+
     registerBotRequest,
     registerBotResponse,
   };
@@ -80,6 +85,13 @@ public:
   struct RegisterBotRequest
   {
     uint32_t pid;
+  };
+  
+  struct RegisterBotResponse
+  {
+    uint8_t isSimulation;
+    double balanceBase;
+    double balanceComm;
   };
 
 #pragma pack(pop)

@@ -1,30 +1,31 @@
 
 #include "User.h"
-#include "SimSession.h"
 #include "Session.h"
 
-User::User() : nextSimSessionId(1), nextSessionId(1) {}
+User::User(ServerHandler& serverHandler) : serverHandler(serverHandler), nextSessionId(1) {}
 
 User::~User()
 {
-  for(HashMap<uint32_t, SimSession*>::Iterator i = simSessions.begin(), end = simSessions.end(); i != end; ++i)
+  for(HashMap<uint32_t, Session*>::Iterator i = simSessions.begin(), end = simSessions.end(); i != end; ++i)
+    delete *i;
+  for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
     delete *i;
 }
 
-void_t User::addClient(ClientHandler& client)
+void_t User::registerClient(ClientHandler& client)
 {
   clients.append(&client);
 }
 
-void_t User::removeClient(ClientHandler& client)
+void_t User::unregisterClient(ClientHandler& client)
 {
   clients.remove(&client);
 }
 
 uint32_t User::createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm)
 {
-  uint32_t id = nextSimSessionId++;
-  SimSession* simSession = new SimSession(id, name);
+  uint32_t id = nextSessionId++;
+  Session* simSession = new Session(serverHandler, id, name, true);
   if(!simSession->start(engine, balanceBase, balanceComm))
   {
     delete simSession;
@@ -36,7 +37,7 @@ uint32_t User::createSimSession(const String& name, const String& engine, double
 
 bool_t User::deleteSimSession(uint32_t id)
 {
-  HashMap<uint32_t, SimSession*>::Iterator it = simSessions.find(id);
+  HashMap<uint32_t, Session*>::Iterator it = simSessions.find(id);
   if(it == simSessions.end())
     return false;
   delete *it;
@@ -46,15 +47,15 @@ bool_t User::deleteSimSession(uint32_t id)
 
 uint32_t User::createSession(const String& name, uint32_t simSessionId, double balanceBase, double balanceComm)
 {
-  HashMap<uint32_t, SimSession*>::Iterator it = simSessions.find(simSessionId);
+  HashMap<uint32_t, Session*>::Iterator it = simSessions.find(simSessionId);
   if(it == simSessions.end())
     return 0;
-  SimSession* simSession = *it;
+  Session* simSession = *it;
 
 
   uint32_t id = nextSessionId++;
-  Session* session = new Session(id, name);
-  if(!session->start(simSession->getEngineName(), balanceBase, balanceComm))
+  Session* session = new Session(serverHandler, id, name, false);
+  if(!session->start(simSession->getEngine(), balanceBase, balanceComm))
   {
     delete session;
     return 0;

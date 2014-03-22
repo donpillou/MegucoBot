@@ -37,6 +37,7 @@ bool_t BotConnection::connect(uint16_t port)
   // receive register source response
   {
     BotProtocol::Header header;
+    BotProtocol::RegisterBotResponse response;
     if(!socket.recv((byte_t*)&header, sizeof(header)))
     {
       error = Socket::getLastErrorString();
@@ -46,6 +47,12 @@ bool_t BotConnection::connect(uint16_t port)
     if(header.messageType != BotProtocol::registerBotResponse)
     {
       error = "Could not receive register bot response.";
+      socket.close();
+      return false;
+    }
+    if(!socket.recv((byte_t*)&response, sizeof(response)))
+    {
+      error = Socket::getLastErrorString();
       socket.close();
       return false;
     }

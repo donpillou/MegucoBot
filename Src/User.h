@@ -5,8 +5,8 @@
 #include <nstd/HashMap.h>
 #include <nstd/HashSet.h>
 
+class ServerHandler;
 class ClientHandler;
-class SimSession;
 class Session;
 
 class User
@@ -17,20 +17,20 @@ public:
   byte_t pwhmac[64];
 
 public:
-  User();
+  User(ServerHandler& serverHandler);
   ~User();
 
-  void_t addClient(ClientHandler& client);
-  void_t removeClient(ClientHandler& client);
+  void_t registerClient(ClientHandler& client);
+  void_t unregisterClient(ClientHandler& client);
   uint32_t createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm);
   bool_t deleteSimSession(uint32_t id);
   uint32_t createSession(const String& name, uint32_t simSessionId, double balanceBase, double balanceComm);
   bool_t deleteSession(uint32_t id);
 
 private:
+  ServerHandler& serverHandler;
   HashSet<ClientHandler*> clients;
-  HashMap<uint32_t, SimSession*> simSessions;
-  uint32_t nextSimSessionId;
+  HashMap<uint32_t, Session*> simSessions;
   HashMap<uint32_t, Session*> sessions;
   uint32_t nextSessionId;
 };

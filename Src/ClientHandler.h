@@ -6,6 +6,7 @@
 
 class ServerHandler;
 class User;
+class Session;
 
 class ClientHandler : public Server::Client::Listener
 {
@@ -21,6 +22,7 @@ private:
     newState,
     loginState,
     authedState,
+    botState,
   };
 
 private:
@@ -30,6 +32,7 @@ private:
   Server::Client& client;
   State state;
   User* user;
+  Session* session;
   byte_t loginkey[64];
 
   void_t handleMessage(const BotProtocol::Header& messageHeader, byte_t* data, size_t size);

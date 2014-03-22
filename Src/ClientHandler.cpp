@@ -4,14 +4,17 @@
 #include "ClientHandler.h"
 #include "ServerHandler.h"
 #include "User.h"
+#include "Session.h"
 
 ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
-  state(newState), user(0) {}
+  state(newState), user(0), session(0) {}
 
 ClientHandler::~ClientHandler()
 {
-  if(user && state == authedState)
-    user->removeClient(*this);
+  if(user)
+    user->unregisterClient(*this);
+  if(session)
+    session->setClient(0);
 }
 
 size_t ClientHandler::handle(byte_t* data, size_t size)
@@ -53,7 +56,7 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
         handleLogin(messageHeader.source, *(BotProtocol::LoginRequest*)data);
       break;
     case BotProtocol::registerBotRequest:
-      if(size >= sizeof(BotProtocol::RegisterBotRequest))
+      if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterBotRequest))
         handleRegisterBot(messageHeader.source, *(BotProtocol::RegisterBotRequest*)data);
       break;
     }
@@ -125,7 +128,7 @@ void ClientHandler::handleAuth(uint64_t source, BotProtocol::AuthRequest& authRe
   header.messageType = BotProtocol::authResponse;
   client.send((const byte_t*)&header, sizeof(header));
   state = authedState;
-  user->addClient(*this);
+  user->registerClient(*this);
 }
 
 void_t ClientHandler::handleCreateSimSession(uint64_t source, BotProtocol::CreateSimSessionRequest& createSimSessionRequest)
@@ -160,7 +163,30 @@ void_t ClientHandler::handleCreateSession(uint64_t source, BotProtocol::CreateSe
 
 void_t ClientHandler::handleRegisterBot(uint64_t source, BotProtocol::RegisterBotRequest& registerBotRequest)
 {
+  Session* session = serverHandler.findSession(registerBotRequest.pid);
+  if(!session)
+  {
+    sendErrorResponse(BotProtocol::registerBotRequest, source, "Unknown session.");
+    return;
+  }
+  if(!session->setClient(this))
+  {
+    sendErrorResponse(BotProtocol::registerBotRequest, source, "Invalid session.");
+    return;
+  }
 
+  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::RegisterBotResponse)];
+  BotProtocol::Header* header = (BotProtocol::Header*)message;
+  BotProtocol::RegisterBotResponse* response = (BotProtocol::RegisterBotResponse*)(header + 1);
+  header->size = sizeof(message);
+  header->source = 0;
+  header->destination = source;
+  header->messageType = BotProtocol::registerBotResponse;
+  response->isSimulation = session->isSimulation();
+  session->getInitialBalance(response->balanceBase, response->balanceComm);
+  client.send(message, sizeof(message));
+  this->session = session;
+  state = botState;
 }
 
 void_t ClientHandler::sendErrorResponse(BotProtocol::MessageType messageType, uint64_t destination, const String& errorMessage)

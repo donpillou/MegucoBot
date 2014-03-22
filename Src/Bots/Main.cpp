@@ -13,6 +13,8 @@
 //#include <nstd/Thread.h>
 //#include <nstd/Error.h>
 
+#include "Tools/BotConnection.h"
+
 #ifdef BOT_BUYBOT
 #include "Bots/BuyBot.h"
 typedef BuyBot MarketConnection;
@@ -68,6 +70,14 @@ int_t main(int_t argc, char_t* argv[])
       return 0;
   }
 #endif
+
+  BotConnection connection;
+  if(!connection.connect(port))
+  {
+    Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)connection.getErrorString());
+    return -1;
+  }
+
   /*
   RelayConnection relayConnection;
   MarketConnection marketConnection;
