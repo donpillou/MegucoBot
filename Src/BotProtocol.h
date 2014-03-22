@@ -11,6 +11,12 @@ public:
     errorResponse,
     loginRequest,
     loginResponse,
+    authRequest,
+    authResponse,
+    createSimSessionRequest,
+    createSimSessionResponse,
+    createSessionRequest,
+    createSessionResponse,
   };
 
 #pragma pack(push, 1)
@@ -37,6 +43,36 @@ public:
   {
     byte_t userkey[64];
     byte_t loginkey[64];
+  };
+
+  struct AuthRequest
+  {
+    byte_t signature[64];
+  };
+
+  struct CreateSimSessionRequest
+  {
+    char_t name[33];
+    char_t engine[33];
+    double balanceBase;
+    double balanceComm;
+  };
+
+  struct CreateSimSessionResponse
+  {
+    uint64_t id;
+  };
+
+  struct CreateSessionRequest
+  {
+    uint64_t simSessionId;
+    double balanceBase;
+    double balanceComm;
+  };
+
+  struct CreateSessionResponse
+  {
+    uint64_t id;
   };
 
 #pragma pack(pop)
