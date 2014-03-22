@@ -1,7 +1,7 @@
 
 #include "SimSession.h"
 
-SimSession::SimSession(uint64_t id, const String& name) : id(id), name(name) {}
+SimSession::SimSession(uint32_t id, const String& name) : id(id), name(name) {}
 
 bool_t SimSession::start(const String& engine, double balanceBase, double balanceComm)
 {

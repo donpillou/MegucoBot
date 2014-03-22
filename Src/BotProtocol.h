@@ -60,19 +60,19 @@ public:
 
   struct CreateSimSessionResponse
   {
-    uint64_t id;
+    uint32_t id;
   };
 
   struct CreateSessionRequest
   {
-    uint64_t simSessionId;
+    uint32_t simSessionId;
     double balanceBase;
     double balanceComm;
   };
 
   struct CreateSessionResponse
   {
-    uint64_t id;
+    uint32_t id;
   };
 
 #pragma pack(pop)

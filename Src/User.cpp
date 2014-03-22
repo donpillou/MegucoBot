@@ -24,7 +24,7 @@ void_t User::removeClient(ClientHandler& client)
 
 uint64_t User::createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm)
 {
-  uint64_t id = nextSimSessionId++;
+  uint32_t id = nextSimSessionId++;
   SimSession* simSession = new SimSession(id, name);
   if(!simSession->start(engine, balanceBase, balanceComm))
   {

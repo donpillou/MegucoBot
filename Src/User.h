@@ -30,7 +30,7 @@ public:
 private:
   HashSet<ClientHandler*> clients;
   HashMap<uint64_t, SimSession*> simSessions;
-  uint64_t nextSimSessionId;
+  uint32_t nextSimSessionId;
   HashMap<uint64_t, Session*> sessions;
-  uint64_t nextSessionId;
+  uint32_t nextSessionId;
 };
