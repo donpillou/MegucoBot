@@ -38,6 +38,7 @@ private:
   void_t handleAuth(uint64_t source, BotProtocol::AuthRequest& authRequest);
   void_t handleCreateSimSession(uint64_t source, BotProtocol::CreateSimSessionRequest& createSimSessionRequest);
   void_t handleCreateSession(uint64_t source, BotProtocol::CreateSessionRequest& createSessionRequest);
+  void_t handleRegisterBot(uint64_t source, BotProtocol::RegisterBotRequest& registerBotRequest);
 
   void_t sendErrorResponse(BotProtocol::MessageType messageType, uint64_t destination, const String& errorMessage);
 

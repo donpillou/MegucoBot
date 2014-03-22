@@ -1,14 +1,13 @@
 
 #include "User.h"
 #include "SimSession.h"
-
-class Session {};
+#include "Session.h"
 
 User::User() : nextSimSessionId(1), nextSessionId(1) {}
 
 User::~User()
 {
-  for(HashMap<uint64_t, SimSession*>::Iterator i = simSessions.begin(), end = simSessions.end(); i != end; ++i)
+  for(HashMap<uint32_t, SimSession*>::Iterator i = simSessions.begin(), end = simSessions.end(); i != end; ++i)
     delete *i;
 }
 
@@ -22,7 +21,7 @@ void_t User::removeClient(ClientHandler& client)
   clients.remove(&client);
 }
 
-uint64_t User::createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm)
+uint32_t User::createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm)
 {
   uint32_t id = nextSimSessionId++;
   SimSession* simSession = new SimSession(id, name);
@@ -35,9 +34,9 @@ uint64_t User::createSimSession(const String& name, const String& engine, double
   return id;
 }
 
-bool_t User::deleteSimSession(uint64_t id)
+bool_t User::deleteSimSession(uint32_t id)
 {
-  HashMap<uint64_t, SimSession*>::Iterator it = simSessions.find(id);
+  HashMap<uint32_t, SimSession*>::Iterator it = simSessions.find(id);
   if(it == simSessions.end())
     return false;
   delete *it;
@@ -45,14 +44,28 @@ bool_t User::deleteSimSession(uint64_t id)
   return true;
 }
 
-uint64_t User::createSession(uint64_t simSessionId, double balanceBase, double balanceComm)
+uint32_t User::createSession(const String& name, uint32_t simSessionId, double balanceBase, double balanceComm)
 {
-  return 0;
+  HashMap<uint32_t, SimSession*>::Iterator it = simSessions.find(simSessionId);
+  if(it == simSessions.end())
+    return 0;
+  SimSession* simSession = *it;
+
+
+  uint32_t id = nextSessionId++;
+  Session* session = new Session(id, name);
+  if(!session->start(simSession->getEngineName(), balanceBase, balanceComm))
+  {
+    delete session;
+    return 0;
+  }
+  sessions.append(id, session);
+  return id;
 }
 
-bool_t User::deleteSession(uint64_t id)
+bool_t User::deleteSession(uint32_t id)
 {
-  HashMap<uint64_t, Session*>::Iterator it = sessions.find(id);
+  HashMap<uint32_t, Session*>::Iterator it = sessions.find(id);
   if(it == sessions.end())
     return false;
   delete *it;

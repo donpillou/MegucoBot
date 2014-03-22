@@ -1,8 +1,12 @@
 
+bots = "Src/Bots/*.cpp"
+bots = "$(patsubst Src/Bots/%.cpp,%,$(bots))"
+bots -= "Main"
+
 targets = {
 
   tradedbot = cppApplication + {
-    dependencies = { "libnstd" } + markets
+    dependencies = { "libnstd" } + bots
     buildDir = "Build/$(configuration)/$(target)"
     includePaths = { "Ext/libnstd/include" }
     libPaths = { "Build/$(configuration)/libnstd" }
@@ -12,6 +16,7 @@ targets = {
       "Src/**.cpp" = cppSource
       "Src/**.h"
     }
+    files -= { "Src/Bots/**" }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
       dependencies += { "libcurl" }
@@ -29,6 +34,50 @@ targets = {
     if platform == "Linux" {
       libs += { "pthread", "rt" }
 //      cppFlags += { "-Wno-delete-non-virtual-dtor" }
+    }
+  }
+  
+  "$(bots)" = cppApplication + {
+    folder = "Bots"
+    dependencies = { "libnstd" }
+    defines += { "BOT_$(upper $(target))" }
+    buildDir = "Build/$(configuration)/$(target)"
+    includePaths = {
+      "Ext/libnstd/include"
+      "Src",
+      "Src/Bots",
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+    }
+    libs = { "nstd", "curl" }
+    root = { "Src/Bots", "Src" }
+    files = {
+      "Src/Bots/$(target).cpp" = cppSource
+      "Src/Bots/$(target).h"
+      "Src/Tools/Socket.cpp" = cppSource
+      "Src/Tools/Socket.h"
+      "Src/BotProtocol.h"
+      "Src/Bots/Tools/**.cpp" = cppSource
+      "Src/Bots/Tools/**.h"
+      "Src/Bots/Main.cpp" = cppSource
+    }
+    if tool == "vcxproj" {
+      libs += { "ws2_32" }
+      dependencies += { "libcurl" }
+      linkFlags += { "/SUBSYSTEM:CONSOLE" }
+      defines += { "CURL_STATICLIB" }
+      includePaths += {
+        "Ext/curl/include",
+        "Build/$(configuration)/libcurl/include"
+        "Build/$(configuration)/libcurl/include/curl"
+      }
+      libPaths += {
+        "Build/$(configuration)/libcurl"
+      }
+    }
+    if platform == "Linux" {
+      libs += { "pthread", "rt" }
     }
   }
 

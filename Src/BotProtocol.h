@@ -17,6 +17,8 @@ public:
     createSimSessionResponse,
     createSessionRequest,
     createSessionResponse,
+    registerBotRequest,
+    registerBotResponse,
   };
 
 #pragma pack(push, 1)
@@ -73,6 +75,11 @@ public:
   struct CreateSessionResponse
   {
     uint32_t id;
+  };
+
+  struct RegisterBotRequest
+  {
+    uint32_t pid;
   };
 
 #pragma pack(pop)

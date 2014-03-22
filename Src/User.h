@@ -22,15 +22,15 @@ public:
 
   void_t addClient(ClientHandler& client);
   void_t removeClient(ClientHandler& client);
-  uint64_t createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm);
-  bool_t deleteSimSession(uint64_t id);
-  uint64_t createSession(uint64_t simSessionId, double balanceBase, double balanceComm);
-  bool_t deleteSession(uint64_t id);
+  uint32_t createSimSession(const String& name, const String& engine, double balanceBase, double balanceComm);
+  bool_t deleteSimSession(uint32_t id);
+  uint32_t createSession(const String& name, uint32_t simSessionId, double balanceBase, double balanceComm);
+  bool_t deleteSession(uint32_t id);
 
 private:
   HashSet<ClientHandler*> clients;
-  HashMap<uint64_t, SimSession*> simSessions;
+  HashMap<uint32_t, SimSession*> simSessions;
   uint32_t nextSimSessionId;
-  HashMap<uint64_t, Session*> sessions;
+  HashMap<uint32_t, Session*> sessions;
   uint32_t nextSessionId;
 };
