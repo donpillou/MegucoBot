@@ -34,9 +34,9 @@ bool_t ServerHandler::addUser(const String& userName, const String& password)
     return false;
   User* user = new User(*this);
   user->userName = userName;
-  for(uint32_t* p = (uint32_t*)user->key, * end = (uint32_t*)(user->key + 64); p < end; ++p)
+  for(uint32_t* p = (uint32_t*)user->key, * end = (uint32_t*)(user->key + 32); p < end; ++p)
     *p = Math::random();
-  Sha256::hmac(user->key, 64, (const byte_t*)(const char_t*)password, password.length(), user->pwhmac);
+  Sha256::hmac(user->key, 32, (const byte_t*)(const char_t*)password, password.length(), user->pwhmac);
   users.append(userName, user);
   return true;
 }

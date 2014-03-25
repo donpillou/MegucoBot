@@ -48,13 +48,13 @@ public:
 
   struct LoginResponse
   {
-    byte_t userkey[64];
-    byte_t loginkey[64];
+    byte_t userkey[32];
+    byte_t loginkey[32];
   };
 
   struct AuthRequest
   {
-    byte_t signature[64];
+    byte_t signature[32];
   };
 
   struct CreateSimSessionRequest

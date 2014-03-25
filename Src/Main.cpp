@@ -83,12 +83,14 @@ int_t main(int_t argc, char_t* argv[])
   }
 #endif
 
-  Console::printf("Starting relay server...\n", port);
+  Console::printf("Starting bot server...\n", port);
 
   // initialize listen server
   Server server;
   ServerHandler serverHandler(port);
   server.setListener(&serverHandler);
+
+  serverHandler.addUser("donpillou", "1234");
 
   // run listen server
   if(!server.listen(port))

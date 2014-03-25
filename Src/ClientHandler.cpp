@@ -91,13 +91,13 @@ void_t ClientHandler::handleLogin(uint64_t source, BotProtocol::LoginRequest& lo
   user = serverHandler.findUser(username);
   if(!user)
   {
-    sendErrorResponse(BotProtocol::loginRequest, source, "Unknown user");
+    sendErrorResponse(BotProtocol::loginRequest, source, "Unknown user.");
     return;
   }
 
-  for(uint32_t* p = (uint32_t*)loginkey, * end = (uint32_t*)(loginkey + 64); p < end; ++p)
+  for(uint32_t* p = (uint32_t*)loginkey, * end = (uint32_t*)(loginkey + 32); p < end; ++p)
     *p = Math::random();
-  
+
   byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::LoginResponse)];
   BotProtocol::Header* header = (BotProtocol::Header*)message;
   BotProtocol::LoginResponse* loginResponse = (BotProtocol::LoginResponse*)(header + 1);
@@ -113,11 +113,11 @@ void_t ClientHandler::handleLogin(uint64_t source, BotProtocol::LoginRequest& lo
 
 void ClientHandler::handleAuth(uint64_t source, BotProtocol::AuthRequest& authRequest)
 {
-  byte_t signature[64];
-  Sha256::hmac(loginkey, 64, user->pwhmac, 64, signature);
-  if(Memory::compare(signature, authRequest.signature, 64) != 0)
+  byte_t signature[32];
+  Sha256::hmac(loginkey, 32, user->pwhmac, 32, signature);
+  if(Memory::compare(signature, authRequest.signature, 32) != 0)
   {
-    sendErrorResponse(BotProtocol::authRequest, source, "Incorrect signature");
+    sendErrorResponse(BotProtocol::authRequest, source, "Incorrect signature.");
     return;
   }
 

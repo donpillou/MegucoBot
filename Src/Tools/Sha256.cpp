@@ -195,7 +195,7 @@ void Sha256::update(const Byte *data, unsigned int size)
   }
 }
 
-void Sha256::finalize(Byte *digest)
+void Sha256::finalize(byte_t (&digestBuf)[digestSize])
 {
   CSha256 *p = this;
   UInt64 lenInBits = (p->count << 3);
@@ -216,6 +216,7 @@ void Sha256::finalize(Byte *digest)
   }
   Sha256_WriteByteBlock(p);
 
+  byte_t* digest = digestBuf;
   for (i = 0; i < 8; i++)
   {
     *digest++ = (Byte)(p->state[i] >> 24);

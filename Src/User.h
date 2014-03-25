@@ -13,8 +13,8 @@ class User
 {
 public:
   String userName;
-  byte_t key[64];
-  byte_t pwhmac[64];
+  byte_t key[32];
+  byte_t pwhmac[32];
 
 public:
   User(ServerHandler& serverHandler);
