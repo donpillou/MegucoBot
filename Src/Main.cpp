@@ -11,6 +11,7 @@
 #include <nstd/Console.h>
 #include <nstd/Debug.h>
 #include <nstd/Directory.h>
+#include <nstd/File.h>
 #include <nstd/Error.h>
 
 #include "Tools/Server.h"
@@ -21,7 +22,12 @@ int_t main(int_t argc, char_t* argv[])
   static const uint16_t port = 40124;
   bool background = true;
   String dataDir("Data");
-  String binaryDir("Engine");
+#ifdef _DEBUG
+  String defaultBinaryDir("Build/Debug");
+#else
+  String defaultBinaryDir("Build/Release");
+#endif
+  String binaryDir = defaultBinaryDir;
 
   // parse parameters
   for(int i = 1; i < argc; ++i)
@@ -42,7 +48,7 @@ int_t main(int_t argc, char_t* argv[])
       Console::errorf("Usage: %s [-b] [-b <dir>]\n\
   -f            run in foreground (not as daemon)\n\
   -c <dir>      set data directory (default is ./Data)\n\
-  -b <dir>      set binary directory (default is ./Engine)\n", argv[0]);
+  -b <dir>      set binary directory (default is ./%s)\n", argv[0], (const char_t*)defaultBinaryDir);
       return -1;
     }
 
@@ -52,11 +58,14 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not create data directory: %s\n", (const tchar_t*)Error::getErrorString());
     return -1;
   }
+  if(!File::isAbsolutePath(binaryDir))
+    binaryDir = Directory::getCurrent() + "/" + binaryDir;
   if(!dataDir.isEmpty() && !Directory::change(dataDir))
   {
     Console::errorf("error: Could not enter data directory: %s\n", (const tchar_t*)Error::getErrorString());
     return -1;
   }
+  binaryDir = File::getRelativePath(Directory::getCurrent(), binaryDir);
 
 #ifndef _WIN32
   // daemonize process
@@ -103,13 +112,25 @@ int_t main(int_t argc, char_t* argv[])
   // load bot engine list
   {
     Directory dir;
-    if(dir.open(binaryDir, String(), false))
+#ifdef _WIN32
+    String pattern("*.exe");
+#else
+    String pattern;
+#endif
+    String cd = Directory::getCurrent();
+    if(dir.open(binaryDir, pattern, false))
     {
       String path;
       bool_t isDir;
       while(dir.read(path, isDir))
-        if(!isDir)
-          serverHandler.addEngine(path);
+        if(!isDir && path != 
+#ifdef _WIN32
+          "botd.exe"
+#else
+          "botd"
+#endif
+          )
+          serverHandler.addEngine(binaryDir + "/" + path);
     }
   }
 

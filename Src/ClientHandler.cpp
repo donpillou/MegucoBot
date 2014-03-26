@@ -1,4 +1,6 @@
 
+#include <nstd/File.h>
+
 #include "Tools/Math.h"
 #include "Tools/Sha256.h"
 #include "ClientHandler.h"
@@ -142,8 +144,8 @@ void ClientHandler::handleAuth(uint64_t source, BotProtocol::AuthRequest& authRe
     header->messageType = BotProtocol::engineMessage;
     for(List<String>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
     {
-      const String& engine = *i;
-      Memory::copy(engineMessage->name, (const char_t*)engine, Math::min(engine.length() + 1, sizeof(engineMessage->name) -1));
+      const String engineName = File::basename(*i, ".exe");
+      Memory::copy(engineMessage->name, (const char_t*)engineName, Math::min(engineName.length() + 1, sizeof(engineMessage->name) -1));
       engineMessage->name[sizeof(engineMessage->name) -1] = '\0';
       client.send(message, sizeof(message));
     }
