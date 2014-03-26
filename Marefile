@@ -42,7 +42,7 @@ targets = {
     folder = "Bots"
     dependencies = { "libnstd" }
     defines += { "BOT_$(upper $(target))" }
-    buildDir = "Build/$(configuration)/$(target)"
+    buildDir = "Build/$(configuration)/Bots/$(target)"
     output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
     includePaths = {
       "Ext/libnstd/include"
