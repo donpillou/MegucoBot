@@ -5,9 +5,10 @@ bots -= "Main"
 
 targets = {
 
-  tradedbot = cppApplication + {
+  MegucoBot = cppApplication + {
     dependencies = { "libnstd" } + bots
     buildDir = "Build/$(configuration)/$(target)"
+    output = "Build/$(configuration)/botd$(if $(Win32),.exe,)"
     includePaths = { "Ext/libnstd/include" }
     libPaths = { "Build/$(configuration)/libnstd" }
     libs = { "nstd", "curl" }
@@ -42,6 +43,7 @@ targets = {
     dependencies = { "libnstd" }
     defines += { "BOT_$(upper $(target))" }
     buildDir = "Build/$(configuration)/$(target)"
+    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
     includePaths = {
       "Ext/libnstd/include"
       "Src",
