@@ -22,6 +22,8 @@ public:
     //sessionMessage,
     //sessionRemoveMessage,
 
+    engineMessage,
+
     registerBotRequest,
     registerBotResponse,
   };
@@ -80,6 +82,11 @@ public:
   struct CreateSessionResponse
   {
     uint32_t id;
+  };
+
+  struct EngineMessage
+  {
+    char_t name[33];
   };
 
   struct RegisterBotRequest

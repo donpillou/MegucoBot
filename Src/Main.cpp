@@ -21,6 +21,7 @@ int_t main(int_t argc, char_t* argv[])
   static const uint16_t port = 40124;
   bool background = true;
   String dataDir("Data");
+  String binaryDir("Engine");
 
   // parse parameters
   for(int i = 1; i < argc; ++i)
@@ -31,11 +32,17 @@ int_t main(int_t argc, char_t* argv[])
       ++i;
       dataDir = String(argv[i], String::length(argv[i]));
     }
+    else if(String::compare(argv[i], "-b") == 0&& i + 1 < argc)
+    {
+      ++i;
+      binaryDir = String(argv[i], String::length(argv[i]));
+    }
     else
     {
-      Console::errorf("Usage: %s [-b] [-c <dir>]\n\
+      Console::errorf("Usage: %s [-b] [-b <dir>]\n\
   -f            run in foreground (not as daemon)\n\
-  -c <dir>      set data directory (default is .)\n", argv[0]);
+  -c <dir>      set data directory (default is ./Data)\n\
+  -b <dir>      set binary directory (default is ./Engine)\n", argv[0]);
       return -1;
     }
 
@@ -90,7 +97,21 @@ int_t main(int_t argc, char_t* argv[])
   ServerHandler serverHandler(port);
   server.setListener(&serverHandler);
 
+  // load users
   serverHandler.addUser("donpillou", "1234");
+
+  // load bot engine list
+  {
+    Directory dir;
+    if(dir.open(binaryDir, String(), false))
+    {
+      String path;
+      bool_t isDir;
+      while(dir.read(path, isDir))
+        if(!isDir)
+          serverHandler.addEngine(path);
+    }
+  }
 
   // run listen server
   if(!server.listen(port))

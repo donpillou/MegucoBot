@@ -129,6 +129,28 @@ void ClientHandler::handleAuth(uint64_t source, BotProtocol::AuthRequest& authRe
   client.send((const byte_t*)&header, sizeof(header));
   state = authedState;
   user->registerClient(*this);
+
+  // send engine list
+  {
+    const List<String>& engines = serverHandler.getEngines();
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::EngineMessage)];
+    BotProtocol::Header* header = (BotProtocol::Header*)message;
+    BotProtocol::EngineMessage* engineMessage = (BotProtocol::EngineMessage*)(header + 1);
+    header->size = sizeof(message);
+    header->source = 0;
+    header->destination = source;
+    header->messageType = BotProtocol::engineMessage;
+    for(List<String>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
+    {
+      const String& engine = *i;
+      Memory::copy(engineMessage->name, (const char_t*)engine, Math::min(engine.length() + 1, sizeof(engineMessage->name) -1));
+      engineMessage->name[sizeof(engineMessage->name) -1] = '\0';
+      client.send(message, sizeof(message));
+    }
+  }
+
+  // send session list
+  // todo: 
 }
 
 void_t ClientHandler::handleCreateSimSession(uint64_t source, BotProtocol::CreateSimSessionRequest& createSimSessionRequest)
