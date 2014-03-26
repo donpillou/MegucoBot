@@ -103,7 +103,7 @@ void DataConnection::handleMessage(DataProtocol::MessageType messageType, char* 
 {
   switch(messageType)
   {
-  case DataProtocol::MessageType::channelResponse:
+  case DataProtocol::channelResponse:
     {
       int count = size / sizeof(DataProtocol::Channel);
       DataProtocol::Channel* channel = (DataProtocol::Channel*)data;
@@ -116,7 +116,7 @@ void DataConnection::handleMessage(DataProtocol::MessageType messageType, char* 
       }
     }
     break;
-  case DataProtocol::MessageType::subscribeResponse:
+  case DataProtocol::subscribeResponse:
     if(size >= sizeof(DataProtocol::SubscribeResponse))
     {
       DataProtocol::SubscribeResponse* subscribeResponse = (DataProtocol::SubscribeResponse*)data;
@@ -126,7 +126,7 @@ void DataConnection::handleMessage(DataProtocol::MessageType messageType, char* 
       callback->receivedSubscribeResponse(channelName, subscribeResponse->channelId);
     }
     break;
-  case DataProtocol::MessageType::unsubscribeResponse:
+  case DataProtocol::unsubscribeResponse:
     if(size >= sizeof(DataProtocol::SubscribeResponse))
     {
       DataProtocol::SubscribeResponse* unsubscribeResponse = (DataProtocol::SubscribeResponse*)data;
@@ -136,7 +136,7 @@ void DataConnection::handleMessage(DataProtocol::MessageType messageType, char* 
       callback->receivedUnsubscribeResponse(channelName, unsubscribeResponse->channelId);
     }
     break;
-  case DataProtocol::MessageType::tradeMessage:
+  case DataProtocol::tradeMessage:
     if(size >= sizeof(DataProtocol::TradeMessage))
     {
       DataProtocol::TradeMessage* tradeMessage = (DataProtocol::TradeMessage*)data;
@@ -144,14 +144,14 @@ void DataConnection::handleMessage(DataProtocol::MessageType messageType, char* 
       callback->receivedTrade(tradeMessage->channelId, tradeMessage->trade);
     }
     break;
-  case DataProtocol::MessageType::tickerMessage:
+  case DataProtocol::tickerMessage:
     {
       DataProtocol::TickerMessage* tickerMessage = (DataProtocol::TickerMessage*)data;
       tickerMessage->ticker.time += serverTimeToLocalTime;
       callback->receivedTicker(tickerMessage->channelId, tickerMessage->ticker);
     }
     break;
-  case DataProtocol::MessageType::errorResponse:
+  case DataProtocol::errorResponse:
     if(size >= sizeof(DataProtocol::ErrorResponse))
     {
       DataProtocol::ErrorResponse* errorResponse = (DataProtocol::ErrorResponse*)data;

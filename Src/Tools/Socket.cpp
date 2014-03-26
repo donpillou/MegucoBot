@@ -50,7 +50,7 @@ public:
 } socketFramework;
 #endif
 
-Socket::Socket() : s((void_t*)INVALID_SOCKET) {}
+Socket::Socket() : s(INVALID_SOCKET) {}
 
 Socket::~Socket()
 {
@@ -63,7 +63,7 @@ bool_t Socket::open()
   if((SOCKET)s != INVALID_SOCKET)
     return false;
 
-  s = (void_t*)socket(AF_INET, SOCK_STREAM, 0);
+  s = socket(AF_INET, SOCK_STREAM, 0);
   if((SOCKET)s == INVALID_SOCKET)
     return false;
   return true;
@@ -74,7 +74,7 @@ bool_t Socket::close()
   if((SOCKET)s == INVALID_SOCKET)
     return false;
   ::CLOSE((SOCKET)s);
-  s = (void_t*)INVALID_SOCKET;
+  s = INVALID_SOCKET;
   return true;
 }
 
@@ -90,7 +90,7 @@ bool_t Socket::accept(const Socket& from, uint32_t& ip, uint16_t& port)
 
   struct sockaddr_in sin;
   socklen_t val = sizeof(sin);
-  s = (void_t*)::accept((SOCKET)from.s, (struct sockaddr *)&sin, &val);
+  s = ::accept((SOCKET)from.s, (struct sockaddr *)&sin, &val);
   if((SOCKET)s == INVALID_SOCKET)
     return false;
   port = ntohs(sin.sin_port);

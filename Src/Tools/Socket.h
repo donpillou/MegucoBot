@@ -61,7 +61,11 @@ public:
   };
 
 private:
-  void_t* s;
+#ifdef _WIN32
+  int_t s; // TODO: use correct type
+#else
+  int_t s;
+#endif
 
   Socket(const Socket&);
   Socket& operator=(const Socket&);

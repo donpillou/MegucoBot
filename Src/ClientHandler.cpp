@@ -61,6 +61,8 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterBotRequest))
         handleRegisterBot(messageHeader.source, *(BotProtocol::RegisterBotRequest*)data);
       break;
+    default:
+      break;
     }
     break;
   case loginState:
@@ -79,7 +81,11 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       if(size >= sizeof(BotProtocol::CreateSessionRequest))
         handleCreateSession(messageHeader.source, *(BotProtocol::CreateSessionRequest*)data);
       break;
+    default:
+      break;
     }
+    break;
+  default:
     break;
   }
 

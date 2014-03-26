@@ -18,6 +18,7 @@
 #ifdef BOT_BUYBOT
 #include "Bots/BuyBot.h"
 typedef BuyBot MarketConnection;
+const char* botName = "BuyBot";
 #endif
 
 int_t main(int_t argc, char_t* argv[])
@@ -43,7 +44,7 @@ int_t main(int_t argc, char_t* argv[])
     Console::printf("Starting as daemon...\n");
 
     char logFileName[200];
-    strcpy(logFileName, exchangeName);
+    strcpy(logFileName, botName);
     strcat(logFileName, ".log");
     int fd = open(logFileName, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if(fd == -1)
