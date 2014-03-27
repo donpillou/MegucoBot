@@ -73,10 +73,6 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
   case authedState:
     switch((BotProtocol::MessageType)messageHeader.messageType)
     {
-    case BotProtocol::createSimSessionRequest:
-      if(size >= sizeof(BotProtocol::CreateSimSessionRequest))
-        handleCreateSimSession(messageHeader.source, *(BotProtocol::CreateSimSessionRequest*)data);
-      break;
     case BotProtocol::createSessionRequest:
       if(size >= sizeof(BotProtocol::CreateSessionRequest))
         handleCreateSession(messageHeader.source, *(BotProtocol::CreateSessionRequest*)data);
@@ -161,34 +157,30 @@ void ClientHandler::handleAuth(uint64_t source, BotProtocol::AuthRequest& authRe
   // todo: 
 }
 
-void_t ClientHandler::handleCreateSimSession(uint64_t source, BotProtocol::CreateSimSessionRequest& createSimSessionRequest)
+void_t ClientHandler::handleCreateSession(uint64_t source, BotProtocol::CreateSessionRequest& createSessionRequest)
 {
-  createSimSessionRequest.name[sizeof(createSimSessionRequest.name) - 1] = '\0';
-  createSimSessionRequest.engine[sizeof(createSimSessionRequest.engine) - 1] = '\0';
+  createSessionRequest.name[sizeof(createSessionRequest.name) - 1] = '\0';
+  createSessionRequest.engine[sizeof(createSessionRequest.engine) - 1] = '\0';
   String name;
   String engine;
-  name.attach(createSimSessionRequest.name, String::length(createSimSessionRequest.name));
-  engine.attach(createSimSessionRequest.engine, String::length(createSimSessionRequest.engine));
-  uint32_t id = user->createSimSession(name, engine, createSimSessionRequest.balanceBase, createSimSessionRequest.balanceComm);
+  name.attach(createSessionRequest.name, String::length(createSessionRequest.name));
+  engine.attach(createSessionRequest.engine, String::length(createSessionRequest.engine));
+  uint32_t id = user->createSimSession(name, engine, createSessionRequest.balanceBase, createSessionRequest.balanceComm);
   if(id == 0)
   {
-    sendErrorResponse(BotProtocol::createSimSessionRequest, source, "Could not create sim session.");
+    sendErrorResponse(BotProtocol::createSessionRequest, source, "Could not create sim session.");
     return;
   }
 
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::CreateSimSessionResponse)];
+  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::CreateSessionResponse)];
   BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::CreateSimSessionResponse* createSimSessionResponse = (BotProtocol::CreateSimSessionResponse*)(header + 1);
+  BotProtocol::CreateSessionResponse* createSessionResponse = (BotProtocol::CreateSessionResponse*)(header + 1);
   header->size = sizeof(message);
   header->source = 0;
   header->destination = source;
-  header->messageType = BotProtocol::createSimSessionResponse;
-  createSimSessionResponse->id = id;
+  header->messageType = BotProtocol::createSessionResponse;
+  createSessionResponse->id = id;
   client.send(message, sizeof(message));
-}
-
-void_t ClientHandler::handleCreateSession(uint64_t source, BotProtocol::CreateSessionRequest& createSessionRequest)
-{
 }
 
 void_t ClientHandler::handleRegisterBot(uint64_t source, BotProtocol::RegisterBotRequest& registerBotRequest)

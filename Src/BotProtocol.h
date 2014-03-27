@@ -13,8 +13,6 @@ public:
     loginResponse,
     authRequest,
     authResponse,
-    createSimSessionRequest,
-    createSimSessionResponse,
     createSessionRequest,
     createSessionResponse,
     //simSessionMessage,
@@ -59,22 +57,10 @@ public:
     byte_t signature[32];
   };
 
-  struct CreateSimSessionRequest
+  struct CreateSessionRequest
   {
     char_t name[33];
     char_t engine[33];
-    double balanceBase;
-    double balanceComm;
-  };
-
-  struct CreateSimSessionResponse
-  {
-    uint32_t id;
-  };
-
-  struct CreateSessionRequest
-  {
-    uint32_t simSessionId;
     double balanceBase;
     double balanceComm;
   };
