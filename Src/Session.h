@@ -27,6 +27,7 @@ public:
   bool_t setClient(ClientHandler* client);
 
   bool_t isSimulation() const {return simulation;}
+  const String& getName() const {return name;}
   const String& getEngine() const {return engine;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 

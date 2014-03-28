@@ -15,6 +15,8 @@ public:
   ~ClientHandler();
 
   uint64_t getId() const {return id;}
+  
+  void_t send(const byte_t* data, size_t size) {client.send(data, size);}
 
 private:
   enum State

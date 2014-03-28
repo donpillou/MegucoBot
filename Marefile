@@ -3,6 +3,12 @@ bots = "Src/Bots/*.cpp"
 bots = "$(patsubst Src/Bots/%.cpp,%,$(bots))"
 bots -= "Main"
 
+if configuration == "Debug" {
+  defines += { "_DEBUG", "DEBUG" }
+} else {
+  defines += { "NDEBUG" }
+}
+
 targets = {
 
   MegucoBot = cppApplication + {

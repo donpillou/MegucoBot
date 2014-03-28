@@ -15,10 +15,8 @@ public:
     authResponse,
     createSessionRequest,
     createSessionResponse,
-    //simSessionMessage,
-    //simSessionRemoveMessage,
-    //sessionMessage,
-    //sessionRemoveMessage,
+    sessionMessage,
+    sessionRemoveMessage,
 
     engineMessage,
 
@@ -66,6 +64,18 @@ public:
   };
 
   struct CreateSessionResponse
+  {
+    uint32_t id;
+  };
+  
+  struct SessionMessage
+  {
+    uint32_t id;
+    char_t name[33];
+    char_t engine[33];
+  };
+  
+  struct SessionRemoveMessage
   {
     uint32_t id;
   };
