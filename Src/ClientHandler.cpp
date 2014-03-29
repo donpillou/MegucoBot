@@ -51,31 +51,31 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
   switch(state)
   {
   case newState:
-    switch((BotProtocol::MessageType)messageHeader.messageType)
+    switch((BotProtocol::EntityType)messageHeader.entityType)
     {
     case BotProtocol::loginRequest:
       if(size >= sizeof(BotProtocol::LoginRequest))
-        handleLogin(messageHeader.source, *(BotProtocol::LoginRequest*)data);
+        handleLogin(*(BotProtocol::LoginRequest*)data);
       break;
     case BotProtocol::registerBotRequest:
       if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterBotRequest))
-        handleRegisterBot(messageHeader.source, *(BotProtocol::RegisterBotRequest*)data);
+        handleRegisterBot(*(BotProtocol::RegisterBotRequest*)data);
       break;
     default:
       break;
     }
     break;
   case loginState:
-    if((BotProtocol::MessageType)messageHeader.messageType == BotProtocol::authRequest)
+    if((BotProtocol::EntityType)messageHeader.entityType == BotProtocol::authRequest)
       if(size >= sizeof(BotProtocol::AuthRequest))
-        handleAuth(messageHeader.source, *(BotProtocol::AuthRequest*)data);
+        handleAuth(*(BotProtocol::AuthRequest*)data);
     break;
   case authedState:
-    switch((BotProtocol::MessageType)messageHeader.messageType)
+    switch((BotProtocol::EntityType)messageHeader.entityType)
     {
     case BotProtocol::createSessionRequest:
       if(size >= sizeof(BotProtocol::CreateSessionRequest))
-        handleCreateSession(messageHeader.source, *(BotProtocol::CreateSessionRequest*)data);
+        handleCreateSession(*(BotProtocol::CreateSessionRequest*)data);
       break;
     default:
       break;
@@ -87,176 +87,128 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
 
 }
 
-void_t ClientHandler::handleLogin(uint64_t source, BotProtocol::LoginRequest& loginRequest)
+void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
 {
-  loginRequest.username[sizeof(loginRequest.username) - 1] = '\0';
-  String username;
-  username.attach(loginRequest.username, String::length(loginRequest.username));
+  String username = getString(loginRequest.username);
   user = serverHandler.findUser(username);
   if(!user)
   {
-    sendErrorResponse(BotProtocol::loginRequest, source, "Unknown user.");
+    sendError(BotProtocol::loginRequest, "Unknown user.");
     return;
   }
 
   for(uint32_t* p = (uint32_t*)loginkey, * end = (uint32_t*)(loginkey + 32); p < end; ++p)
     *p = Math::random();
 
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::LoginResponse)];
-  BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::LoginResponse* loginResponse = (BotProtocol::LoginResponse*)(header + 1);
-  header->size = sizeof(message);
-  header->source = 0;
-  header->destination = source;
-  header->messageType = BotProtocol::loginResponse;
-  Memory::copy(loginResponse->userkey, user->key, sizeof(loginResponse->userkey));
-  Memory::copy(loginResponse->loginkey, loginkey, sizeof(loginResponse->loginkey));
-  client.send(message, sizeof(message));
+  BotProtocol::LoginResponse loginResponse;
+  Memory::copy(loginResponse.userkey, user->key, sizeof(loginResponse.userkey));
+  Memory::copy(loginResponse.loginkey, loginkey, sizeof(loginResponse.loginkey));
+  sendEntity(BotProtocol::loginResponse, &loginResponse, sizeof(loginResponse));
   state = loginState;
 }
 
-void ClientHandler::handleAuth(uint64_t source, BotProtocol::AuthRequest& authRequest)
+void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
 {
   byte_t signature[32];
   Sha256::hmac(loginkey, 32, user->pwhmac, 32, signature);
   if(Memory::compare(signature, authRequest.signature, 32) != 0)
   {
-    sendErrorResponse(BotProtocol::authRequest, source, "Incorrect signature.");
+    sendError(BotProtocol::authRequest, "Incorrect signature.");
     return;
   }
 
-  BotProtocol::Header header;
-  header.size = sizeof(header);
-  header.source = 0;
-  header.destination = source;
-  header.messageType = BotProtocol::authResponse;
-  client.send((const byte_t*)&header, sizeof(header));
+  sendEntity(BotProtocol::authResponse, 0, 0);
   state = authedState;
   user->registerClient(*this);
 
   // send engine list
   {
+    BotProtocol::Engine engine;
     const List<String>& engines = serverHandler.getEngines();
-    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::EngineMessage)];
-    BotProtocol::Header* header = (BotProtocol::Header*)message;
-    BotProtocol::EngineMessage* engineMessage = (BotProtocol::EngineMessage*)(header + 1);
-    header->size = sizeof(message);
-    header->source = 0;
-    header->destination = source;
-    header->messageType = BotProtocol::engineMessage;
     for(List<String>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
     {
       const String engineName = File::basename(*i, ".exe");
-      Memory::copy(engineMessage->name, (const char_t*)engineName, Math::min(engineName.length() + 1, sizeof(engineMessage->name) -1));
-      engineMessage->name[sizeof(engineMessage->name) -1] = '\0';
-      client.send(message, sizeof(message));
+      setString(engine.name, engineName);
+      sendEntity(BotProtocol::engine, &engine, sizeof(engine));
     }
   }
 
   // send session list
   {
-    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::SessionMessage)];
-    BotProtocol::Header* header = (BotProtocol::Header*)message;
-    BotProtocol::SessionMessage* sessionMessage = (BotProtocol::SessionMessage*)(header + 1);
-    header->size = sizeof(message);
-    header->source = 0;
-    header->destination = source;
-    header->messageType = BotProtocol::sessionMessage;
+    BotProtocol::Session session;
     const HashMap<uint32_t, Session*>& sessions = user->getSessions();
     for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
     {
-      const Session* session = *i;
-      const String& name = session->getName();
-      const String& engine = session->getEngine();
-      sessionMessage->id = id;
-      Memory::copy(sessionMessage->name, (const tchar_t*)name, Math::min(name.length() + 1, sizeof(sessionMessage->name) - 1));
-      sessionMessage->name[sizeof(sessionMessage->name) - 1] = '\0';
-      Memory::copy(sessionMessage->engine, (const tchar_t*)engine, Math::min(engine.length() + 1, sizeof(sessionMessage->engine) - 1));
-      sessionMessage->engine[sizeof(sessionMessage->engine) - 1] = '\0';
-      client.send(message, sizeof(message));
+      const Session* sessionHandler = *i;
+      const String& name = sessionHandler->getName();
+      const String& engine = sessionHandler->getEngine();
+      session.id = id;
+      setString(session.name, name);
+      setString(session.engine, engine);
+      sendEntity(BotProtocol::session, &session, sizeof(session));
     }
   }
 }
 
-void_t ClientHandler::handleCreateSession(uint64_t source, BotProtocol::CreateSessionRequest& createSessionRequest)
+void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionRequest& createSessionRequest)
 {
-  createSessionRequest.name[sizeof(createSessionRequest.name) - 1] = '\0';
-  createSessionRequest.engine[sizeof(createSessionRequest.engine) - 1] = '\0';
-  String name;
-  String engine;
-  name.attach(createSessionRequest.name, String::length(createSessionRequest.name));
-  engine.attach(createSessionRequest.engine, String::length(createSessionRequest.engine));
+  String name = getString(createSessionRequest.name);
+  String engine = getString(createSessionRequest.engine);
   uint32_t id = user->createSession(name, engine, createSessionRequest.balanceBase, createSessionRequest.balanceComm);
   if(id == 0)
   {
-    sendErrorResponse(BotProtocol::createSessionRequest, source, "Could not create sim session.");
+    sendError(BotProtocol::createSessionRequest, "Could not create sim session.");
     return;
   }
 
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::CreateSessionResponse)];
-  BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::CreateSessionResponse* createSessionResponse = (BotProtocol::CreateSessionResponse*)(header + 1);
-  header->size = sizeof(message);
-  header->source = 0;
-  header->destination = source;
-  header->messageType = BotProtocol::createSessionResponse;
-  createSessionResponse->id = id;
-  client.send(message, sizeof(message));
+  BotProtocol::CreateSessionResponse createSessionResponse;
+  createSessionResponse.id = id;
+  sendEntity(BotProtocol::createSessionResponse, &createSessionResponse, sizeof(createSessionResponse));
   
-  {
-    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::SessionMessage)];
-    BotProtocol::Header* header = (BotProtocol::Header*)message;
-    BotProtocol::SessionMessage* sessionMessage = (BotProtocol::SessionMessage*)(header + 1);
-    header->size = sizeof(message);
-    header->source = 0;
-    header->destination = source;
-    header->messageType = BotProtocol::sessionMessage;
-    sessionMessage->id = id;
-    Memory::copy(sessionMessage->name, createSessionRequest.name, sizeof(sessionMessage->name));
-    Memory::copy(sessionMessage->engine, createSessionRequest.engine, sizeof(sessionMessage->engine));
-    user->sendClients(message, sizeof(message));
-  }
+  BotProtocol::Session session;
+  session.id = id;
+  setString(session.name, createSessionRequest.name);
+  setString(session.engine, createSessionRequest.engine);
+  user->sendEntity(BotProtocol::session, &session, sizeof(session));
 }
 
-void_t ClientHandler::handleRegisterBot(uint64_t source, BotProtocol::RegisterBotRequest& registerBotRequest)
+void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registerBotRequest)
 {
   Session* session = serverHandler.findSession(registerBotRequest.pid);
   if(!session)
   {
-    sendErrorResponse(BotProtocol::registerBotRequest, source, "Unknown session.");
+    sendError(BotProtocol::registerBotRequest, "Unknown session.");
     return;
   }
   if(!session->setClient(this))
   {
-    sendErrorResponse(BotProtocol::registerBotRequest, source, "Invalid session.");
+    sendError(BotProtocol::registerBotRequest, "Invalid session.");
     return;
   }
 
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::RegisterBotResponse)];
-  BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::RegisterBotResponse* response = (BotProtocol::RegisterBotResponse*)(header + 1);
-  header->size = sizeof(message);
-  header->source = 0;
-  header->destination = source;
-  header->messageType = BotProtocol::registerBotResponse;
-  response->isSimulation = session->isSimulation();
-  session->getInitialBalance(response->balanceBase, response->balanceComm);
-  client.send(message, sizeof(message));
+  BotProtocol::RegisterBotResponse response;
+  response.isSimulation = session->isSimulation();
+  session->getInitialBalance(response.balanceBase, response.balanceComm);
+  sendEntity(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;
   state = botState;
 }
 
-void_t ClientHandler::sendErrorResponse(BotProtocol::MessageType messageType, uint64_t destination, const String& errorMessage)
+void_t ClientHandler::sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size)
 {
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::ErrorResponse)];
-  BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)(header + 1);
-  header->size = sizeof(message);
-  header->destination = destination;
-  header->source = 0;
-  header->messageType = BotProtocol::errorResponse;
-  errorResponse->messageType = messageType;
-  Memory::copy(errorResponse->errorMessage, (const char_t*)errorMessage, Math::min(errorMessage.length() + 1, sizeof(errorResponse->errorMessage) - 1));
-  errorResponse->errorMessage[sizeof(errorResponse->errorMessage) - 1] = '\0';
-  client.send(message, sizeof(message));
+  BotProtocol::Header header;
+  header.size = sizeof(header) + size;
+  header.entityType = type;
+  client.reserve(header.size);
+  client.send((const byte_t*)&header, sizeof(header));
+  if(size > 0)
+    client.send((const byte_t*)data, size);
+}
+
+void_t ClientHandler::sendError(BotProtocol::EntityType entityType, const String& errorMessage)
+{
+  BotProtocol::Error error;
+  error.entityType = entityType;
+  setString(error.errorMessage, errorMessage);
+  sendEntity(BotProtocol::error, &error, sizeof(error));
 }

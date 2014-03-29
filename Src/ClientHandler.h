@@ -16,7 +16,8 @@ public:
 
   uint64_t getId() const {return id;}
   
-  void_t send(const byte_t* data, size_t size) {client.send(data, size);}
+  //void_t send(const byte_t* data, size_t size) {client.send(data, size);}
+  void_t sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size);
 
 private:
   enum State
@@ -37,14 +38,32 @@ private:
   Session* session;
   byte_t loginkey[64];
 
+private:
   void_t handleMessage(const BotProtocol::Header& messageHeader, byte_t* data, size_t size);
 
-  void_t handleLogin(uint64_t source, BotProtocol::LoginRequest& loginRequest);
-  void_t handleAuth(uint64_t source, BotProtocol::AuthRequest& authRequest);
-  void_t handleCreateSession(uint64_t source, BotProtocol::CreateSessionRequest& createSessionRequest);
-  void_t handleRegisterBot(uint64_t source, BotProtocol::RegisterBotRequest& registerBotRequest);
+  void_t handleLogin(BotProtocol::LoginRequest& loginRequest);
+  void_t handleAuth(BotProtocol::AuthRequest& authRequest);
+  void_t handleCreateSession(BotProtocol::CreateSessionRequest& createSessionRequest);
+  void_t handleRegisterBot(BotProtocol::RegisterBotRequest& registerBotRequest);
 
-  void_t sendErrorResponse(BotProtocol::MessageType messageType, uint64_t destination, const String& errorMessage);
+  void_t sendError(BotProtocol::EntityType entityType, const String& errorMessage);
+
+  template<size_t N> void_t setString(char_t(&str)[N], const String& value)
+  {
+    size_t size = value.length() + 1;
+    if(size > N - 1)
+      size = N - 1;
+    Memory::copy(str, (const char_t*)value, size);
+    str[N - 1] = '\0';
+  }
+  
+  template<size_t N> String getString(char_t(&str)[N])
+  {
+    str[N - 1] = '\0';
+    String result;
+    result.attach(str, String::length(str));
+    return result;
+  }
 
 private: // Server::Client::Listener
   virtual size_t handle(byte_t* data, size_t size);

@@ -44,11 +44,11 @@ bool_t User::deleteSession(uint32_t id)
   return true;
 }
 
-void_t User::sendClients(const byte_t* data, size_t size)
+void_t User::sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
   {
     ClientHandler* clientHandler = *i;
-    clientHandler->send(data, size);
+    clientHandler->sendEntity(type, data, size);
   }
 }

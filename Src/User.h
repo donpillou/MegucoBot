@@ -5,6 +5,8 @@
 #include <nstd/HashMap.h>
 #include <nstd/HashSet.h>
 
+#include "BotProtocol.h"
+
 class ServerHandler;
 class ClientHandler;
 class Session;
@@ -25,7 +27,7 @@ public:
   uint32_t createSession(const String& name, const String& engine, double balanceBase, double balanceComm);
   bool_t deleteSession(uint32_t id);
 
-  void_t sendClients(const byte_t* data, size_t size);
+  void_t sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size);
   
   const HashMap<uint32_t, Session*>& getSessions() const {return sessions;}
 

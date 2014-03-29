@@ -23,8 +23,7 @@ bool_t BotConnection::connect(uint16_t port)
     BotProtocol::Header* header = (BotProtocol::Header*)message;
     BotProtocol::RegisterBotRequest* registerBotRequest = (BotProtocol::RegisterBotRequest*)(header + 1);
     header->size = sizeof(message);
-    header->destination = header->source = 0;
-    header->messageType = BotProtocol::registerBotRequest;
+    header->entityType = BotProtocol::registerBotRequest;
     registerBotRequest->pid = Process::getCurrentProcessId();
     if(!socket.send(message, sizeof(message)))
     {
@@ -44,7 +43,7 @@ bool_t BotConnection::connect(uint16_t port)
       socket.close();
       return false;
     }
-    if(header.messageType != BotProtocol::registerBotResponse)
+    if(header.entityType != BotProtocol::registerBotResponse)
     {
       error = "Could not receive register bot response.";
       socket.close();

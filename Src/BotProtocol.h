@@ -6,20 +6,17 @@
 class BotProtocol
 {
 public:
-  enum MessageType
+  enum EntityType
   {
-    errorResponse,
+    error,
     loginRequest,
     loginResponse,
     authRequest,
     authResponse,
     createSessionRequest,
     createSessionResponse,
-    sessionMessage,
-    sessionRemoveMessage,
-
-    engineMessage,
-
+    session,
+    engine,
     registerBotRequest,
     registerBotResponse,
   };
@@ -28,14 +25,12 @@ public:
   struct Header
   {
     uint32_t size; // including header
-    uint64_t source; // client id
-    uint64_t destination; // client id
-    uint16_t messageType; // MessageType
+    uint16_t entityType; // EntityType
   };
 
-  struct ErrorResponse
+  struct Error
   {
-    uint16_t messageType;
+    uint16_t entityType;
     char_t errorMessage[129];
   };
 
@@ -68,19 +63,14 @@ public:
     uint32_t id;
   };
   
-  struct SessionMessage
+  struct Session
   {
     uint32_t id;
     char_t name[33];
     char_t engine[33];
-  };
-  
-  struct SessionRemoveMessage
-  {
-    uint32_t id;
-  };
+  }; 
 
-  struct EngineMessage
+  struct Engine
   {
     char_t name[33];
   };
