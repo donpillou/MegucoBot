@@ -26,6 +26,7 @@ public:
 
   bool_t setClient(ClientHandler* client);
 
+  uint32_t getId() const {return id;}
   bool_t isSimulation() const {return simulation;}
   const String& getName() const {return name;}
   const String& getEngine() const {return engine;}

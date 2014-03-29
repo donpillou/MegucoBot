@@ -21,7 +21,7 @@ void_t User::unregisterClient(ClientHandler& client)
   clients.remove(&client);
 }
 
-uint32_t User::createSession(const String& name, const String& engine, double balanceBase, double balanceComm)
+Session* User::createSession(const String& name, const String& engine, double balanceBase, double balanceComm)
 {
   uint32_t id = nextSessionId++;
   Session* session = new Session(serverHandler, id, name, true);
@@ -31,7 +31,7 @@ uint32_t User::createSession(const String& name, const String& engine, double ba
     return 0;
   }
   sessions.append(id, session);
-  return id;
+  return session;
 }
 
 bool_t User::deleteSession(uint32_t id)
@@ -44,11 +44,20 @@ bool_t User::deleteSession(uint32_t id)
   return true;
 }
 
-void_t User::sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size)
+void_t User::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
   {
     ClientHandler* clientHandler = *i;
-    clientHandler->sendEntity(type, data, size);
+    clientHandler->sendEntity(type, id, data, size);
+  }
+}
+
+void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
+{
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+  {
+    ClientHandler* clientHandler = *i;
+    clientHandler->removeEntity(type, id);
   }
 }

@@ -16,8 +16,9 @@ public:
 
   uint64_t getId() const {return id;}
   
-  //void_t send(const byte_t* data, size_t size) {client.send(data, size);}
-  void_t sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size);
+  void_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
+  void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
+  void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
 private:
   enum State
@@ -46,7 +47,7 @@ private:
   void_t handleCreateSession(BotProtocol::CreateSessionRequest& createSessionRequest);
   void_t handleRegisterBot(BotProtocol::RegisterBotRequest& registerBotRequest);
 
-  void_t sendError(BotProtocol::EntityType entityType, const String& errorMessage);
+  void_t sendError(const String& errorMessage);
 
   template<size_t N> void_t setString(char_t(&str)[N], const String& value)
   {

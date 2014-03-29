@@ -6,31 +6,38 @@
 class BotProtocol
 {
 public:
-  enum EntityType
+  enum MessageType
   {
-    error,
     loginRequest,
     loginResponse,
     authRequest,
     authResponse,
     createSessionRequest,
     createSessionResponse,
-    session,
-    engine,
     registerBotRequest,
     registerBotResponse,
+    updateEntity,
+    removeEntity,
+  };
+  
+  enum EntityType
+  {
+    error,
+    session,
+    engine,
   };
 
 #pragma pack(push, 1)
   struct Header
   {
     uint32_t size; // including header
+    uint16_t messageType; // MessageType
     uint16_t entityType; // EntityType
+    uint32_t entityId;
   };
 
   struct Error
   {
-    uint16_t entityType;
     char_t errorMessage[129];
   };
 
@@ -65,7 +72,6 @@ public:
   
   struct Session
   {
-    uint32_t id;
     char_t name[33];
     char_t engine[33];
   }; 

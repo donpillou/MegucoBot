@@ -24,10 +24,11 @@ public:
 
   void_t registerClient(ClientHandler& client);
   void_t unregisterClient(ClientHandler& client);
-  uint32_t createSession(const String& name, const String& engine, double balanceBase, double balanceComm);
+  Session* createSession(const String& name, const String& engine, double balanceBase, double balanceComm);
   bool_t deleteSession(uint32_t id);
 
-  void_t sendEntity(BotProtocol::EntityType type, const void_t* data, size_t size);
+  void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
+  void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
   
   const HashMap<uint32_t, Session*>& getSessions() const {return sessions;}
 

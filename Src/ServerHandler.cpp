@@ -4,18 +4,21 @@
 #include "ServerHandler.h"
 #include "ClientHandler.h"
 #include "User.h"
+#include "Engine.h"
 
 ServerHandler::~ServerHandler()
 {
-  for(HashMap<uint64_t, ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+  for(HashMap<uint32_t, ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     delete *i;
   for(HashMap<String, User*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
+    delete *i;
+  for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
     delete *i;
 }
 
 void_t ServerHandler::acceptedClient(Server::Client& client, uint32_t addr, uint16_t port)
 {
-  uint64_t clientId = nextClientId++;
+  uint64_t clientId = nextEntityId++;
   ClientHandler* clientHandler = new ClientHandler(clientId, addr, *this, client);
   client.setListener(clientHandler);
   clients.append(clientId, clientHandler);
@@ -47,6 +50,13 @@ User* ServerHandler::findUser(const String& userName)
   if(it == users.end())
     return 0;
   return *it;
+}
+
+void_t ServerHandler::addEngine(const String& path)
+{
+  uint32_t id = nextEntityId++;
+  Engine* engine = new Engine(id, path);
+  engines.append(id, engine);
 }
 
 Session* ServerHandler::findSession(uint32_t pid)
