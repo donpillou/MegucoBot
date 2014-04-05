@@ -72,8 +72,15 @@ public:
   
   struct Session
   {
+    enum State
+    {
+      inactive,
+      active,
+    };
+
     char_t name[33];
     char_t engine[33];
+    uint8_t state;
   }; 
 
   struct Engine

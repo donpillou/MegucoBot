@@ -24,12 +24,12 @@ void_t User::unregisterClient(ClientHandler& client)
 Session* User::createSession(const String& name, const String& engine, double balanceBase, double balanceComm)
 {
   uint32_t id = nextSessionId++;
-  Session* session = new Session(serverHandler, id, name, true);
-  if(!session->start(engine, balanceBase, balanceComm))
-  {
-    delete session;
-    return 0;
-  }
+  Session* session = new Session(serverHandler, id, name, engine);
+  //if(!session->start(engine, balanceBase, balanceComm))
+  //{
+  //  delete session;
+  //  return 0;
+  //}
   sessions.append(id, session);
   return session;
 }

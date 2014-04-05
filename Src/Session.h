@@ -5,24 +5,18 @@
 #include <nstd/String.h>
 #include <nstd/Process.h>
 
+#include "BotProtocol.h"
+
 class ServerHandler;
 class ClientHandler;
 
 class Session
 {
 public:
-  enum State
-  {
-    newState,
-    connectedState,
-    disconnectedState,
-  };
-
-public:
-  Session(ServerHandler& serverHandler, uint32_t id, const String& name, bool_t simulation);
+  Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine);
   ~Session();
 
-  bool_t start(const String& engine, double balanceBase, double balanceComm);
+  bool_t start(double balanceBase, double balanceComm);
 
   bool_t setClient(ClientHandler* client);
 
@@ -30,18 +24,19 @@ public:
   bool_t isSimulation() const {return simulation;}
   const String& getName() const {return name;}
   const String& getEngine() const {return engine;}
+  BotProtocol::Session::State getState() const {return state;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
 private:
   ServerHandler& serverHandler;
   uint32_t id;
   String name;
+  String engine;
+  BotProtocol::Session::State state;
   bool_t simulation;
   Process process;
   uint32_t pid;
-  State state;
   ClientHandler* client;
-  String engine;
   double balanceBase;
   double balanceComm;
 };

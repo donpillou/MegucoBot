@@ -142,6 +142,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
       const Session* session = *i;
       setString(sessionData.name, session->getName());
       setString(sessionData.engine, session->getEngine());
+      sessionData.state = session->getState();
       sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
     }
   }
@@ -159,12 +160,13 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionRequest& cre
   }
 
   BotProtocol::CreateSessionResponse createSessionResponse;
-  createSessionResponse.id = id;
+  createSessionResponse.id = session->getId();
   sendMessage(BotProtocol::createSessionResponse, &createSessionResponse, sizeof(createSessionResponse));
   
   BotProtocol::Session sessionData;
   setString(sessionData.name, session->getName());
   setString(sessionData.engine, session->getEngine());
+  sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
 }
 
