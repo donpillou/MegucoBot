@@ -8,7 +8,7 @@
 
 ServerHandler::~ServerHandler()
 {
-  for(HashMap<uint32_t, ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+  for(HashMap<uint64_t, ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     delete *i;
   for(HashMap<String, User*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
     delete *i;

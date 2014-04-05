@@ -27,7 +27,7 @@ public:
 private:
   uint16_t port;
   uint32_t nextEntityId;
-  HashMap<uint32_t, ClientHandler*> clients;
+  HashMap<uint64_t, ClientHandler*> clients;
   HashMap<String, User*> users;
   HashMap<uint32_t, Session*> sessions;
   HashMap<uint32_t, Engine*> engines;
