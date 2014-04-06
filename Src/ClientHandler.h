@@ -44,8 +44,16 @@ private:
 
   void_t handleLogin(BotProtocol::LoginRequest& loginRequest);
   void_t handleAuth(BotProtocol::AuthRequest& authRequest);
-  void_t handleCreateSession(BotProtocol::CreateSessionRequest& createSessionRequest);
   void_t handleRegisterBot(BotProtocol::RegisterBotRequest& registerBotRequest);
+
+  void_t handleCreateEntity(BotProtocol::EntityType type, byte_t* data, size_t size);
+  void_t handleRemoveEntity(BotProtocol::EntityType type, uint32_t id);
+  void_t handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size);
+
+  void_t handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs);
+  void_t handelRemoveSession(uint32_t id);
+
+  void_t handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs);
 
   void_t sendError(const String& errorMessage);
 

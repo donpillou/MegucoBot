@@ -24,7 +24,7 @@ void_t User::unregisterClient(ClientHandler& client)
 Session* User::createSession(const String& name, const String& engine, double balanceBase, double balanceComm)
 {
   uint32_t id = nextSessionId++;
-  Session* session = new Session(serverHandler, id, name, engine);
+  Session* session = new Session(serverHandler, id, name, engine, balanceBase, balanceComm);
   //if(!session->start(engine, balanceBase, balanceComm))
   //{
   //  delete session;
@@ -32,6 +32,11 @@ Session* User::createSession(const String& name, const String& engine, double ba
   //}
   sessions.append(id, session);
   return session;
+}
+
+Session* User::findSession(uint32_t id)
+{
+  return *sessions.find(id);
 }
 
 bool_t User::deleteSession(uint32_t id)

@@ -12,12 +12,12 @@ public:
     loginResponse,
     authRequest,
     authResponse,
-    createSessionRequest,
-    createSessionResponse,
     registerBotRequest,
     registerBotResponse,
     updateEntity,
     removeEntity,
+    controlEntity,
+    createEntity,
   };
   
   enum EntityType
@@ -57,25 +57,13 @@ public:
     byte_t signature[32];
   };
 
-  struct CreateSessionRequest
-  {
-    char_t name[33];
-    char_t engine[33];
-    double balanceBase;
-    double balanceComm;
-  };
-
-  struct CreateSessionResponse
-  {
-    uint32_t id;
-  };
-  
   struct Session
   {
     enum State
     {
       inactive,
       active,
+      simulating,
     };
 
     char_t name[33];
@@ -98,6 +86,25 @@ public:
     uint8_t isSimulation;
     double balanceBase;
     double balanceComm;
+  };
+
+  struct CreateSessionArgs
+  {
+    char_t name[33];
+    char_t engine[33];
+    double balanceBase;
+    double balanceComm;
+  };
+
+  struct ControlSessionArgs
+  {
+    enum Command
+    {
+      startSimulation,
+      stop,
+    };
+
+    uint8_t cmd;
   };
 
 #pragma pack(pop)

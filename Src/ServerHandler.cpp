@@ -46,10 +46,7 @@ bool_t ServerHandler::addUser(const String& userName, const String& password)
 
 User* ServerHandler::findUser(const String& userName)
 {
-  HashMap<String, User*>::Iterator it = users.find(userName);
-  if(it == users.end())
-    return 0;
-  return *it;
+  return *users.find(userName);
 }
 
 void_t ServerHandler::addEngine(const String& path)
@@ -59,12 +56,9 @@ void_t ServerHandler::addEngine(const String& path)
   engines.append(id, engine);
 }
 
-Session* ServerHandler::findSession(uint32_t pid)
+Session* ServerHandler::findSessionByPid(uint32_t pid)
 {
-  HashMap<uint32_t, Session*>::Iterator it = sessions.find(pid);
-  if(it == sessions.end())
-    return 0;
-  return *it;
+  return *sessions.find(pid);
 }
 
 void_t ServerHandler::registerSession(uint32_t pid, Session& session)

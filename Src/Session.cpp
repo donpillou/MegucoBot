@@ -2,9 +2,9 @@
 #include "Session.h"
 #include "ServerHandler.h"
 
-Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine) :
-  serverHandler(serverHandler), id(id), name(name), engine(engine), state(BotProtocol::Session::inactive), simulation(true),
-  pid(0), client(0), balanceBase(0.), balanceComm(0.) {}
+Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine, double balanceBase, double balanceComm) :
+  serverHandler(serverHandler), id(id), name(name), engine(engine), balanceBase(balanceBase), balanceComm(balanceComm),
+  state(BotProtocol::Session::inactive), simulation(true), pid(0), client(0) {}
 
 Session::~Session()
 {
@@ -13,17 +13,26 @@ Session::~Session()
   process.kill();
 }
 
-bool_t Session::start(double balanceBase, double balanceComm)
+bool_t Session::startSimulation()
 {
-  if(process.isRunning())
+  if(pid != 0)
     return false;
   pid = process.start(engine);
   if(!pid)
     return false;
   serverHandler.registerSession(pid, *this);
-  this->engine = engine;
-  this->balanceBase = balanceBase;
-  this->balanceComm = balanceComm;
+  state = BotProtocol::Session::simulating;
+  return true;
+}
+
+bool_t Session::stop()
+{
+  if(pid == 0)
+    return false;
+  if(!process.kill())
+    return false;
+  pid = 0;
+  state = BotProtocol::Session::inactive;
   return true;
 }
 

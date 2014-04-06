@@ -74,10 +74,14 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
   case authedState:
     switch((BotProtocol::MessageType)messageHeader.messageType)
     {
-    case BotProtocol::createSessionRequest:
-      if(size >= sizeof(BotProtocol::CreateSessionRequest))
-        handleCreateSession(*(BotProtocol::CreateSessionRequest*)data);
+    case BotProtocol::createEntity:
+      handleCreateEntity((BotProtocol::EntityType)messageHeader.entityType, data, size);
       break;
+    case BotProtocol::controlEntity:
+      handleControlEntity((BotProtocol::EntityType)messageHeader.entityType, messageHeader.entityId, data, size);
+      break;
+    case BotProtocol::removeEntity:
+      handleRemoveEntity((BotProtocol::EntityType)messageHeader.entityType, messageHeader.entityId);
     default:
       break;
     }
@@ -148,31 +152,9 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
   }
 }
 
-void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionRequest& createSessionRequest)
-{
-  String name = getString(createSessionRequest.name);
-  String engine = getString(createSessionRequest.engine);
-  Session* session = user->createSession(name, engine, createSessionRequest.balanceBase, createSessionRequest.balanceComm);
-  if(!session)
-  {
-    sendError("Could not create session.");
-    return;
-  }
-
-  BotProtocol::CreateSessionResponse createSessionResponse;
-  createSessionResponse.id = session->getId();
-  sendMessage(BotProtocol::createSessionResponse, &createSessionResponse, sizeof(createSessionResponse));
-  
-  BotProtocol::Session sessionData;
-  setString(sessionData.name, session->getName());
-  setString(sessionData.engine, session->getEngine());
-  sessionData.state = session->getState();
-  user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
-}
-
 void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registerBotRequest)
 {
-  Session* session = serverHandler.findSession(registerBotRequest.pid);
+  Session* session = serverHandler.findSessionByPid(registerBotRequest.pid);
   if(!session)
   {
     sendError("Unknown session.");
@@ -190,6 +172,99 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;
   state = botState;
+}
+
+void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* data, size_t size)
+{
+  switch(type)
+  {
+  case BotProtocol::session:
+    if(size >= sizeof(BotProtocol::CreateSessionArgs))
+      handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t id)
+{
+  switch(type)
+  {
+  case BotProtocol::session:
+    handelRemoveSession(id);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t ClientHandler::handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size)
+{
+  switch(type)
+  {
+  case BotProtocol::session:
+    if(size >= sizeof(BotProtocol::ControlSessionArgs))
+      handleControlSession(id, *(BotProtocol::ControlSessionArgs*)data);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
+{
+  String name = getString(createSessionArgs.name);
+  String engine = getString(createSessionArgs.engine);
+  Session* session = user->createSession(name, engine, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
+  if(!session)
+  {
+    sendError("Could not create session.");
+    return;
+  }
+
+  BotProtocol::Session sessionData;
+  setString(sessionData.name, session->getName());
+  setString(sessionData.engine, session->getEngine());
+  sessionData.state = session->getState();
+  user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
+}
+
+void_t ClientHandler::handelRemoveSession(uint32_t id)
+{
+  if(!user->deleteSession(id))
+  {
+    sendError("Unknown session.");
+    return;
+  }
+
+  user->removeEntity(BotProtocol::session, id);
+}
+
+void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs)
+{
+  Session* session = user->findSession(id);
+  if(!session)
+  {
+    sendError("Unknown session.");
+    return;
+  }
+
+  switch((BotProtocol::ControlSessionArgs::Command)controlSessionArgs.cmd)
+  {
+  case BotProtocol::ControlSessionArgs::startSimulation:
+    session->startSimulation();
+    break;
+  case BotProtocol::ControlSessionArgs::stop:
+    session->stop();
+    break;
+  }
+
+  BotProtocol::Session sessionData;
+  setString(sessionData.name, session->getName());
+  setString(sessionData.engine, session->getEngine());
+  sessionData.state = session->getState();
+  user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)

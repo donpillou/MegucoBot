@@ -24,18 +24,18 @@ const char* botName = "BuyBot";
 int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
-  bool background = true;
-
-  // parse parameters
-  for(int i = 1; i < argc; ++i)
-    if(String::compare(argv[i], "-f") == 0)
-      background = false;
-    else
-    {
-      Console::errorf("Usage: %s [-f]\n\
-  -f            run in foreground (not as daemon)\n", argv[0]);
-      return -1;
-    }
+//  bool background = true;
+//
+//  // parse parameters
+//  for(int i = 1; i < argc; ++i)
+//    if(String::compare(argv[i], "-f") == 0)
+//      background = false;
+//    else
+//    {
+//      Console::errorf("Usage: %s [-f]\n\
+//  -f            run in foreground (not as daemon)\n", argv[0]);
+//      return -1;
+//    }
 
 #ifndef _WIN32
   // daemonize process

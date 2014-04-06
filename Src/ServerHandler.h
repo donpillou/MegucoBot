@@ -20,7 +20,7 @@ public:
   const HashMap<uint32_t, Engine*>& getEngines() const {return engines;}
   bool_t addUser(const String& userName, const String& password);
   User* findUser(const String& userName);
-  Session* findSession(uint32_t pid);
+  Session* findSessionByPid(uint32_t pid);
   void_t registerSession(uint32_t pid, Session& session);
   void_t unregisterSession(uint32_t pid);
 

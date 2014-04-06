@@ -13,10 +13,11 @@ class ClientHandler;
 class Session
 {
 public:
-  Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine);
+  Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine, double balanceBase, double balanceComm);
   ~Session();
 
-  bool_t start(double balanceBase, double balanceComm);
+  bool_t startSimulation();
+  bool_t stop();
 
   bool_t setClient(ClientHandler* client);
 
@@ -32,11 +33,11 @@ private:
   uint32_t id;
   String name;
   String engine;
+  double balanceBase;
+  double balanceComm;
   BotProtocol::Session::State state;
   bool_t simulation;
   Process process;
   uint32_t pid;
   ClientHandler* client;
-  double balanceBase;
-  double balanceComm;
 };

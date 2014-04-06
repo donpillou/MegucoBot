@@ -25,6 +25,7 @@ public:
   void_t registerClient(ClientHandler& client);
   void_t unregisterClient(ClientHandler& client);
   Session* createSession(const String& name, const String& engine, double balanceBase, double balanceComm);
+  Session* findSession(uint32_t id);
   bool_t deleteSession(uint32_t id);
 
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
