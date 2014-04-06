@@ -39,37 +39,37 @@ int_t main(int_t argc, char_t* argv[])
 
 #ifndef _WIN32
   // daemonize process
-  if(background)
-  {
-    Console::printf("Starting as daemon...\n");
-
-    char logFileName[200];
-    strcpy(logFileName, botName);
-    strcat(logFileName, ".log");
-    int fd = open(logFileName, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-    if(fd == -1)
-    {
-      Console::errorf("error: Could not open file %s: %s\n", logFileName, strerror(errno));
-      return -1;
-    }
-    if(dup2(fd, STDOUT_FILENO) == -1)
-    {
-      Console::errorf("error: Could not reopen stdout: %s\n", strerror(errno));
-      return 0;
-    }
-    if(dup2(fd, STDERR_FILENO) == -1)
-    {
-      Console::errorf("error: Could not reopen stdout: %s\n", strerror(errno));
-      return 0;
-    }
-    close(fd);
-
-    pid_t childPid = fork();
-    if(childPid == -1)
-      return -1;
-    if(childPid != 0)
-      return 0;
-  }
+//  if(background)
+//  {
+//    Console::printf("Starting as daemon...\n");
+//
+//    char logFileName[200];
+//    strcpy(logFileName, botName);
+//    strcat(logFileName, ".log");
+//    int fd = open(logFileName, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+//    if(fd == -1)
+//    {
+//      Console::errorf("error: Could not open file %s: %s\n", logFileName, strerror(errno));
+//      return -1;
+//    }
+//    if(dup2(fd, STDOUT_FILENO) == -1)
+//    {
+//      Console::errorf("error: Could not reopen stdout: %s\n", strerror(errno));
+//      return 0;
+//    }
+//    if(dup2(fd, STDERR_FILENO) == -1)
+//    {
+//      Console::errorf("error: Could not reopen stdout: %s\n", strerror(errno));
+//      return 0;
+//    }
+//    close(fd);
+//
+//    pid_t childPid = fork();
+//    if(childPid == -1)
+//      return -1;
+//    if(childPid != 0)
+//      return 0;
+//  }
 #endif
 
   BotConnection connection;
