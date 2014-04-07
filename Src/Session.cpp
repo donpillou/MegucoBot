@@ -58,3 +58,13 @@ void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) cons
   balanceBase = this->balanceBase;
   balanceComm = this->balanceComm;
 }
+
+void_t Session::toVariant(Variant& variant)
+{
+  HashMap<String, Variant>& data = variant.toMap();
+  data.append("id", id);
+  data.append("name", name);
+  data.append("engine", engine);
+  data.append("balanceBase", balanceBase);
+  data.append("balanceComm", balanceComm);
+}

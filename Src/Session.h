@@ -4,6 +4,7 @@
 
 #include <nstd/String.h>
 #include <nstd/Process.h>
+#include <nstd/Variant.h>
 
 #include "BotProtocol.h"
 
@@ -27,6 +28,8 @@ public:
   const String& getEngine() const {return engine;}
   BotProtocol::Session::State getState() const {return state;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
+
+  void_t toVariant(Variant& variant);
 
 private:
   ServerHandler& serverHandler;

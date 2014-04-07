@@ -32,6 +32,8 @@ public:
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
   
   const HashMap<uint32_t, Session*>& getSessions() const {return sessions;}
+  
+  bool_t saveData();
 
 private:
   ServerHandler& serverHandler;

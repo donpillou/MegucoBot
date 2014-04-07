@@ -1,4 +1,9 @@
 
+#include <nstd/File.h>
+#include <nstd/Variant.h>
+
+#include "Tools/Json.h"
+
 #include "User.h"
 #include "Session.h"
 #include "ClientHandler.h"
@@ -66,3 +71,25 @@ void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
     clientHandler->removeEntity(type, id);
   }
 }
+
+bool_t User::saveData()
+{
+  Variant dataVar;
+  HashMap<String, Variant>& data = dataVar.toMap();
+  List<Variant>& sessionsVar = data.append("sessions", Variant()).toList();
+  for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
+  {
+    Variant& sessionVar = sessionsVar.append(Variant());;
+    (*i)->toVariant(sessionVar);
+  }
+  String json;
+  if(!Json::generate(data, json))
+    return false;
+  File file;
+  if(!file.open(userName + ".json", File::writeFlag))
+    return false;
+  if(!file.write(json))
+    return false;
+  return true;
+}
+
