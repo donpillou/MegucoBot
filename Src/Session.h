@@ -15,6 +15,7 @@ class Session
 {
 public:
   Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine, double balanceBase, double balanceComm);
+  Session(ServerHandler& serverHandler, const Variant& variant);
   ~Session();
 
   bool_t startSimulation();
@@ -23,7 +24,6 @@ public:
   bool_t setClient(ClientHandler* client);
 
   uint32_t getId() const {return id;}
-  bool_t isSimulation() const {return simulation;}
   const String& getName() const {return name;}
   const String& getEngine() const {return engine;}
   BotProtocol::Session::State getState() const {return state;}
@@ -39,7 +39,6 @@ private:
   double balanceBase;
   double balanceComm;
   BotProtocol::Session::State state;
-  bool_t simulation;
   Process process;
   uint32_t pid;
   ClientHandler* client;

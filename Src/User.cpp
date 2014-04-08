@@ -30,11 +30,6 @@ Session* User::createSession(const String& name, const String& engine, double ba
 {
   uint32_t id = nextSessionId++;
   Session* session = new Session(serverHandler, id, name, engine, balanceBase, balanceComm);
-  //if(!session->start(engine, balanceBase, balanceComm))
-  //{
-  //  delete session;
-  //  return 0;
-  //}
   sessions.append(id, session);
   return session;
 }
@@ -69,6 +64,32 @@ void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
   {
     ClientHandler* clientHandler = *i;
     clientHandler->removeEntity(type, id);
+  }
+}
+
+bool_t User::loadData()
+{
+  File file;
+  if(!file.open(userName + ".json", File::readFlag))
+    return false;
+  String data;
+  if(!file.readAll(data))
+    return false;
+  Variant dataVar;
+  if(!Json::parse(data, dataVar))
+    return false;
+  const List<Variant>& sessionsVar = dataVar.toMap().find("sessions")->toList();
+  for(List<Variant>::Iterator i = sessionsVar.begin(), end = sessionsVar.end(); i != end; ++i)
+  {
+    Session* session = new Session(serverHandler, *i);
+    uint32_t id = session->getId();
+    if(sessions.find(id) != sessions.end())
+    {
+      delete session;
+      continue;
+    }
+    sessions.append(id, session);
+    nextSessionId = id + 1;
   }
 }
 

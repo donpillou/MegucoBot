@@ -33,6 +33,7 @@ public:
   
   const HashMap<uint32_t, Session*>& getSessions() const {return sessions;}
   
+  bool_t loadData();
   bool_t saveData();
 
 private:

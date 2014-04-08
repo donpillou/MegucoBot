@@ -164,10 +164,10 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   {
     sendError("Invalid session.");
     return;
-  }
+  } 
 
   BotProtocol::RegisterBotResponse response;
-  response.isSimulation = session->isSimulation();
+  response.isSimulation = session->getState() != BotProtocol::Session::active;
   session->getInitialBalance(response.balanceBase, response.balanceComm);
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;

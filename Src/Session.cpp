@@ -3,8 +3,30 @@
 #include "ServerHandler.h"
 
 Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine, double balanceBase, double balanceComm) :
-  serverHandler(serverHandler), id(id), name(name), engine(engine), balanceBase(balanceBase), balanceComm(balanceComm),
-  state(BotProtocol::Session::inactive), simulation(true), pid(0), client(0) {}
+  serverHandler(serverHandler),
+  id(id), name(name), engine(engine), balanceBase(balanceBase), balanceComm(balanceComm),
+  state(BotProtocol::Session::inactive), pid(0), client(0) {}
+
+Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverHandler(serverHandler),
+  state(BotProtocol::Session::inactive), pid(0), client(0)
+{
+  const HashMap<String, Variant>& data = variant.toMap();
+  id = data.find("id")->toUInt();
+  name = data.find("name")->toString();
+  engine = data.find("engine")->toString();
+  balanceBase = data.find("balanceBase")->toDouble();
+  balanceComm = data.find("balanceComm")->toDouble();
+}
+
+void_t Session::toVariant(Variant& variant)
+{
+  HashMap<String, Variant>& data = variant.toMap();
+  data.append("id", id);
+  data.append("name", name);
+  data.append("engine", engine);
+  data.append("balanceBase", balanceBase);
+  data.append("balanceComm", balanceComm);
+}
 
 Session::~Session()
 {
@@ -57,14 +79,4 @@ void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) cons
 {
   balanceBase = this->balanceBase;
   balanceComm = this->balanceComm;
-}
-
-void_t Session::toVariant(Variant& variant)
-{
-  HashMap<String, Variant>& data = variant.toMap();
-  data.append("id", id);
-  data.append("name", name);
-  data.append("engine", engine);
-  data.append("balanceBase", balanceBase);
-  data.append("balanceComm", balanceComm);
 }
