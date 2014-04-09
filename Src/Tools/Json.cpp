@@ -315,6 +315,37 @@ bool_t Json::parse(const Buffer& data, Variant& result)
   return parse((const tchar_t*)(const byte_t*)data, result);
 }
 
+bool_t generateString(const String& str, String& result)
+{
+  size_t strLen = str.length();
+  result.reserve(result.length() + 2 + strLen * 2);
+  result += '"';
+  for(const tchar_t* start = str, * p = start;;)
+  {
+    const tchar_t* e = String::findOneOf(p, "\"\\");
+    if(!e)
+    {
+      result.append(p, strLen - (p - start));
+      break;
+    }
+    if(e > p)
+      result.append(p, e - p);
+    switch(*e)
+    {
+    case '"':
+      result += "\\\"";
+      break;
+    case '\\':
+      result += "\\\\";
+      break;
+    }
+    p = e + 1;
+  }
+  result += '"';
+  return true;
+
+}
+
 bool_t Json::generate(const Variant& data, String& result)
 {
   switch(data.getType())
@@ -331,42 +362,17 @@ bool_t Json::generate(const Variant& data, String& result)
     result += data.toString();
     return true;
   case Variant::stringType:
-    {
-      const String str = data.toString();
-      size_t strLen = str.length();
-      result.reserve(result.length() + 2 + strLen * 2);
-      result += '"';
-      for(const tchar_t* start = str, * p = start;;)
-      {
-        const tchar_t* e = String::findOneOf(p, "\"\\");
-        if(!e)
-        {
-          result.append(p, strLen - (p - start));
-          break;
-        }
-        if(e > p)
-          result.append(p, e - p);
-        switch(*e)
-        {
-        case '"':
-          result += "\\\"";
-          break;
-        case '\\':
-          result += "\\\\";
-          break;
-        }
-        p = e + 1;
-      }
-      result += '"';
-      return true;
-    }
+    if(!generateString(data.toString(), result))
+      return false;
+    return true;
   case Variant::mapType:
     {
       result += '{';
       const HashMap<String, Variant>& map = data.toMap();
       for(HashMap<String, Variant>::Iterator i = map.begin(), end = map.end();;)
       {
-        result += i.key();
+        if(!generateString(i.key(), result))
+          return false;
         result += ':';
         if(!generate(*i, result))
           return false;

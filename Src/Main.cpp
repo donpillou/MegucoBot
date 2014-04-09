@@ -107,7 +107,8 @@ int_t main(int_t argc, char_t* argv[])
   server.setListener(&serverHandler);
 
   // load users
-  serverHandler.addUser("donpillou", "1234");
+  //serverHandler.addUser("donpillou", "1234");
+  serverHandler.loadData();
 
   // load bot engine list
   {

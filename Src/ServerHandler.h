@@ -24,6 +24,9 @@ public:
   void_t registerSession(uint32_t pid, Session& session);
   void_t unregisterSession(uint32_t pid);
 
+  bool_t loadData();
+  bool_t saveData();
+
 private:
   uint16_t port;
   uint32_t nextEntityId;

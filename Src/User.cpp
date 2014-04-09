@@ -70,7 +70,7 @@ void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
 bool_t User::loadData()
 {
   File file;
-  if(!file.open(userName + ".json", File::readFlag))
+  if(!file.open(String("user-") + userName + ".json", File::readFlag))
     return false;
   String data;
   if(!file.readAll(data))
@@ -104,10 +104,10 @@ bool_t User::saveData()
     (*i)->toVariant(sessionVar);
   }
   String json;
-  if(!Json::generate(data, json))
+  if(!Json::generate(dataVar, json))
     return false;
   File file;
-  if(!file.open(userName + ".json", File::writeFlag))
+  if(!file.open(String("user-") + userName + ".json", File::writeFlag))
     return false;
   if(!file.write(json))
     return false;
