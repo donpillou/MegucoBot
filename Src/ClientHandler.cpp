@@ -228,6 +228,7 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
   setString(sessionData.engine, session->getEngine());
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
+  user->saveData();
 }
 
 void_t ClientHandler::handelRemoveSession(uint32_t id)
@@ -239,6 +240,7 @@ void_t ClientHandler::handelRemoveSession(uint32_t id)
   }
 
   user->removeEntity(BotProtocol::session, id);
+  user->saveData();
 }
 
 void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs)
