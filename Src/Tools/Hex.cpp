@@ -37,13 +37,13 @@ bool_t Hex::fromString(const String& str, Buffer& data)
     if(cu >= _T('0') && cu <= _T('9'))
       cu -= _T('0');
     else if(cu >= _T('a') && cu <= _T('f'))
-      cu -= _T('a') + 10;
+      cu -= _T('a') - 10;
     else
       return false;
     if(cl >= _T('0') && cl <= _T('9'))
       cl -= _T('0');
     else if(cl >= 'a' && cl <= 'f')
-      cl -= _T('a') + 10;
+      cl -= _T('a') - 10;
     else
       return false;
     *dest = cu << 4 | cl;
