@@ -91,6 +91,7 @@ bool_t User::loadData()
     sessions.append(id, session);
     nextSessionId = id + 1;
   }
+  return true;
 }
 
 bool_t User::saveData()
