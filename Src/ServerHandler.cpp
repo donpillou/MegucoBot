@@ -9,6 +9,7 @@
 #include "ClientHandler.h"
 #include "User.h"
 #include "Engine.h"
+#include "Market.h"
 
 ServerHandler::~ServerHandler()
 {
@@ -17,6 +18,8 @@ ServerHandler::~ServerHandler()
   for(HashMap<String, User*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
     delete *i;
   for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
+    delete *i;
+  for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
     delete *i;
 }
 
@@ -39,11 +42,12 @@ bool_t ServerHandler::addUser(const String& userName, const String& password)
 {
   if(findUser(userName))
     return false;
-  User* user = new User(*this);
-  user->userName = userName;
-  for(uint32_t* p = (uint32_t*)user->key, * end = (uint32_t*)(user->key + 32); p < end; ++p)
+  byte_t key[32];
+  byte_t pwhmac[32];
+  for(uint32_t* p = (uint32_t*)key, * end = (uint32_t*)(key + 32); p < end; ++p)
     *p = Math::random();
-  Sha256::hmac(user->key, 32, (const byte_t*)(const char_t*)password, password.length(), user->pwhmac);
+  Sha256::hmac(key, 32, (const byte_t*)(const char_t*)password, password.length(), pwhmac);
+  User* user = new User(*this, userName, key, pwhmac);
   users.append(userName, user);
   saveData();
   return true;
@@ -76,6 +80,12 @@ void_t ServerHandler::unregisterSession(uint32_t pid)
   sessions.remove(pid);
 }
 
+void_t ServerHandler::addMarket(const String& name, const String& currencyBase, const String& currencyComm)
+{
+  uint32_t id = nextEntityId++;
+  Market* market = new Market(id, name, currencyBase, currencyComm);
+  markets.append(id, market);
+}
 
 bool_t ServerHandler::loadData()
 {
@@ -102,10 +112,9 @@ bool_t ServerHandler::loadData()
     if(!Hex::fromString(userVar.find("pwhmac")->toString(), pwhmac) || pwhmac.size() != 32)
       continue;
 
-    User* user = new User(*this);
-    user->userName = name;
-    Memory::copy(user->key, (const byte_t*)key, 32);
-    Memory::copy(user->pwhmac, (const byte_t*)pwhmac, 32);
+    const byte_t* keyPtr = (const byte_t*)key;
+    const byte_t* pwhmacPtr = (const byte_t*)pwhmac;
+    User* user = new User(*this, name, (const byte_t (&)[32])keyPtr, (const byte_t (&)[32])pwhmacPtr);
     users.append(name, user);
     user->loadData();
   }
@@ -120,9 +129,9 @@ bool_t ServerHandler::saveData()
   {
     const User* user = *i;
     HashMap<String, Variant>& userVar = usersVar.append(Variant()).toMap();
-    userVar.append("name", user->userName);
-    userVar.append("key", Hex::toString(user->key, sizeof(user->key)));
-    userVar.append("pwhmac", Hex::toString(user->pwhmac, sizeof(user->pwhmac)));
+    userVar.append("name", user->getUserName());
+    userVar.append("key", Hex::toString(user->getKey(), 32));
+    userVar.append("pwhmac", Hex::toString(user->getPwHmac(), 32));
   }
   String json;
   if(!Json::generate(dataVar, json))

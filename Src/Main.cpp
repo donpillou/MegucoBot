@@ -106,6 +106,9 @@ int_t main(int_t argc, char_t* argv[])
   ServerHandler serverHandler(port);
   server.setListener(&serverHandler);
 
+  // load market list
+  serverHandler.addMarket("Bitstamp/USD", "USD", "BTC");
+
   // load users
   //serverHandler.addUser("donpillou", "1234");
   serverHandler.loadData();

@@ -8,6 +8,7 @@
 #include "User.h"
 #include "Session.h"
 #include "Engine.h"
+#include "Market.h"
 
 ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
   state(newState), user(0), session(0) {}
@@ -105,7 +106,7 @@ void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
     *p = Math::random();
 
   BotProtocol::LoginResponse loginResponse;
-  Memory::copy(loginResponse.userkey, user->key, sizeof(loginResponse.userkey));
+  Memory::copy(loginResponse.userkey, user->getKey(), sizeof(loginResponse.userkey));
   Memory::copy(loginResponse.loginkey, loginkey, sizeof(loginResponse.loginkey));
   sendMessage(BotProtocol::loginResponse, &loginResponse, sizeof(loginResponse));
   state = loginState;
@@ -114,7 +115,7 @@ void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
 void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
 {
   byte_t signature[32];
-  Sha256::hmac(loginkey, 32, user->pwhmac, 32, signature);
+  Sha256::hmac(loginkey, 32, user->getPwHmac(), 32, signature);
   if(Memory::compare(signature, authRequest.signature, 32) != 0)
   {
     sendError("Incorrect signature.");
@@ -134,6 +135,20 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
       const Engine* engine = *i;
       setString(engineData.name, engine->getName());
       sendEntity(BotProtocol::engine, engine->getId(), &engineData, sizeof(engineData));
+    }
+  }
+
+  // send market list
+  {
+    BotProtocol::Market marketData;
+    const HashMap<uint32_t, Market*>& markets = serverHandler.getMarkets();
+    for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
+    {
+      const Market* market = *i;
+      setString(marketData.name, market->getName());
+      setString(marketData.currencyBase, market->getCurrencyBase());
+      setString(marketData.currencyComm, market->getCurrencyComm());
+      sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
     }
   }
 

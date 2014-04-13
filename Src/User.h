@@ -14,12 +14,7 @@ class Session;
 class User
 {
 public:
-  String userName;
-  byte_t key[32];
-  byte_t pwhmac[32];
-
-public:
-  User(ServerHandler& serverHandler);
+  User(ServerHandler& serverHandler, const String& userName, const byte_t (&key)[32], const byte_t (&pwhmac)[32]);
   ~User();
 
   void_t registerClient(ClientHandler& client);
@@ -31,6 +26,9 @@ public:
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
   
+  const String& getUserName() const {return userName;}
+  const byte_t* getKey() const {return key;}
+  const byte_t* getPwHmac() const {return pwhmac;}
   const HashMap<uint32_t, Session*>& getSessions() const {return sessions;}
   
   bool_t loadData();
@@ -38,6 +36,9 @@ public:
 
 private:
   ServerHandler& serverHandler;
+  String userName;
+  byte_t key[32];
+  byte_t pwhmac[32];
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, Session*> sessions;
   uint32_t nextSessionId;

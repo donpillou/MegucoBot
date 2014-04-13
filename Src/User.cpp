@@ -8,7 +8,12 @@
 #include "Session.h"
 #include "ClientHandler.h"
 
-User::User(ServerHandler& serverHandler) : serverHandler(serverHandler), nextSessionId(1) {}
+User::User(ServerHandler& serverHandler, const String& userName, const byte_t (&key)[32], const byte_t (&pwhmac)[32]) :
+  serverHandler(serverHandler), userName(userName), nextSessionId(1)
+{
+  Memory::copy(this->key, key, sizeof(this->key));
+  Memory::copy(this->pwhmac, pwhmac, sizeof(this->pwhmac));
+}
 
 User::~User()
 {
