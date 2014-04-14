@@ -112,9 +112,7 @@ bool_t ServerHandler::loadData()
     if(!Hex::fromString(userVar.find("pwhmac")->toString(), pwhmac) || pwhmac.size() != 32)
       continue;
 
-    const byte_t* keyPtr = (const byte_t*)key;
-    const byte_t* pwhmacPtr = (const byte_t*)pwhmac;
-    User* user = new User(*this, name, (const byte_t (&)[32])keyPtr, (const byte_t (&)[32])pwhmacPtr);
+    User* user = new User(*this, name, (const byte_t (&)[32])*(const byte_t*)key, (const byte_t (&)[32])*(const byte_t*)pwhmac);
     users.append(name, user);
     user->loadData();
   }
