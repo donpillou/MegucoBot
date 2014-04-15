@@ -16,6 +16,8 @@ public:
 
   uint64_t getId() const {return id;}
   
+  void_t deselectSession();
+
   void_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);

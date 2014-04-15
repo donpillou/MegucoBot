@@ -112,6 +112,7 @@ public:
     {
       startSimulation,
       stop,
+      select,
     };
 
     uint8_t cmd;

@@ -1,16 +1,17 @@
 
 #include "Session.h"
 #include "ServerHandler.h"
+#include "ClientHandler.h"
 #include "Engine.h"
 #include "Market.h"
 
 Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
   serverHandler(serverHandler),
   id(id), name(name), engine(&engine), market(&market), balanceBase(balanceBase), balanceComm(balanceComm),
-  state(BotProtocol::Session::inactive), pid(0), client(0) {}
+  state(BotProtocol::Session::inactive), pid(0), botClient(0) {}
 
 Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverHandler(serverHandler),
-  state(BotProtocol::Session::inactive), pid(0), client(0)
+  state(BotProtocol::Session::inactive), pid(0), botClient(0)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -37,6 +38,10 @@ Session::~Session()
   if(pid != 0)
     serverHandler.unregisterSession(pid);
   process.kill();
+  if(botClient)
+    botClient->deselectSession();
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->deselectSession();
 }
 
 bool_t Session::startSimulation()
@@ -62,21 +67,25 @@ bool_t Session::stop()
   return true;
 }
 
-bool_t Session::setClient(ClientHandler* client)
+bool_t Session::registerClient(ClientHandler& client, bool_t bot)
 {
-  if(client)
+  if(bot)
   {
-    if(this->client)
+    if(botClient)
       return false;
-    this->client = client;
+    botClient = &client;
   }
   else
-  {
-    if(!this->client)
-      return false;
-    this->client = 0;
-  }
+    clients.append(&client);
   return true;
+}
+
+void_t Session::unregisterClient(ClientHandler& client)
+{
+  if(&client == botClient)
+    botClient = 0;
+  else
+    clients.remove(&client);
 }
 
 void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) const

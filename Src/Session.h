@@ -5,6 +5,7 @@
 #include <nstd/String.h>
 #include <nstd/Process.h>
 #include <nstd/Variant.h>
+#include <nstd/HashSet.h>
 
 #include "BotProtocol.h"
 
@@ -23,7 +24,8 @@ public:
   bool_t startSimulation();
   bool_t stop();
 
-  bool_t setClient(ClientHandler* client);
+  bool_t registerClient(ClientHandler& client, bool_t bot);
+  void_t unregisterClient(ClientHandler& client);
 
   uint32_t getId() const {return id;}
   const String& getName() const {return name;}
@@ -45,5 +47,6 @@ private:
   BotProtocol::Session::State state;
   Process process;
   uint32_t pid;
-  ClientHandler* client;
+  ClientHandler* botClient;
+  HashSet<ClientHandler*> clients;
 };

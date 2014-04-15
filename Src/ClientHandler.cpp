@@ -18,7 +18,14 @@ ClientHandler::~ClientHandler()
   if(user)
     user->unregisterClient(*this);
   if(session)
-    session->setClient(0);
+    session->unregisterClient(*this);
+}
+
+void_t ClientHandler::deselectSession()
+{
+  session = 0;
+  if(state == botState)
+    client.close();
 }
 
 size_t ClientHandler::handle(byte_t* data, size_t size)
@@ -176,7 +183,7 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
     sendError("Unknown session.");
     return;
   }
-  if(!session->setClient(this))
+  if(!session->registerClient(*this, true))
   {
     sendError("Invalid session.");
     return;
@@ -289,6 +296,12 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
   case BotProtocol::ControlSessionArgs::stop:
     session->stop();
     break;
+  case BotProtocol::ControlSessionArgs::select:
+    if(this->session)
+      this->session->unregisterClient(*this);
+    session->registerClient(*this, false);
+    this->session = session;
+    return;
   }
 
   BotProtocol::Session sessionData;
