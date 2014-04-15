@@ -16,7 +16,12 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
+  bool_t createTransaction(const BotProtocol::CreateTransationArgs& transaction);
+
 private:
   Socket socket;
   String error;
+
+private:
+  bool_t createEntity(BotProtocol::EntityType type, const void_t* data, size_t size);
 };

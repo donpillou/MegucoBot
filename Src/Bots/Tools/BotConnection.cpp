@@ -59,3 +59,24 @@ bool_t BotConnection::connect(uint16_t port)
 
   return true;
 }
+
+bool_t BotConnection::createTransaction(const BotProtocol::CreateTransationArgs& transaction)
+{
+  return createEntity(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransationArgs));
+}
+
+bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size)
+{
+  BotProtocol::Header header;
+  header.size = sizeof(header) + size;
+  header.messageType = BotProtocol::createEntity;
+  header.entityType = type;
+  header.entityId = 0;
+  if(!socket.send((const byte_t*)&header, sizeof(header)) ||
+     !(size > 0 && !socket.send((const byte_t*)data, size)))
+  {
+    error = Socket::getLastErrorString();
+    return false;
+  }
+  return true;
+}

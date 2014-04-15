@@ -26,6 +26,7 @@ public:
     session,
     engine,
     market,
+    transaction,
   };
 
 #pragma pack(push, 1)
@@ -85,6 +86,21 @@ public:
     char_t currencyComm[33];
   };
 
+  struct Transaction
+  {
+    enum Type
+    {
+      buy,
+      sell
+    };
+
+    int64_t date;
+    double price;
+    double amount;
+    double fee;
+    uint8_t type;
+  };
+
   struct RegisterBotRequest
   {
     uint32_t pid;
@@ -116,6 +132,14 @@ public:
     };
 
     uint8_t cmd;
+  };
+
+  struct CreateTransationArgs
+  {
+    double price;
+    double amount;
+    double fee;
+    uint8_t type; // see Transaction::Type
   };
 
 #pragma pack(pop)

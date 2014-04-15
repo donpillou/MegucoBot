@@ -79,6 +79,17 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
+  BotProtocol::CreateTransationArgs transaction;
+  transaction.amount = 1.;
+  transaction.fee = 0.01;
+  transaction.price = 1000.;
+  transaction.type = BotProtocol::Transaction::buy;
+  if(!connection.createTransaction(transaction))
+  {
+    Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)connection.getErrorString());
+    return -1;
+  }
+
   /*
   RelayConnection relayConnection;
   MarketConnection marketConnection;
