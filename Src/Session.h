@@ -10,11 +10,13 @@
 
 class ServerHandler;
 class ClientHandler;
+class Engine;
+class Market;
 
 class Session
 {
 public:
-  Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine, double balanceBase, double balanceComm);
+  Session(ServerHandler& serverHandler, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm);
   Session(ServerHandler& serverHandler, const Variant& variant);
   ~Session();
 
@@ -25,7 +27,8 @@ public:
 
   uint32_t getId() const {return id;}
   const String& getName() const {return name;}
-  const String& getEngine() const {return engine;}
+  Engine* getEngine() const {return engine;}
+  Market* getMarket() const {return market;}
   BotProtocol::Session::State getState() const {return state;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
@@ -35,7 +38,8 @@ private:
   ServerHandler& serverHandler;
   uint32_t id;
   String name;
-  String engine;
+  Engine* engine;
+  Market* market;
   double balanceBase;
   double balanceComm;
   BotProtocol::Session::State state;

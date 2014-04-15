@@ -160,7 +160,8 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
     {
       const Session* session = *i;
       setString(sessionData.name, session->getName());
-      setString(sessionData.engine, session->getEngine());
+      sessionData.engineId = session->getEngine()->getId();
+      sessionData.marketId = session->getMarket()->getId();
       sessionData.state = session->getState();
       sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
     }
@@ -230,8 +231,20 @@ void_t ClientHandler::handleControlEntity(BotProtocol::EntityType type, uint32_t
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
 {
   String name = getString(createSessionArgs.name);
-  String engine = getString(createSessionArgs.engine);
-  Session* session = user->createSession(name, engine, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
+  Engine* engine = serverHandler.findEngine(createSessionArgs.engineId);
+  if(!engine)
+  {
+    sendError("Unknown engine.");
+    return;
+  }
+  Market* market = serverHandler.findMarket(createSessionArgs.marketId);
+  if(!market)
+  {
+    sendError("Unknown market.");
+    return;
+  }
+
+  Session* session = user->createSession(name, *engine, *market, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
   if(!session)
   {
     sendError("Could not create session.");
@@ -240,7 +253,8 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
 
   BotProtocol::Session sessionData;
   setString(sessionData.name, session->getName());
-  setString(sessionData.engine, session->getEngine());
+  sessionData.engineId = session->getEngine()->getId();
+  sessionData.marketId = session->getMarket()->getId();
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
   user->saveData();
@@ -279,7 +293,8 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
 
   BotProtocol::Session sessionData;
   setString(sessionData.name, session->getName());
-  setString(sessionData.engine, session->getEngine());
+  sessionData.engineId = session->getEngine()->getId();
+  sessionData.marketId = session->getMarket()->getId();
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
 }

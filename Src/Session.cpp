@@ -1,10 +1,12 @@
 
 #include "Session.h"
 #include "ServerHandler.h"
+#include "Engine.h"
+#include "Market.h"
 
-Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, const String& engine, double balanceBase, double balanceComm) :
+Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
   serverHandler(serverHandler),
-  id(id), name(name), engine(engine), balanceBase(balanceBase), balanceComm(balanceComm),
+  id(id), name(name), engine(&engine), market(&market), balanceBase(balanceBase), balanceComm(balanceComm),
   state(BotProtocol::Session::inactive), pid(0), client(0) {}
 
 Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverHandler(serverHandler),
@@ -13,7 +15,8 @@ Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverH
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
   name = data.find("name")->toString();
-  engine = data.find("engine")->toString();
+  engine = serverHandler.findEngine(data.find("engine")->toString());
+  market = serverHandler.findMarket(data.find("market")->toString());
   balanceBase = data.find("balanceBase")->toDouble();
   balanceComm = data.find("balanceComm")->toDouble();
 }
@@ -23,7 +26,8 @@ void_t Session::toVariant(Variant& variant)
   HashMap<String, Variant>& data = variant.toMap();
   data.append("id", id);
   data.append("name", name);
-  data.append("engine", engine);
+  data.append("engine", engine->getName());
+  data.append("market", market->getName());
   data.append("balanceBase", balanceBase);
   data.append("balanceComm", balanceComm);
 }
@@ -39,7 +43,7 @@ bool_t Session::startSimulation()
 {
   if(pid != 0)
     return false;
-  pid = process.start(engine);
+  pid = process.start(engine->getPath());
   if(!pid)
     return false;
   serverHandler.registerSession(pid, *this);

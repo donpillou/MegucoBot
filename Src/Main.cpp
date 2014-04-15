@@ -109,10 +109,6 @@ int_t main(int_t argc, char_t* argv[])
   // load market list
   serverHandler.addMarket("Bitstamp/USD", "USD", "BTC");
 
-  // load users
-  //serverHandler.addUser("donpillou", "1234");
-  serverHandler.loadData();
-
   // load bot engine list
   {
     Directory dir;
@@ -134,9 +130,13 @@ int_t main(int_t argc, char_t* argv[])
           "botd"
 #endif
           )
-          serverHandler.addEngine(binaryDir + "/" + path);
+          serverHandler.addEngine(File::basename(path, ".exe"), binaryDir + "/" + path);
     }
   }
+
+  // load users
+  //serverHandler.addUser("donpillou", "1234");
+  serverHandler.loadData();
 
   // run listen server
   if(!server.listen(port))

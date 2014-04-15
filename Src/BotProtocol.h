@@ -68,7 +68,8 @@ public:
     };
 
     char_t name[33];
-    char_t engine[33];
+    uint32_t engineId;
+    uint32_t marketId;
     uint8_t state;
   }; 
 
@@ -99,7 +100,8 @@ public:
   struct CreateSessionArgs
   {
     char_t name[33];
-    char_t engine[33];
+    uint32_t engineId;
+    uint32_t marketId;
     double balanceBase;
     double balanceComm;
   };

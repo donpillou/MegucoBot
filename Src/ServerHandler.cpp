@@ -53,31 +53,12 @@ bool_t ServerHandler::addUser(const String& userName, const String& password)
   return true;
 }
 
-User* ServerHandler::findUser(const String& userName)
-{
-  return *users.find(userName);
-}
-
-void_t ServerHandler::addEngine(const String& path)
+void_t ServerHandler::addEngine(const String& name, const String& path)
 {
   uint32_t id = nextEntityId++;
   Engine* engine = new Engine(id, path);
   engines.append(id, engine);
-}
-
-Session* ServerHandler::findSessionByPid(uint32_t pid)
-{
-  return *sessions.find(pid);
-}
-
-void_t ServerHandler::registerSession(uint32_t pid, Session& session)
-{
-  sessions.append(pid, &session);
-}
-
-void_t ServerHandler::unregisterSession(uint32_t pid)
-{
-  sessions.remove(pid);
+  enginesByName.append(name, engine);
 }
 
 void_t ServerHandler::addMarket(const String& name, const String& currencyBase, const String& currencyComm)
@@ -85,6 +66,7 @@ void_t ServerHandler::addMarket(const String& name, const String& currencyBase, 
   uint32_t id = nextEntityId++;
   Market* market = new Market(id, name, currencyBase, currencyComm);
   markets.append(id, market);
+  marketsByName.append(name, market);
 }
 
 bool_t ServerHandler::loadData()
