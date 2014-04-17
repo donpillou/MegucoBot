@@ -422,5 +422,8 @@ static bool_t generate(const Variant& data, const String& indentation, String& r
 
 bool_t Json::generate(const Variant& data, String& result)
 {
-  return ::generate(data, String(), result);
+  if(!::generate(data, String(), result))
+    return false;
+  result += '\n';
+  return true;
 }
