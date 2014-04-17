@@ -346,7 +346,7 @@ bool_t generateString(const String& str, String& result)
 
 }
 
-bool_t Json::generate(const Variant& data, String& result)
+static bool_t generate(const Variant& data, const String& indentation, String& result)
 {
   switch(data.getType())
   {
@@ -367,37 +367,60 @@ bool_t Json::generate(const Variant& data, String& result)
     return true;
   case Variant::mapType:
     {
-      result += '{';
       const HashMap<String, Variant>& map = data.toMap();
-      for(HashMap<String, Variant>::Iterator i = map.begin(), end = map.end();;)
+      if(map.isEmpty())
+        result += "{}";
+      else
       {
-        if(!generateString(i.key(), result))
-          return false;
-        result += ':';
-        if(!generate(*i, result))
-          return false;
-        if(++i == end)
-          break;
-        result += ',';
+        result += "{\n";
+        String newIndentation = indentation + "\t";
+        for(HashMap<String, Variant>::Iterator i = map.begin(), end = map.end();;)
+        {
+          result += newIndentation;
+          if(!generateString(i.key(), result))
+            return false;
+          result += ": ";
+          if(!generate(*i, newIndentation, result))
+            return false;
+          if(++i == end)
+            break;
+          result += ",\n";
+        }
+        result += '\n';
+        result += indentation;
+        result += '}';
       }
-      result += '}';
       return true;
     }
   case Variant::listType:
     {
-      result += '[';;
       const List<Variant>& list = data.toList();
-      for(List<Variant>::Iterator i = list.begin(), end = list.end();;)
+      if(list.isEmpty())
+        result += "[]";
+      else
       {
-        if(!generate(*i, result))
-          return false;
-        if(++i == end)
-          break;
-        result += ',';
+        result += "[\n";;
+        String newIndentation = indentation + "\t";
+        for(List<Variant>::Iterator i = list.begin(), end = list.end();;)
+        {
+          result += newIndentation;
+          if(!generate(*i, newIndentation, result))
+            return false;
+          if(++i == end)
+            break;
+          result += ",\n";
+        }
+        result += '\n';
+        result += indentation;
+        result += ']';
       }
-      result += ']';
       return true;
     }
   }
   return false;
+}
+
+bool_t Json::generate(const Variant& data, String& result)
+{
+  return ::generate(data, String(), result);
 }
