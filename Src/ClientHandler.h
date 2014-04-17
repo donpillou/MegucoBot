@@ -27,7 +27,7 @@ private:
   {
     newState,
     loginState,
-    authedState,
+    userState,
     botState,
   };
 
@@ -54,6 +54,9 @@ private:
 
   void_t handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs);
   void_t handelRemoveSession(uint32_t id);
+
+  void_t handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs);
+  void_t handelRemoveTransaction(uint32_t id);
 
   void_t handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs);
 

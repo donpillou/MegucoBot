@@ -13,6 +13,7 @@ class ServerHandler;
 class ClientHandler;
 class Engine;
 class Market;
+class Transaction;
 
 class Session
 {
@@ -34,7 +35,14 @@ public:
   BotProtocol::Session::State getState() const {return state;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
+  Transaction* createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type);
+  const HashMap<uint32_t, Transaction*>& getTransactions() const {return transactions;}
+  bool_t deleteTransaction(uint32_t id);
+
   void_t toVariant(Variant& variant);
+
+  void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
+  void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
 private:
   ServerHandler& serverHandler;
@@ -49,4 +57,6 @@ private:
   uint32_t pid;
   ClientHandler* botClient;
   HashSet<ClientHandler*> clients;
+  HashMap<uint32_t, Transaction*> transactions;
+  uint32_t nextTransactionId;
 };

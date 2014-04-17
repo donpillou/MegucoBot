@@ -4,14 +4,15 @@
 #include "ClientHandler.h"
 #include "Engine.h"
 #include "Market.h"
+#include "Transaction.h"
 
 Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
   serverHandler(serverHandler),
   id(id), name(name), engine(&engine), market(&market), balanceBase(balanceBase), balanceComm(balanceComm),
-  state(BotProtocol::Session::inactive), pid(0), botClient(0) {}
+  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextTransactionId(1) {}
 
 Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverHandler(serverHandler),
-  state(BotProtocol::Session::inactive), pid(0), botClient(0)
+  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextTransactionId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -20,6 +21,19 @@ Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverH
   market = serverHandler.findMarket(data.find("market")->toString());
   balanceBase = data.find("balanceBase")->toDouble();
   balanceComm = data.find("balanceComm")->toDouble();
+  const List<Variant>& transactionsVar = data.find("transactions")->toList();
+  for(List<Variant>::Iterator i = transactionsVar.begin(), end = transactionsVar.end(); i != end; ++i)
+  {
+    Transaction* transaction = new Transaction(*i);
+    uint32_t id = transaction->getId();
+    if(transactions.find(id) != transactions.end())
+    {
+      delete transaction;
+      continue;
+    }
+    transactions.append(id, transaction);
+    nextTransactionId = id + 1;
+  }
 }
 
 void_t Session::toVariant(Variant& variant)
@@ -31,6 +45,12 @@ void_t Session::toVariant(Variant& variant)
   data.append("market", market->getName());
   data.append("balanceBase", balanceBase);
   data.append("balanceComm", balanceComm);
+  List<Variant>& transactionsVar = data.append("transactions", Variant()).toList();
+  for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  {
+    Variant& transactionVar = transactionsVar.append(Variant());;
+    (*i)->toVariant(transactionVar);
+  }
 }
 
 Session::~Session()
@@ -42,6 +62,8 @@ Session::~Session()
     botClient->deselectSession();
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->deselectSession();
+  for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+    delete *i;
 }
 
 bool_t Session::startSimulation()
@@ -92,4 +114,34 @@ void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) cons
 {
   balanceBase = this->balanceBase;
   balanceComm = this->balanceComm;
+}
+
+Transaction* Session::createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type)
+{
+  uint32_t id = nextTransactionId++;
+  Transaction* transaction = new Transaction(id, price, amount, fee, type);
+  transactions.append(id, transaction);
+  return transaction;
+}
+
+bool_t Session::deleteTransaction(uint32_t id)
+{
+  HashMap<uint32_t, Transaction*>::Iterator it = transactions.find(id);
+  if(it == transactions.end())
+    return false;
+  delete *it;
+  transactions.remove(it);
+  return true;
+}
+
+void_t Session::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)
+{
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->sendEntity(type, id, data, size);
+}
+
+void_t Session::removeEntity(BotProtocol::EntityType type, uint32_t id)
+{
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->removeEntity(type, id);
 }

@@ -60,9 +60,9 @@ bool_t BotConnection::connect(uint16_t port)
   return true;
 }
 
-bool_t BotConnection::createTransaction(const BotProtocol::CreateTransationArgs& transaction)
+bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs& transaction)
 {
-  return createEntity(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransationArgs));
+  return createEntity(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs));
 }
 
 bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size)

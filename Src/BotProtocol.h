@@ -134,7 +134,7 @@ public:
     uint8_t cmd;
   };
 
-  struct CreateTransationArgs
+  struct CreateTransactionArgs
   {
     double price;
     double amount;

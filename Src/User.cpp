@@ -57,19 +57,13 @@ bool_t User::deleteSession(uint32_t id)
 void_t User::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-  {
-    ClientHandler* clientHandler = *i;
-    clientHandler->sendEntity(type, id, data, size);
-  }
+    (*i)->sendEntity(type, id, data, size);
 }
 
 void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-  {
-    ClientHandler* clientHandler = *i;
-    clientHandler->removeEntity(type, id);
-  }
+    (*i)->removeEntity(type, id);
 }
 
 bool_t User::loadData()

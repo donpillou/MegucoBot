@@ -9,6 +9,7 @@
 #include "Session.h"
 #include "Engine.h"
 #include "Market.h"
+#include "Transaction.h"
 
 ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
   state(newState), user(0), session(0) {}
@@ -79,7 +80,8 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       if(size >= sizeof(BotProtocol::AuthRequest))
         handleAuth(*(BotProtocol::AuthRequest*)data);
     break;
-  case authedState:
+  case userState:
+  case botState:
     switch((BotProtocol::MessageType)messageHeader.messageType)
     {
     case BotProtocol::createEntity:
@@ -130,7 +132,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
   }
 
   sendMessage(BotProtocol::authResponse, 0, 0);
-  state = authedState;
+  state = userState;
   user->registerClient(*this);
 
   // send engine list
@@ -199,11 +201,29 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
 
 void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* data, size_t size)
 {
-  switch(type)
+  switch(state)
   {
-  case BotProtocol::session:
-    if(size >= sizeof(BotProtocol::CreateSessionArgs))
-      handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
+  case userState:
+    switch(type)
+    {
+    case BotProtocol::session:
+      if(size >= sizeof(BotProtocol::CreateSessionArgs))
+        handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
+      break;
+    default:
+      break;
+    }
+    break;
+  case botState:
+    switch(type)
+    {
+    case BotProtocol::transaction:
+      if(size >= sizeof(BotProtocol::CreateTransactionArgs))
+        handleCreateTransaction(*(BotProtocol::CreateTransactionArgs*)data);
+      break;
+    default:
+      break;
+    }
     break;
   default:
     break;
@@ -212,10 +232,27 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
 
 void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t id)
 {
-  switch(type)
+  switch(state)
   {
-  case BotProtocol::session:
-    handelRemoveSession(id);
+  case userState:
+    switch(type)
+    {
+    case BotProtocol::session:
+      handelRemoveSession(id);
+      break;
+    default:
+      break;
+    }
+    break;
+  case botState:
+    switch(type)
+    {
+    case BotProtocol::transaction:
+      handelRemoveTransaction(id);
+      break;
+    default:
+      break;
+    }
     break;
   default:
     break;
@@ -224,11 +261,19 @@ void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t 
 
 void_t ClientHandler::handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size)
 {
-  switch(type)
+  switch(state)
   {
-  case BotProtocol::session:
-    if(size >= sizeof(BotProtocol::ControlSessionArgs))
-      handleControlSession(id, *(BotProtocol::ControlSessionArgs*)data);
+  case userState:
+    switch(type)
+    {
+    case BotProtocol::session:
+      if(size >= sizeof(BotProtocol::ControlSessionArgs))
+        handleControlSession(id, *(BotProtocol::ControlSessionArgs*)data);
+      break;
+    default:
+      break;
+    }
+  case botState:
     break;
   default:
     break;
@@ -301,6 +346,19 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
       this->session->unregisterClient(*this);
     session->registerClient(*this, false);
     this->session = session;
+    {
+      BotProtocol::Transaction transactionData;
+      const HashMap<uint32_t, Transaction*>& transactions = session->getTransactions();
+      for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+      {
+        const Transaction* transaction = *i;
+        transactionData.price = transaction->getPrice();
+        transactionData.amount = transaction->getAmount();
+        transactionData.fee = transaction->getFee();
+        transactionData.type = transaction->getType();
+        sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
+      }
+    }
     return;
   }
 
@@ -310,6 +368,31 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
   sessionData.marketId = session->getMarket()->getId();
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
+}
+
+void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
+{
+  Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
+
+  BotProtocol::Transaction transactionData;
+  transactionData.price = transaction->getPrice();
+  transactionData.amount = transaction->getAmount();
+  transactionData.fee = transaction->getFee();
+  transactionData.type = transaction->getType();
+  session->sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
+  user->saveData();
+}
+
+void_t ClientHandler::handelRemoveTransaction(uint32_t id)
+{
+  if(!session->deleteTransaction(id))
+  {
+    sendError("Unknown transaction.");
+    return;
+  }
+
+  session->removeEntity(BotProtocol::transaction, id);
+  user->saveData();
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)

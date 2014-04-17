@@ -79,7 +79,7 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
-  BotProtocol::CreateTransationArgs transaction;
+  BotProtocol::CreateTransactionArgs transaction;
   transaction.amount = 1.;
   transaction.fee = 0.01;
   transaction.price = 1000.;

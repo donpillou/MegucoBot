@@ -16,7 +16,7 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
-  bool_t createTransaction(const BotProtocol::CreateTransationArgs& transaction);
+  bool_t createTransaction(const BotProtocol::CreateTransactionArgs& transaction);
 
 private:
   Socket socket;
