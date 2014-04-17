@@ -72,6 +72,13 @@ int_t main(int_t argc, char_t* argv[])
 //  }
 #endif
 
+  //for(;;)
+  //{
+  //  bool stop = true;
+  //  if(!stop)
+  //    break;
+  //}
+
   BotConnection connection;
   if(!connection.connect(port))
   {

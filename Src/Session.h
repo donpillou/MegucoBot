@@ -14,13 +14,17 @@ class ClientHandler;
 class Engine;
 class Market;
 class Transaction;
+class User;
 
 class Session
 {
 public:
-  Session(ServerHandler& serverHandler, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm);
-  Session(ServerHandler& serverHandler, const Variant& variant);
+  Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm);
+  Session(ServerHandler& serverHandler, User& user, const Variant& variant);
   ~Session();
+  void_t toVariant(Variant& variant);
+
+  bool_t saveData();
 
   bool_t startSimulation();
   bool_t stop();
@@ -39,13 +43,12 @@ public:
   const HashMap<uint32_t, Transaction*>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
-  void_t toVariant(Variant& variant);
-
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
 private:
   ServerHandler& serverHandler;
+  User& user;
   uint32_t id;
   String name;
   Engine* engine;

@@ -373,6 +373,11 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
 void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
 {
   Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
+  if(!transaction)
+  {
+    sendError("Could not create transaction.");
+    return;
+  }
 
   BotProtocol::Transaction transactionData;
   transactionData.price = transaction->getPrice();
@@ -380,7 +385,7 @@ void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs
   transactionData.fee = transaction->getFee();
   transactionData.type = transaction->getType();
   session->sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
-  user->saveData();
+  session->saveData();
 }
 
 void_t ClientHandler::handelRemoveTransaction(uint32_t id)

@@ -34,7 +34,7 @@ void_t User::unregisterClient(ClientHandler& client)
 Session* User::createSession(const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm)
 {
   uint32_t id = nextSessionId++;
-  Session* session = new Session(serverHandler, id, name, engine, market, balanceBase, balanceComm);
+  Session* session = new Session(serverHandler, *this, id, name, engine, market, balanceBase, balanceComm);
   sessions.append(id, session);
   return session;
 }
@@ -80,7 +80,7 @@ bool_t User::loadData()
   const List<Variant>& sessionsVar = dataVar.toMap().find("sessions")->toList();
   for(List<Variant>::Iterator i = sessionsVar.begin(), end = sessionsVar.end(); i != end; ++i)
   {
-    Session* session = new Session(serverHandler, *i);
+    Session* session = new Session(serverHandler, *this, *i);
     uint32_t id = session->getId();
     if(sessions.find(id) != sessions.end() || !session->getEngine() || !session->getMarket())
     {

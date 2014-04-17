@@ -5,13 +5,15 @@
 #include "Engine.h"
 #include "Market.h"
 #include "Transaction.h"
+#include "User.h"
 
-Session::Session(ServerHandler& serverHandler, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
-  serverHandler(serverHandler),
+Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
+  serverHandler(serverHandler), user(user),
   id(id), name(name), engine(&engine), market(&market), balanceBase(balanceBase), balanceComm(balanceComm),
   state(BotProtocol::Session::inactive), pid(0), botClient(0), nextTransactionId(1) {}
 
-Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverHandler(serverHandler),
+Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
+  serverHandler(serverHandler), user(user),
   state(BotProtocol::Session::inactive), pid(0), botClient(0), nextTransactionId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
@@ -36,6 +38,19 @@ Session::Session(ServerHandler& serverHandler, const Variant& variant) : serverH
   }
 }
 
+Session::~Session()
+{
+  if(pid != 0)
+    serverHandler.unregisterSession(pid);
+  process.kill();
+  if(botClient)
+    botClient->deselectSession();
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->deselectSession();
+  for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+    delete *i;
+}
+
 void_t Session::toVariant(Variant& variant)
 {
   HashMap<String, Variant>& data = variant.toMap();
@@ -53,17 +68,9 @@ void_t Session::toVariant(Variant& variant)
   }
 }
 
-Session::~Session()
+bool_t Session::saveData()
 {
-  if(pid != 0)
-    serverHandler.unregisterSession(pid);
-  process.kill();
-  if(botClient)
-    botClient->deselectSession();
-  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->deselectSession();
-  for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-    delete *i;
+  return user.saveData();
 }
 
 bool_t Session::startSimulation()
