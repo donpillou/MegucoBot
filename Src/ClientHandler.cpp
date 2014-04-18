@@ -356,6 +356,7 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
         transactionData.amount = transaction->getAmount();
         transactionData.fee = transaction->getFee();
         transactionData.type = transaction->getType();
+        transactionData.date = transaction->getDate();
         sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
       }
     }
@@ -384,6 +385,7 @@ void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs
   transactionData.amount = transaction->getAmount();
   transactionData.fee = transaction->getFee();
   transactionData.type = transaction->getType();
+  transactionData.date = transaction->getDate();
   session->sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
   session->saveData();
 }

@@ -1,8 +1,13 @@
 
+#include <nstd/Time.h>
+
 #include "Transaction.h"
 
 Transaction::Transaction(uint32_t id, double price, double amount, double fee, BotProtocol::Transaction::Type type) :
-  id(id), price(price), amount(amount), fee(fee), type(type) {}
+  id(id), price(price), amount(amount), fee(fee), type(type)
+{
+  date = Time::time();
+}
 
 Transaction::Transaction(const Variant& variant)
 {
@@ -12,6 +17,7 @@ Transaction::Transaction(const Variant& variant)
   amount = data.find("amount")->toDouble();
   fee = data.find("fee")->toDouble();
   type = (BotProtocol::Transaction::Type)data.find("type")->toUInt();
+  date = data.find("date")->toInt64();
 }
 
 void_t Transaction::toVariant(Variant& variant)
@@ -22,4 +28,5 @@ void_t Transaction::toVariant(Variant& variant)
   data.append("amount", amount);
   data.append("fee", fee);
   data.append("type", (uint_t)type);
+  data.append("date", date);
 }

@@ -18,6 +18,7 @@ public:
   double getAmount() const {return amount;}
   double getFee() const {return fee;}
   BotProtocol::Transaction::Type getType() const {return type;}
+  timestamp_t getDate() const {return date;}
 
 private:
   uint32_t id;
@@ -25,4 +26,5 @@ private:
   double amount;
   double fee;
   BotProtocol::Transaction::Type type;
+  timestamp_t date;
 };
