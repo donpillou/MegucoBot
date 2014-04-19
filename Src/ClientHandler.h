@@ -56,7 +56,10 @@ private:
   void_t handelRemoveSession(uint32_t id);
 
   void_t handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs);
-  void_t handelRemoveTransaction(uint32_t id);
+  void_t handleRemoveTransaction(uint32_t id);
+
+  void_t handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs);
+  void_t handleRemoveOrder(uint32_t id);
 
   void_t handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs);
 

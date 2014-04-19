@@ -15,6 +15,7 @@ class Engine;
 class Market;
 class Transaction;
 class User;
+class Order;
 
 class Session
 {
@@ -43,6 +44,10 @@ public:
   const HashMap<uint32_t, Transaction*>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
+  Order* createOrder(double price, double amount, double fee, BotProtocol::Order::Type type);
+  const HashMap<uint32_t, Order*>& getOrders() const {return orders;}
+  bool_t deleteOrder(uint32_t id);
+
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
@@ -61,5 +66,6 @@ private:
   ClientHandler* botClient;
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, Transaction*> transactions;
-  uint32_t nextTransactionId;
+  HashMap<uint32_t, Order*> orders;
+  uint32_t nextEntityId;
 };

@@ -6,15 +6,16 @@
 #include "Market.h"
 #include "Transaction.h"
 #include "User.h"
+#include "Order.h"
 
 Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
   id(id), name(name), engine(&engine), market(&market), balanceBase(balanceBase), balanceComm(balanceComm),
-  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextTransactionId(1) {}
+  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextEntityId(1) {}
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
-  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextTransactionId(1)
+  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextEntityId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -34,7 +35,22 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       continue;
     }
     transactions.append(id, transaction);
-    nextTransactionId = id + 1;
+    if(id >= nextEntityId)
+      nextEntityId = id + 1;
+  }
+  const List<Variant>& ordersVar = data.find("orders")->toList();
+  for(List<Variant>::Iterator i = ordersVar.begin(), end = ordersVar.end(); i != end; ++i)
+  {
+    Order* order = new Order(*i);
+    uint32_t id = order->getId();
+    if(transactions.find(id) != transactions.end())
+    {
+      delete order;
+      continue;
+    }
+    orders.append(id, order);
+    if(id >= nextEntityId)
+      nextEntityId = id + 1;
   }
 }
 
@@ -65,6 +81,12 @@ void_t Session::toVariant(Variant& variant)
   {
     Variant& transactionVar = transactionsVar.append(Variant());;
     (*i)->toVariant(transactionVar);
+  }
+  List<Variant>& ordersVar = data.append("orders", Variant()).toList();
+  for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+  {
+    Variant& orderVar = ordersVar.append(Variant());;
+    (*i)->toVariant(orderVar);
   }
 }
 
@@ -125,7 +147,7 @@ void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) cons
 
 Transaction* Session::createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type)
 {
-  uint32_t id = nextTransactionId++;
+  uint32_t id = nextEntityId++;
   Transaction* transaction = new Transaction(id, price, amount, fee, type);
   transactions.append(id, transaction);
   return transaction;
@@ -138,6 +160,24 @@ bool_t Session::deleteTransaction(uint32_t id)
     return false;
   delete *it;
   transactions.remove(it);
+  return true;
+}
+
+Order* Session::createOrder(double price, double amount, double fee, BotProtocol::Order::Type type)
+{
+  uint32_t id = nextEntityId++;
+  Order* order = new Order(id, price, amount, fee, type);
+  orders.append(id, order);
+  return order;
+}
+
+bool_t Session::deleteOrder(uint32_t id)
+{
+  HashMap<uint32_t, Order*>::Iterator it = orders.find(id);
+  if(it == orders.end())
+    return false;
+  delete *it;
+  orders.remove(it);
   return true;
 }
 

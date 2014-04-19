@@ -66,6 +66,11 @@ bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs
   return createEntity(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs));
 }
 
+bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order)
+{
+  return createEntity(BotProtocol::order, &order, sizeof(BotProtocol::CreateOrderArgs));
+}
+
 bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size)
 {
   BotProtocol::Header header;

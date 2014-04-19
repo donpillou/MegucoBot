@@ -43,5 +43,5 @@ private:
   byte_t pwhmac[32];
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, Session*> sessions;
-  uint32_t nextSessionId;
+  uint32_t nextEntityId;
 };

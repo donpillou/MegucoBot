@@ -9,7 +9,7 @@
 #include "ClientHandler.h"
 
 User::User(ServerHandler& serverHandler, const String& userName, const byte_t (&key)[32], const byte_t (&pwhmac)[32]) :
-  serverHandler(serverHandler), userName(userName), nextSessionId(1)
+  serverHandler(serverHandler), userName(userName), nextEntityId(1)
 {
   Memory::copy(this->key, key, sizeof(this->key));
   Memory::copy(this->pwhmac, pwhmac, sizeof(this->pwhmac));
@@ -33,7 +33,7 @@ void_t User::unregisterClient(ClientHandler& client)
 
 Session* User::createSession(const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm)
 {
-  uint32_t id = nextSessionId++;
+  uint32_t id = nextEntityId++;
   Session* session = new Session(serverHandler, *this, id, name, engine, market, balanceBase, balanceComm);
   sessions.append(id, session);
   return session;
@@ -88,7 +88,8 @@ bool_t User::loadData()
       continue;
     }
     sessions.append(id, session);
-    nextSessionId = id + 1;
+    if(id >= nextEntityId)
+      nextEntityId = id + 1;
   }
   return true;
 }

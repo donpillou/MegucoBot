@@ -97,6 +97,17 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
+  BotProtocol::CreateOrderArgs order;
+  order.amount = 1.;
+  order.fee = 0.01;
+  order.price = 1000.;
+  order.type = BotProtocol::Order::buy;
+  if(!connection.createOrder(order))
+  {
+    Console::errorf("error: Could not create test order: %s\n", (const char_t*)connection.getErrorString());
+    return -1;
+  }
+
   /*
   RelayConnection relayConnection;
   MarketConnection marketConnection;

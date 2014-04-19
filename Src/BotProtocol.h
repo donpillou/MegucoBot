@@ -27,6 +27,7 @@ public:
     engine,
     market,
     transaction,
+    order,
   };
 
 #pragma pack(push, 1)
@@ -94,11 +95,26 @@ public:
       sell
     };
 
+    uint8_t type;
     int64_t date;
     double price;
     double amount;
     double fee;
+  };
+
+  struct Order
+  {
+    enum Type
+    {
+      buy,
+      sell,
+    };
+
     uint8_t type;
+    int64_t date;
+    double price;
+    double amount;
+    double fee;
   };
 
   struct RegisterBotRequest
@@ -136,10 +152,18 @@ public:
 
   struct CreateTransactionArgs
   {
+    uint8_t type; // see Transaction::Type
     double price;
     double amount;
     double fee;
-    uint8_t type; // see Transaction::Type
+  };
+
+  struct CreateOrderArgs
+  {
+    uint8_t type; // see Order::Type
+    double price;
+    double amount;
+    double fee;
   };
 
 #pragma pack(pop)

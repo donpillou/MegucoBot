@@ -17,6 +17,7 @@ public:
   const String& getErrorString() const {return error;}
 
   bool_t createTransaction(const BotProtocol::CreateTransactionArgs& transaction);
+  bool_t createOrder(const BotProtocol::CreateOrderArgs& order);
 
 private:
   Socket socket;

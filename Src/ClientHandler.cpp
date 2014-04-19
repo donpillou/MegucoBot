@@ -10,6 +10,7 @@
 #include "Engine.h"
 #include "Market.h"
 #include "Transaction.h"
+#include "Order.h"
 
 ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
   state(newState), user(0), session(0) {}
@@ -221,6 +222,10 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
       if(size >= sizeof(BotProtocol::CreateTransactionArgs))
         handleCreateTransaction(*(BotProtocol::CreateTransactionArgs*)data);
       break;
+    case BotProtocol::order:
+      if(size >= sizeof(BotProtocol::CreateOrderArgs))
+        handleCreateOrder(*(BotProtocol::CreateOrderArgs*)data);
+      break;
     default:
       break;
     }
@@ -248,7 +253,10 @@ void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t 
     switch(type)
     {
     case BotProtocol::transaction:
-      handelRemoveTransaction(id);
+      handleRemoveTransaction(id);
+      break;
+    case BotProtocol::order:
+      handleRemoveOrder(id);
       break;
     default:
       break;
@@ -359,6 +367,18 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
         transactionData.date = transaction->getDate();
         sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
       }
+      BotProtocol::Order orderData;
+      const HashMap<uint32_t, Order*>& orders = session->getOrders();
+      for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+      {
+        const Order* order = *i;
+        orderData.price = order->getPrice();
+        orderData.amount = order->getAmount();
+        orderData.fee = order->getFee();
+        orderData.type = order->getType();
+        orderData.date = order->getDate();
+        sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
+      }
     }
     return;
   }
@@ -390,7 +410,7 @@ void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs
   session->saveData();
 }
 
-void_t ClientHandler::handelRemoveTransaction(uint32_t id)
+void_t ClientHandler::handleRemoveTransaction(uint32_t id)
 {
   if(!session->deleteTransaction(id))
   {
@@ -399,7 +419,38 @@ void_t ClientHandler::handelRemoveTransaction(uint32_t id)
   }
 
   session->removeEntity(BotProtocol::transaction, id);
-  user->saveData();
+  session->saveData();
+}
+
+void_t ClientHandler::handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
+{
+  Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
+  if(!order)
+  {
+    sendError("Could not create order.");
+    return;
+  }
+
+  BotProtocol::Order orderData;
+  orderData.price = order->getPrice();
+  orderData.amount = order->getAmount();
+  orderData.fee = order->getFee();
+  orderData.type = order->getType();
+  orderData.date = order->getDate();
+  session->sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
+  session->saveData();
+}
+
+void_t ClientHandler::handleRemoveOrder(uint32_t id)
+{
+  if(!session->deleteOrder(id))
+  {
+    sendError("Unknown order.");
+    return;
+  }
+
+  session->removeEntity(BotProtocol::order, id);
+  session->saveData();
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)
