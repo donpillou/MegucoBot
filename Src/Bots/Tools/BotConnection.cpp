@@ -83,28 +83,53 @@ bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactio
   }
 }
 
-bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs& transaction)
+bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs& transaction, uint32_t& id)
 {
-  return createEntity(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs));
+  return createEntity<BotProtocol::Transaction>(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs), id);
 }
 
-bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order)
+bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id)
 {
-  return createEntity(BotProtocol::order, &order, sizeof(BotProtocol::CreateOrderArgs));
+  return createEntity<BotProtocol::Order>(BotProtocol::order, &order, sizeof(BotProtocol::CreateOrderArgs), id);
 }
 
-bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size)
+template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id)
 {
-  BotProtocol::Header header;
-  header.size = sizeof(header) + size;
-  header.messageType = BotProtocol::createEntity;
-  header.entityType = type;
-  header.entityId = 0;
-  if(!socket.send((const byte_t*)&header, sizeof(header)) ||
-     (size > 0 && !socket.send((const byte_t*)data, size)))
+  // send create request
   {
-    error = Socket::getLastErrorString();
-    return false;
+    BotProtocol::Header header;
+    header.size = sizeof(header) + size;
+    header.messageType = BotProtocol::createEntity;
+    header.entityType = type;
+    header.entityId = 0;
+    if(!socket.send((const byte_t*)&header, sizeof(header)) ||
+       (size > 0 && !socket.send((const byte_t*)data, size)))
+    {
+      error = Socket::getLastErrorString();
+      return false;
+    }
+  }
+  
+  // receive response
+  {
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(E)];
+    if(!socket.recv(message, sizeof(message)))
+    {
+      error = Socket::getLastErrorString();
+      return false;
+    }
+    BotProtocol::Header* header = (BotProtocol::Header*)message;
+    if(header->messageType != BotProtocol::createEntity)
+    {
+      error = "Received invalid response.";
+      return false;
+    }
+    if(header->entityType != type)
+    {
+      error = "Received invalid response.";
+      return false;
+    }
+    id = header->entityId;
   }
   return true;
 }

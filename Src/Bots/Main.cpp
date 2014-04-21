@@ -10,7 +10,7 @@
 
 #include <nstd/Console.h>
 #include <nstd/String.h>
-//#include <nstd/Thread.h>
+#include <nstd/Thread.h> // sleep
 //#include <nstd/Error.h>
 
 #include "Tools/BotConnection.h"
@@ -32,8 +32,8 @@ int_t main(int_t argc, char_t* argv[])
 //      background = false;
 //    else
 //    {
-//      Console::errorf("Usage: %s [-f]\n\
-//  -f            run in foreground (not as daemon)\n", argv[0]);
+//      Console::errorf("Usage: %s [-f]\n"
+//"  -f            run in foreground (not as daemon)\n", argv[0]);
 //      return -1;
 //    }
 
@@ -86,26 +86,32 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
-  BotProtocol::CreateTransactionArgs transaction;
-  transaction.amount = 1.;
-  transaction.fee = 0.01;
-  transaction.price = 1000.;
-  transaction.type = BotProtocol::Transaction::buy;
-  if(!connection.createTransaction(transaction))
+  for(;;)
   {
-    Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)connection.getErrorString());
-    return -1;
-  }
+    BotProtocol::CreateTransactionArgs transaction;
+    transaction.amount = 1.;
+    transaction.fee = 0.01;
+    transaction.price = 1000.;
+    transaction.type = BotProtocol::Transaction::buy;
+    uint32_t entityId;
+    if(!connection.createTransaction(transaction, entityId))
+    {
+      Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
 
-  BotProtocol::CreateOrderArgs order;
-  order.amount = 1.;
-  order.fee = 0.01;
-  order.price = 1000.;
-  order.type = BotProtocol::Order::buy;
-  if(!connection.createOrder(order))
-  {
-    Console::errorf("error: Could not create test order: %s\n", (const char_t*)connection.getErrorString());
-    return -1;
+    Thread::sleep(5000);
+    BotProtocol::CreateOrderArgs order;
+    order.amount = 1.;
+    order.fee = 0.01;
+    order.price = 1000.;
+    order.type = BotProtocol::Order::buy;
+    if(!connection.createOrder(order, entityId))
+    {
+      Console::errorf("error: Could not create test order: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
+
   }
 
   /*

@@ -19,8 +19,8 @@ public:
 
   bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
 
-  bool_t createTransaction(const BotProtocol::CreateTransactionArgs& transaction);
-  bool_t createOrder(const BotProtocol::CreateOrderArgs& order);
+  bool_t createTransaction(const BotProtocol::CreateTransactionArgs& transaction, uint32_t& id);
+  bool_t createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id);
 
 private:
   Socket socket;
@@ -28,7 +28,7 @@ private:
   Buffer recvBuffer;
 
 private:
-  bool_t createEntity(BotProtocol::EntityType type, const void_t* data, size_t size);
+  template <class E> bool_t createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id);
   bool_t sendPing();
   bool_t requestEntities(BotProtocol::EntityType entityType);
   bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
