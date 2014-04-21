@@ -31,6 +31,7 @@ public:
     market,
     transaction,
     order,
+    marketEngine
   };
 
 #pragma pack(push, 1)
@@ -120,6 +121,11 @@ public:
     double fee;
   };
 
+  struct MarketEngine
+  {
+    char_t name[33];
+  };
+
   struct RegisterBotRequest
   {
     uint32_t pid;
@@ -167,6 +173,14 @@ public:
     double price;
     double amount;
     double fee;
+  };
+  
+  struct CreateMarketArgs
+  {
+    uint32_t marketEngineId;
+    char_t username[33];
+    char_t key[33];
+    char_t secret[33];
   };
 
 #pragma pack(pop)

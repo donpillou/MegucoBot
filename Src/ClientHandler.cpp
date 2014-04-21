@@ -227,6 +227,9 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
       if(size >= sizeof(BotProtocol::CreateSessionArgs))
         handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
       break;
+    case BotProtocol::market:
+      if(size >= sizeeof(BotProtocol::CreateMarketArgs))
+        handleCreateMarket(*(BotProtocol::CreateMarketArgs*)data);
     default:
       break;
     }
@@ -334,6 +337,24 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
   user->saveData();
+}
+
+void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs)
+{
+  MarketEngine* engine = serverHandler.findMarketEngine(createSessionArgs.marketEngineId);
+  if(!engine)
+  {
+    sendError("Unknown market engine.");
+    return;
+  }
+
+  String username = get
+  Session* session = user->createMarket(*engine, username, key, secret);
+  if(!session)
+  {
+    sendError("Could not create session.");
+    return;
+  }
 }
 
 void_t ClientHandler::handelRemoveSession(uint32_t id)
