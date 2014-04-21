@@ -85,6 +85,9 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
   case botState:
     switch((BotProtocol::MessageType)messageHeader.messageType)
     {
+    case BotProtocol::pingRequest:
+      handlePing(data, size);
+      break;
     case BotProtocol::createEntity:
       handleCreateEntity((BotProtocol::EntityType)messageHeader.entityType, data, size);
       break;
@@ -198,6 +201,19 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;
   state = botState;
+}
+
+void_t ClientHandler::handlePing(const byte_t* data, size_t size)
+{
+  BotProtocol::Header header;
+  header.size = sizeof(header) + size;
+  header.messageType = BotProtocol::pingResponse;
+  header.entityType = 0;
+  header.entityId = 0;
+  client.reserve(header.size);
+  client.send((const byte_t*)&header, sizeof(header));
+  if(size > 0)
+    client.send(data, size);
 }
 
 void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* data, size_t size)
