@@ -54,6 +54,8 @@ private:
   void_t handleRemoveEntity(BotProtocol::EntityType type, uint32_t id);
   void_t handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size);
 
+  void_t handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs);
+
   void_t handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs);
   void_t handelRemoveSession(uint32_t id);
 

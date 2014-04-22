@@ -100,7 +100,14 @@ int_t main(int_t argc, char_t* argv[])
       return -1;
     }
 
-    Thread::sleep(5000);
+    Thread::sleep(2500);
+    if(!connection.removeTransaction(entityId))
+    {
+      Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
+    Thread::sleep(1000);
+
     BotProtocol::CreateOrderArgs order;
     order.amount = 1.;
     order.fee = 0.01;
@@ -111,7 +118,12 @@ int_t main(int_t argc, char_t* argv[])
       Console::errorf("error: Could not create test order: %s\n", (const char_t*)connection.getErrorString());
       return -1;
     }
-
+    Thread::sleep(2500);
+    if(!connection.removeOrder(entityId))
+    {
+      Console::errorf("error: Could not remove test order: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
   }
 
   /*

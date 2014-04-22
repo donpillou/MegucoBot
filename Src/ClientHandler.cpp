@@ -228,7 +228,7 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
         handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
       break;
     case BotProtocol::market:
-      if(size >= sizeeof(BotProtocol::CreateMarketArgs))
+      if(size >= sizeof(BotProtocol::CreateMarketArgs))
         handleCreateMarket(*(BotProtocol::CreateMarketArgs*)data);
     default:
       break;
@@ -307,6 +307,25 @@ void_t ClientHandler::handleControlEntity(BotProtocol::EntityType type, uint32_t
   }
 }
 
+void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs)
+{
+  //MarketEngine* engine = serverHandler.findMarketEngine(createSessionArgs.marketEngineId);
+  //if(!engine)
+  //{
+  //  sendError("Unknown market engine.");
+  //  return;
+  //}
+  //
+  //String username = get
+  //Session* session = user->createMarket(*engine, username, key, secret);
+  //if(!session)
+  //{
+  //  sendError("Could not create session.");
+  //  return;
+  //}
+}
+
+
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
 {
   String name = getString(createSessionArgs.name);
@@ -337,24 +356,6 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
   user->saveData();
-}
-
-void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs)
-{
-  MarketEngine* engine = serverHandler.findMarketEngine(createSessionArgs.marketEngineId);
-  if(!engine)
-  {
-    sendError("Unknown market engine.");
-    return;
-  }
-
-  String username = get
-  Session* session = user->createMarket(*engine, username, key, secret);
-  if(!session)
-  {
-    sendError("Could not create session.");
-    return;
-  }
 }
 
 void_t ClientHandler::handelRemoveSession(uint32_t id)
@@ -443,6 +444,7 @@ void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs
   transactionData.fee = transaction->getFee();
   transactionData.type = transaction->getType();
   transactionData.date = transaction->getDate();
+  sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
   session->sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
   session->saveData();
 }
@@ -474,6 +476,7 @@ void_t ClientHandler::handleCreateOrder(BotProtocol::CreateOrderArgs& createOrde
   orderData.fee = order->getFee();
   orderData.type = order->getType();
   orderData.date = order->getDate();
+  sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
   session->sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
   session->saveData();
 }

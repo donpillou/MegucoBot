@@ -88,9 +88,19 @@ bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs
   return createEntity<BotProtocol::Transaction>(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs), id);
 }
 
+bool_t BotConnection::removeTransaction(uint32_t id)
+{
+  return removeEntity(BotProtocol::transaction, id);
+}
+
 bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id)
 {
   return createEntity<BotProtocol::Order>(BotProtocol::order, &order, sizeof(BotProtocol::CreateOrderArgs), id);
+}
+
+bool_t BotConnection::removeOrder(uint32_t id)
+{
+  return removeEntity(BotProtocol::order, id);
 }
 
 template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id)
@@ -119,7 +129,7 @@ template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType ty
       return false;
     }
     BotProtocol::Header* header = (BotProtocol::Header*)message;
-    if(header->messageType != BotProtocol::createEntity)
+    if(header->messageType != BotProtocol::updateEntity)
     {
       error = "Received invalid response.";
       return false;
@@ -130,6 +140,21 @@ template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType ty
       return false;
     }
     id = header->entityId;
+  }
+  return true;
+}
+
+bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
+{
+  BotProtocol::Header header;
+  header.size = sizeof(header);
+  header.messageType = BotProtocol::removeEntity;
+  header.entityType = type;
+  header.entityId = id;
+  if(!socket.send((const byte_t*)&header, sizeof(header)))
+  {
+    error = Socket::getLastErrorString();
+    return false;
   }
   return true;
 }
