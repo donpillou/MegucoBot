@@ -28,10 +28,10 @@ public:
     error,
     session,
     engine,
-    market,
+    marketAdapter,
     transaction,
     order,
-    marketEngine
+    //marketEngine
   };
 
 #pragma pack(push, 1)
@@ -84,7 +84,7 @@ public:
     char_t name[33];
   };
 
-  struct Market
+  struct MarketAdapter
   {
     char_t name[33];
     char_t currencyBase[33];

@@ -3,14 +3,14 @@
 #include "ServerHandler.h"
 #include "ClientHandler.h"
 #include "Engine.h"
-#include "Market.h"
+#include "MarketAdapter.h"
 #include "Transaction.h"
 #include "User.h"
 #include "Order.h"
 
-Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, Market& market, double balanceBase, double balanceComm) :
+Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, MarketAdapter& marketAdapter, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
-  id(id), name(name), engine(&engine), market(&market), balanceBase(balanceBase), balanceComm(balanceComm),
+  id(id), name(name), engine(&engine), marketAdapter(&marketAdapter), balanceBase(balanceBase), balanceComm(balanceComm),
   state(BotProtocol::Session::inactive), pid(0), botClient(0), nextEntityId(1) {}
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
@@ -21,7 +21,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   id = data.find("id")->toUInt();
   name = data.find("name")->toString();
   engine = serverHandler.findEngine(data.find("engine")->toString());
-  market = serverHandler.findMarket(data.find("market")->toString());
+  marketAdapter = serverHandler.findMarketAdapter(data.find("market")->toString());
   balanceBase = data.find("balanceBase")->toDouble();
   balanceComm = data.find("balanceComm")->toDouble();
   const List<Variant>& transactionsVar = data.find("transactions")->toList();
@@ -73,7 +73,7 @@ void_t Session::toVariant(Variant& variant)
   data.append("id", id);
   data.append("name", name);
   data.append("engine", engine->getName());
-  data.append("market", market->getName());
+  data.append("market", marketAdapter->getName());
   data.append("balanceBase", balanceBase);
   data.append("balanceComm", balanceComm);
   List<Variant>& transactionsVar = data.append("transactions", Variant()).toList();

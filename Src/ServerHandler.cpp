@@ -9,7 +9,7 @@
 #include "ClientHandler.h"
 #include "User.h"
 #include "Engine.h"
-#include "Market.h"
+#include "MarketAdapter.h"
 
 ServerHandler::~ServerHandler()
 {
@@ -19,7 +19,7 @@ ServerHandler::~ServerHandler()
     delete *i;
   for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
     delete *i;
-  for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
+  for(HashMap<uint32_t, MarketAdapter*>::Iterator i = marketAdapters.begin(), end = marketAdapters.end(); i != end; ++i)
     delete *i;
 }
 
@@ -61,12 +61,12 @@ void_t ServerHandler::addEngine(const String& name, const String& path)
   enginesByName.append(name, engine);
 }
 
-void_t ServerHandler::addMarket(const String& name, const String& currencyBase, const String& currencyComm)
+void_t ServerHandler::addMarketAdapter(const String& name, const String& currencyBase, const String& currencyComm)
 {
   uint32_t id = nextEntityId++;
-  Market* market = new Market(id, name, currencyBase, currencyComm);
-  markets.append(id, market);
-  marketsByName.append(name, market);
+  MarketAdapter* marketAdapter = new MarketAdapter(id, name, currencyBase, currencyComm);
+  marketAdapters.append(id, marketAdapter);
+  marketAdaptersByName.append(name, marketAdapter);
 }
 
 bool_t ServerHandler::loadData()

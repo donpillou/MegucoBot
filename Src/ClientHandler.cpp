@@ -8,7 +8,7 @@
 #include "User.h"
 #include "Session.h"
 #include "Engine.h"
-#include "Market.h"
+#include "MarketAdapter.h"
 #include "Transaction.h"
 #include "Order.h"
 
@@ -153,15 +153,15 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
 
   // send market list
   {
-    BotProtocol::Market marketData;
-    const HashMap<uint32_t, Market*>& markets = serverHandler.getMarkets();
-    for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
+    BotProtocol::MarketAdapter marketAdapterData;
+    const HashMap<uint32_t, MarketAdapter*>& marketAdapters = serverHandler.getMarketAdapters();
+    for(HashMap<uint32_t, MarketAdapter*>::Iterator i = marketAdapters.begin(), end = marketAdapters.end(); i != end; ++i)
     {
-      const Market* market = *i;
-      setString(marketData.name, market->getName());
-      setString(marketData.currencyBase, market->getCurrencyBase());
-      setString(marketData.currencyComm, market->getCurrencyComm());
-      sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
+      const MarketAdapter* marketAdapter = *i;
+      setString(marketAdapterData.name, marketAdapter->getName());
+      setString(marketAdapterData.currencyBase, marketAdapter->getCurrencyBase());
+      setString(marketAdapterData.currencyComm, marketAdapter->getCurrencyComm());
+      sendEntity(BotProtocol::marketAdapter, marketAdapter->getId(), &marketAdapterData, sizeof(marketAdapterData));
     }
   }
 
@@ -174,7 +174,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
       const Session* session = *i;
       setString(sessionData.name, session->getName());
       sessionData.engineId = session->getEngine()->getId();
-      sessionData.marketId = session->getMarket()->getId();
+      sessionData.marketId = session->getMarketAdapter()->getId();
       sessionData.state = session->getState();
       sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
     }
@@ -227,7 +227,7 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
       if(size >= sizeof(BotProtocol::CreateSessionArgs))
         handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
       break;
-    case BotProtocol::market:
+    case BotProtocol::marketAdapter:
       if(size >= sizeof(BotProtocol::CreateMarketArgs))
         handleCreateMarket(*(BotProtocol::CreateMarketArgs*)data);
     default:
@@ -335,14 +335,14 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
     sendError("Unknown engine.");
     return;
   }
-  Market* market = serverHandler.findMarket(createSessionArgs.marketId);
-  if(!market)
+  MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createSessionArgs.marketId);
+  if(!marketAdapter)
   {
     sendError("Unknown market.");
     return;
   }
 
-  Session* session = user->createSession(name, *engine, *market, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
+  Session* session = user->createSession(name, *engine, *marketAdapter, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
   if(!session)
   {
     sendError("Could not create session.");
@@ -352,7 +352,7 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
   BotProtocol::Session sessionData;
   setString(sessionData.name, session->getName());
   sessionData.engineId = session->getEngine()->getId();
-  sessionData.marketId = session->getMarket()->getId();
+  sessionData.marketId = session->getMarketAdapter()->getId();
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
   user->saveData();
@@ -424,7 +424,7 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
   BotProtocol::Session sessionData;
   setString(sessionData.name, session->getName());
   sessionData.engineId = session->getEngine()->getId();
-  sessionData.marketId = session->getMarket()->getId();
+  sessionData.marketId = session->getMarketAdapter()->getId();
   sessionData.state = session->getState();
   user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
 }

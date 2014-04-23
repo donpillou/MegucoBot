@@ -3,7 +3,7 @@
 
 #include <nstd/String.h>
 
-class Market
+class MarketAdapter
 {
 public:
   uint32_t getId() const {return id;}
@@ -12,7 +12,7 @@ public:
   const String& getCurrencyComm() const {return currencyComm;}
 
 public:
-  Market(uint32_t id, const String& name, const String& currencyBase, const String& currencyComm);
+  MarketAdapter(uint32_t id, const String& name, const String& currencyBase, const String& currencyComm);
 
 private:
   uint32_t id;
