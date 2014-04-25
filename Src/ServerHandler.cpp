@@ -61,10 +61,10 @@ void_t ServerHandler::addEngine(const String& name, const String& path)
   enginesByName.append(name, engine);
 }
 
-void_t ServerHandler::addMarketAdapter(const String& name, const String& currencyBase, const String& currencyComm)
+void_t ServerHandler::addMarketAdapter(const String& name, const String& path, const String& currencyBase, const String& currencyComm)
 {
   uint32_t id = nextEntityId++;
-  MarketAdapter* marketAdapter = new MarketAdapter(id, name, currencyBase, currencyComm);
+  MarketAdapter* marketAdapter = new MarketAdapter(id, name, path, currencyBase, currencyComm);
   marketAdapters.append(id, marketAdapter);
   marketAdaptersByName.append(name, marketAdapter);
 }

@@ -12,6 +12,7 @@ class ClientHandler;
 class Session;
 class Engine;
 class MarketAdapter;
+class Market;
 
 class User
 {
@@ -24,6 +25,9 @@ public:
   Session* createSession(const String& name, Engine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm);
   Session* findSession(uint32_t id);
   bool_t deleteSession(uint32_t id);
+
+  Market* createMarket(MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret);
+  bool_t deleteMarket(uint32_t id);
 
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
@@ -43,5 +47,6 @@ private:
   byte_t pwhmac[32];
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, Session*> sessions;
+  HashMap<uint32_t, Market*> markets;
   uint32_t nextEntityId;
 };

@@ -11,11 +11,11 @@
 Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, MarketAdapter& marketAdapter, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
   id(id), name(name), engine(&engine), marketAdapter(&marketAdapter), balanceBase(balanceBase), balanceComm(balanceComm),
-  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextEntityId(1) {}
+  state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1) {}
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
-  state(BotProtocol::Session::inactive), pid(0), botClient(0), nextEntityId(1)
+  state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -114,7 +114,7 @@ bool_t Session::stop()
   if(!process.kill())
     return false;
   pid = 0;
-  state = BotProtocol::Session::inactive;
+  state = BotProtocol::Session::stopped;
   return true;
 }
 

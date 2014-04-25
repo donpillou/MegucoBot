@@ -31,7 +31,7 @@ public:
     marketAdapter,
     transaction,
     order,
-    //marketEngine
+    market,
   };
 
 #pragma pack(push, 1)
@@ -68,7 +68,7 @@ public:
   {
     enum State
     {
-      inactive,
+      stopped,
       active,
       simulating,
     };
@@ -121,9 +121,18 @@ public:
     double fee;
   };
 
-  struct MarketEngine
+  struct Market
   {
-    char_t name[33];
+    enum State
+    {
+      stopped,
+      running,
+    };
+
+    char name[33];
+    char currencyBase[33];
+    char currencyComm[33];
+    uint8_t state;
   };
 
   struct RegisterBotRequest
@@ -177,10 +186,10 @@ public:
   
   struct CreateMarketArgs
   {
-    uint32_t marketEngineId;
+    uint32_t marketAdapterId;
     char_t username[33];
-    char_t key[33];
-    char_t secret[33];
+    char_t key[65];
+    char_t secret[65];
   };
 
 #pragma pack(pop)

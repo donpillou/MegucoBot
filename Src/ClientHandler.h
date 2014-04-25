@@ -7,6 +7,7 @@
 class ServerHandler;
 class User;
 class Session;
+class Market;
 
 class ClientHandler : public Server::Client::Listener
 {
@@ -17,6 +18,7 @@ public:
   uint64_t getId() const {return id;}
   
   void_t deselectSession();
+  void_t deselectMarket();
 
   void_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
@@ -29,6 +31,7 @@ private:
     loginState,
     userState,
     botState,
+    adapterState,
   };
 
 private:
@@ -39,6 +42,7 @@ private:
   State state;
   User* user;
   Session* session;
+  Market* market;
   byte_t loginkey[64];
 
 private:
@@ -55,9 +59,10 @@ private:
   void_t handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size);
 
   void_t handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs);
+  void_t handleRemoveMarket(uint32_t id);
 
   void_t handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs);
-  void_t handelRemoveSession(uint32_t id);
+  void_t handleRemoveSession(uint32_t id);
 
   void_t handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs);
   void_t handleRemoveTransaction(uint32_t id);

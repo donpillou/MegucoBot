@@ -10,6 +10,7 @@ class User;
 class Session;
 class Engine;
 class MarketAdapter;
+class Market;
 
 class ServerHandler : public Server::Listener
 {
@@ -25,11 +26,15 @@ public:
   bool_t addUser(const String& userName, const String& password);
   User* findUser(const String& userName) {return *users.find(userName);}
 
-  void_t registerSession(uint32_t pid, Session& session) {sessions.append(pid, &session);}
-  void_t unregisterSession(uint32_t pid) {sessions.remove(pid);}
-  Session* findSessionByPid(uint32_t pid) {return *sessions.find(pid);}
+  void_t registerSession(uint32_t pid, Session& session) {sessionsByPid.append(pid, &session);}
+  void_t unregisterSession(uint32_t pid) {sessionsByPid.remove(pid);}
+  Session* findSessionByPid(uint32_t pid) {return *sessionsByPid.find(pid);}
 
-  void_t addMarketAdapter(const String& name, const String& currencyBase, const String& currencyComm);
+  void_t registerMarket(uint32_t pid, Market& market) {marketsByPid.append(pid, &market);}
+  void_t unregisterMarket(uint32_t pid) {marketsByPid.remove(pid);}
+  Market* findMarketByPid(uint32_t pid) {return *marketsByPid.find(pid);}
+
+  void_t addMarketAdapter(const String& name, const String& path, const String& currencyBase, const String& currencyComm);
   const HashMap<uint32_t, MarketAdapter*>& getMarketAdapters() const {return marketAdapters;}
   MarketAdapter* findMarketAdapter(const String& name) const {return *marketAdaptersByName.find(name);}
   MarketAdapter* findMarketAdapter(uint32_t id) const {return *marketAdapters.find(id);}
@@ -42,7 +47,8 @@ private:
   uint32_t nextEntityId;
   HashMap<uint64_t, ClientHandler*> clients;
   HashMap<String, User*> users;
-  HashMap<uint32_t, Session*> sessions;
+  HashMap<uint32_t, Session*> sessionsByPid;
+  HashMap<uint32_t, Market*> marketsByPid;
   HashMap<uint32_t, Engine*> engines;
   HashMap<String, Engine*> enginesByName;
   HashMap<uint32_t, MarketAdapter*> marketAdapters;

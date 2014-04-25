@@ -6,6 +6,7 @@
 
 #include "User.h"
 #include "Session.h"
+#include "Market.h"
 #include "ClientHandler.h"
 
 User::User(ServerHandler& serverHandler, const String& userName, const byte_t (&key)[32], const byte_t (&pwhmac)[32]) :
@@ -18,6 +19,8 @@ User::User(ServerHandler& serverHandler, const String& userName, const byte_t (&
 User::~User()
 {
   for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
+    delete *i;
+  for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
     delete *i;
 }
 
@@ -51,6 +54,24 @@ bool_t User::deleteSession(uint32_t id)
     return false;
   delete *it;
   sessions.remove(it);
+  return true;
+}
+
+Market* User::createMarket(MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret)
+{
+  uint32_t id = nextEntityId++;
+  Market* market = new Market(serverHandler, id, marketAdapter, username, key, secret);
+  markets.append(id, market);
+  return market;
+}
+
+bool_t User::deleteMarket(uint32_t id)
+{
+  HashMap<uint32_t, Market*>::Iterator it = markets.find(id);
+  if(it == markets.end())
+    return false;
+  delete *it;
+  markets.remove(it);
   return true;
 }
 

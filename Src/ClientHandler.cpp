@@ -11,9 +11,10 @@
 #include "MarketAdapter.h"
 #include "Transaction.h"
 #include "Order.h"
+#include "Market.h"
 
 ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
-  state(newState), user(0), session(0) {}
+  state(newState), user(0), session(0), market(0) {}
 
 ClientHandler::~ClientHandler()
 {
@@ -27,6 +28,13 @@ void_t ClientHandler::deselectSession()
 {
   session = 0;
   if(state == botState)
+    client.close();
+}
+
+void_t ClientHandler::deselectMarket()
+{
+  market = 0;
+  if(state == adapterState)
     client.close();
 }
 
@@ -262,8 +270,10 @@ void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t 
     switch(type)
     {
     case BotProtocol::session:
-      handelRemoveSession(id);
+      handleRemoveSession(id);
       break;
+    case BotProtocol::market:
+      handleRemoveMarket(id);
     default:
       break;
     }
@@ -309,22 +319,41 @@ void_t ClientHandler::handleControlEntity(BotProtocol::EntityType type, uint32_t
 
 void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs)
 {
-  //MarketEngine* engine = serverHandler.findMarketEngine(createSessionArgs.marketEngineId);
-  //if(!engine)
-  //{
-  //  sendError("Unknown market engine.");
-  //  return;
-  //}
-  //
-  //String username = get
-  //Session* session = user->createMarket(*engine, username, key, secret);
-  //if(!session)
-  //{
-  //  sendError("Could not create session.");
-  //  return;
-  //}
+  MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createMarketArgs.marketAdapterId);
+  if(!marketAdapter)
+  {
+    sendError("Unknown market adapter.");
+    return;
+  }
+  
+  String username = getString(createMarketArgs.username);
+  String key = getString(createMarketArgs.key);
+  String secret = getString(createMarketArgs.secret);
+  Market* market = user->createMarket(*marketAdapter, username, key, secret);
+  if(!market)
+  {
+    sendError("Could not create market.");
+    return;
+  }
+
+  BotProtocol::Market marketData;
+  setString(marketData.name, market->getMarketAdapter()->getName());
+  marketData.state = market->getState();
+  user->sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
+  user->saveData();
 }
 
+void_t ClientHandler::handleRemoveMarket(uint32_t id)
+{
+  if(!user->deleteMarket(id))
+  {
+    sendError("Unknown market.");
+    return;
+  }
+
+  user->removeEntity(BotProtocol::market, id);
+  user->saveData();
+}
 
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
 {
@@ -358,7 +387,7 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
   user->saveData();
 }
 
-void_t ClientHandler::handelRemoveSession(uint32_t id)
+void_t ClientHandler::handleRemoveSession(uint32_t id)
 {
   if(!user->deleteSession(id))
   {
