@@ -180,7 +180,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
     for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
     {
       const Market* market = *i;
-      setString(marketData.name, market->getMarketAdapter()->getName());
+      marketData.marketAdapterId = market->getMarketAdapter()->getId();
       marketData.state = market->getState();
       sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
     }
@@ -350,7 +350,7 @@ void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMa
   }
 
   BotProtocol::Market marketData;
-  setString(marketData.name, market->getMarketAdapter()->getName());
+  marketData.marketAdapterId = market->getMarketAdapter()->getId();
   marketData.state = market->getState();
   user->sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
   user->saveData();
