@@ -16,6 +16,8 @@ public:
     authResponse,
     registerBotRequest,
     registerBotResponse,
+    registerMarketRequest,
+    registerMarketResponse,
     updateEntity,
     removeEntity,
     controlEntity,
@@ -143,6 +145,11 @@ public:
     uint8_t isSimulation;
     double balanceBase;
     double balanceComm;
+  };
+
+  struct RegisterMarketRequest
+  {
+    uint32_t pid;
   };
 
   struct CreateSessionArgs

@@ -51,6 +51,7 @@ private:
   void_t handleLogin(BotProtocol::LoginRequest& loginRequest);
   void_t handleAuth(BotProtocol::AuthRequest& authRequest);
   void_t handleRegisterBot(BotProtocol::RegisterBotRequest& registerBotRequest);
+  void_t handleRegisterMarket(BotProtocol::RegisterMarketRequest& registerMarketRequest);
 
   void_t handlePing(const byte_t* data, size_t size);
 

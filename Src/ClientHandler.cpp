@@ -80,6 +80,10 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterBotRequest))
         handleRegisterBot(*(BotProtocol::RegisterBotRequest*)data);
       break;
+    case BotProtocol::registerMarketRequest:
+      if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterMarketRequest))
+        handleRegisterMarket(*(BotProtocol::RegisterMarketRequest*)data);
+      break;
     default:
       break;
     }
@@ -222,6 +226,37 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;
   state = botState;
+
+  //BotProtocol::Session sessionData;
+  //setString(sessionData.name, session->getName());
+  //sessionData.engineId = session->getEngine()->getId();
+  //sessionData.marketId = session->getMarketAdapter()->getId();
+  //sessionData.state = session->getState();
+  //session->getUser().sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
+}
+
+void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& registerMarketRequest)
+{
+  Market* market = serverHandler.findMarketByPid(registerMarketRequest.pid);
+  if(!market)
+  {
+    sendError("Unknown market.");
+    return;
+  }
+  if(!market->registerClient(*this, true))
+  {
+    sendError("Invalid market.");
+    return;
+  } 
+
+  sendMessage(BotProtocol::registerMarketResponse, 0, 0);
+  this->market = market;
+  state = adapterState;
+
+  //BotProtocol::Market marketData;
+  //marketData.marketAdapterId = market->getMarketAdapter()->getId();
+  //marketData.state = market->getState();
+  //market->getUser().sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
 }
 
 void_t ClientHandler::handlePing(const byte_t* data, size_t size)

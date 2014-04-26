@@ -17,13 +17,6 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
-  bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
-
-  bool_t createTransaction(const BotProtocol::CreateTransactionArgs& transaction, uint32_t& id);
-  bool_t removeTransaction(uint32_t id);
-  bool_t createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id);
-  bool_t removeOrder(uint32_t id);
-
 private:
   Socket socket;
   String error;

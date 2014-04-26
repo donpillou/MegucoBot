@@ -16,15 +16,15 @@ bool_t BotConnection::connect(uint16_t port)
     return false;
   }
 
-  // send register source request
+  // send register market request
   {
-    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::RegisterBotRequest)];
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::RegisterMarketRequest)];
     BotProtocol::Header* header = (BotProtocol::Header*)message;
-    BotProtocol::RegisterBotRequest* registerBotRequest = (BotProtocol::RegisterBotRequest*)(header + 1);
+    BotProtocol::RegisterMarketRequest* registerMarketRequest = (BotProtocol::RegisterMarketRequest*)(header + 1);
     header->size = sizeof(message);
-    header->messageType = BotProtocol::registerBotRequest;
+    header->messageType = BotProtocol::registerMarketRequest;
     header->entityId = header->entityType = 0;
-    registerBotRequest->pid = Process::getCurrentProcessId();
+    registerMarketRequest->pid = Process::getCurrentProcessId();
     if(!socket.send(message, sizeof(message)))
     {
       error = Socket::getLastErrorString();
@@ -32,75 +32,22 @@ bool_t BotConnection::connect(uint16_t port)
     }
   }
 
-  // receive register source response
+  // receive register market response
   {
     BotProtocol::Header header;
-    BotProtocol::RegisterBotResponse response;
     if(!socket.recv((byte_t*)&header, sizeof(header)))
     {
       error = Socket::getLastErrorString();
       return false;
     }
-    if(header.messageType != BotProtocol::registerBotResponse || header.size != sizeof(header) + sizeof(response))
+    if(header.messageType != BotProtocol::registerMarketResponse || header.size != sizeof(header))
     {
-      error = "Could not receive register bot response.";
-      return false;
-    }
-    if(!socket.recv((byte_t*)&response, sizeof(response)))
-    {
-      error = Socket::getLastErrorString();
+      error = "Could not receive register market response.";
       return false;
     }
   }
 
   return true;
-}
-
-bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactions)
-{
-  if(!requestEntities(BotProtocol::transaction))
-    return false;
-  if(!sendPing())
-    return false;
-
-  BotProtocol::Header header;
-  byte_t* data;
-  for(;;)
-  {
-    if(!receiveMessage(header, data))
-      return false;
-    switch((BotProtocol::MessageType)header.messageType)
-    {
-    case BotProtocol::updateEntity:
-      if(header.size >= sizeof(BotProtocol::Transaction))
-        transactions.append(*(BotProtocol::Transaction*)data);
-      break;
-    case BotProtocol::pingResponse:
-      return true;
-    default:
-      break;
-    }
-  }
-}
-
-bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs& transaction, uint32_t& id)
-{
-  return createEntity<BotProtocol::Transaction>(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs), id);
-}
-
-bool_t BotConnection::removeTransaction(uint32_t id)
-{
-  return removeEntity(BotProtocol::transaction, id);
-}
-
-bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id)
-{
-  return createEntity<BotProtocol::Order>(BotProtocol::order, &order, sizeof(BotProtocol::CreateOrderArgs), id);
-}
-
-bool_t BotConnection::removeOrder(uint32_t id)
-{
-  return removeEntity(BotProtocol::order, id);
 }
 
 template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id)

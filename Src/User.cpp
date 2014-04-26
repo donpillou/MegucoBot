@@ -61,6 +61,11 @@ Market* User::createMarket(MarketAdapter& marketAdapter, const String& username,
 {
   uint32_t id = nextEntityId++;
   Market* market = new Market(serverHandler, id, marketAdapter, username, key, secret);
+  if(!market->start())
+  {
+    delete market;
+    return 0;
+  }
   markets.append(id, market);
   return market;
 }
@@ -104,7 +109,8 @@ bool_t User::loadData()
     {
       Market* market = new Market(serverHandler, *i);
       uint32_t id = market->getId();
-      if(markets.find(id) != markets.end() || !market->getMarketAdapter())
+      if(markets.find(id) != markets.end() || !market->getMarketAdapter() ||
+         !market->start())
       {
         delete market;
         continue;
