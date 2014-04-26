@@ -159,7 +159,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
     }
   }
 
-  // send market list
+  // send market adapter list
   {
     BotProtocol::MarketAdapter marketAdapterData;
     const HashMap<uint32_t, MarketAdapter*>& marketAdapters = serverHandler.getMarketAdapters();
@@ -170,6 +170,19 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
       setString(marketAdapterData.currencyBase, marketAdapter->getCurrencyBase());
       setString(marketAdapterData.currencyComm, marketAdapter->getCurrencyComm());
       sendEntity(BotProtocol::marketAdapter, marketAdapter->getId(), &marketAdapterData, sizeof(marketAdapterData));
+    }
+  }
+
+  // send market list
+  {
+    BotProtocol::Market marketData;
+    const HashMap<uint32_t, Market*>& markets = user->getMarkets();
+    for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
+    {
+      const Market* market = *i;
+      setString(marketData.name, market->getMarketAdapter()->getName());
+      marketData.state = market->getState();
+      sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
     }
   }
 
@@ -235,7 +248,7 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
       if(size >= sizeof(BotProtocol::CreateSessionArgs))
         handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
       break;
-    case BotProtocol::marketAdapter:
+    case BotProtocol::market:
       if(size >= sizeof(BotProtocol::CreateMarketArgs))
         handleCreateMarket(*(BotProtocol::CreateMarketArgs*)data);
     default:

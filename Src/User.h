@@ -36,6 +36,7 @@ public:
   const byte_t* getKey() const {return key;}
   const byte_t* getPwHmac() const {return pwhmac;}
   const HashMap<uint32_t, Session*>& getSessions() const {return sessions;}
+  const HashMap<uint32_t, Market*>& getMarkets() const {return markets;}
   
   bool_t loadData();
   bool_t saveData();
