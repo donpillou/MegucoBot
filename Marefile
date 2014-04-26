@@ -3,6 +3,10 @@ bots = "Src/Bots/*.cpp"
 bots = "$(patsubst Src/Bots/%.cpp,%,$(bots))"
 bots -= "Main"
 
+markets = "Src/Markets/*.cpp"
+markets = "$(patsubst Src/Markets/%.cpp,%,$(markets))"
+markets -= "Main"
+
 if configuration == "Debug" {
   defines += { "_DEBUG", "DEBUG" }
 } else {
@@ -23,7 +27,10 @@ targets = {
       "Src/**.cpp" = cppSource
       "Src/**.h"
     }
-    files -= { "Src/Bots/**" }
+    files -= {
+      "Src/Bots/**"
+      "Src/Markets/**"
+    }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
       dependencies += { "libcurl" }
@@ -69,6 +76,51 @@ targets = {
       "Src/Bots/Tools/**.cpp" = cppSource
       "Src/Bots/Tools/**.h"
       "Src/Bots/Main.cpp" = cppSource
+    }
+    if tool == "vcxproj" {
+      libs += { "ws2_32" }
+      dependencies += { "libcurl" }
+      linkFlags += { "/SUBSYSTEM:CONSOLE" }
+      defines += { "CURL_STATICLIB" }
+      includePaths += {
+        "Ext/curl/include",
+        "Build/$(configuration)/libcurl/include"
+        "Build/$(configuration)/libcurl/include/curl"
+      }
+      libPaths += {
+        "Build/$(configuration)/libcurl"
+      }
+    }
+    if platform == "Linux" {
+      libs += { "pthread", "rt" }
+    }
+  }
+
+  "$(markets)" = cppApplication + {
+    folder = "Markets"
+    dependencies = { "libnstd" }
+    defines += { "MARKET_$(upper $(target))" }
+    buildDir = "Build/$(configuration)/Markets/$(target)"
+    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    includePaths = {
+      "Ext/libnstd/include"
+      "Src",
+      "Src/Markets",
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+    }
+    libs = { "nstd", "curl" }
+    root = { "Src/Markets", "Src" }
+    files = {
+      "Src/Markets/$(target).cpp" = cppSource
+      "Src/Markets/$(target).h"
+      "Src/Tools/Socket.cpp" = cppSource
+      "Src/Tools/Socket.h"
+      "Src/BotProtocol.h"
+      "Src/Markets/Tools/**.cpp" = cppSource
+      "Src/Markets/Tools/**.h"
+      "Src/Markets/Main.cpp" = cppSource
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }

@@ -130,7 +130,11 @@ int_t main(int_t argc, char_t* argv[])
           "botd"
 #endif
           )
-          serverHandler.addEngine(File::basename(path, ".exe"), binaryDir + "/" + path);
+        {
+          String name = File::basename(path, ".exe");
+          if(name.endsWith("Bot"))
+            serverHandler.addEngine(name, binaryDir + "/" + path);
+        }
     }
   }
 
