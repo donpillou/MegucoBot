@@ -16,7 +16,7 @@ bool_t BotConnection::connect(uint16_t port)
     return false;
   }
 
-  // send register source request
+  // send register bot request
   {
     byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::RegisterBotRequest)];
     BotProtocol::Header* header = (BotProtocol::Header*)message;
@@ -32,7 +32,7 @@ bool_t BotConnection::connect(uint16_t port)
     }
   }
 
-  // receive register source response
+  // receive register bot response
   {
     BotProtocol::Header header;
     BotProtocol::RegisterBotResponse response;
