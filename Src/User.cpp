@@ -98,19 +98,37 @@ bool_t User::loadData()
   Variant dataVar;
   if(!Json::parse(data, dataVar))
     return false;
-  const List<Variant>& sessionsVar = dataVar.toMap().find("sessions")->toList();
-  for(List<Variant>::Iterator i = sessionsVar.begin(), end = sessionsVar.end(); i != end; ++i)
-  {
-    Session* session = new Session(serverHandler, *this, *i);
-    uint32_t id = session->getId();
-    if(sessions.find(id) != sessions.end() || !session->getEngine() || !session->getMarketAdapter())
+{
+    const List<Variant>& marketsVar = dataVar.toMap().find("markets")->toList();
+    for(List<Variant>::Iterator i = marketsVar.begin(), end = marketsVar.end(); i != end; ++i)
     {
-      delete session;
-      continue;
+      Market* market = new Market(serverHandler, *i);
+      uint32_t id = market->getId();
+      if(markets.find(id) != markets.end() || !market->getMarketAdapter())
+      {
+        delete market;
+        continue;
+      }
+      markets.append(id, market);
+      if(id >= nextEntityId)
+        nextEntityId = id + 1;
     }
-    sessions.append(id, session);
-    if(id >= nextEntityId)
-      nextEntityId = id + 1;
+  }
+  {
+    const List<Variant>& sessionsVar = dataVar.toMap().find("sessions")->toList();
+    for(List<Variant>::Iterator i = sessionsVar.begin(), end = sessionsVar.end(); i != end; ++i)
+    {
+      Session* session = new Session(serverHandler, *this, *i);
+      uint32_t id = session->getId();
+      if(sessions.find(id) != sessions.end() || !session->getEngine() || !session->getMarketAdapter())
+      {
+        delete session;
+        continue;
+      }
+      sessions.append(id, session);
+      if(id >= nextEntityId)
+        nextEntityId = id + 1;
+    }
   }
   return true;
 }
@@ -119,11 +137,21 @@ bool_t User::saveData()
 {
   Variant dataVar;
   HashMap<String, Variant>& data = dataVar.toMap();
-  List<Variant>& sessionsVar = data.append("sessions", Variant()).toList();
-  for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
   {
-    Variant& sessionVar = sessionsVar.append(Variant());;
-    (*i)->toVariant(sessionVar);
+    List<Variant>& marketsVar = data.append("markets", Variant()).toList();
+    for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
+    {
+      Variant& marketVar = marketsVar.append(Variant());;
+      (*i)->toVariant(marketVar);
+    }
+  }
+  {
+    List<Variant>& sessionsVar = data.append("sessions", Variant()).toList();
+    for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
+    {
+      Variant& sessionVar = sessionsVar.append(Variant());;
+      (*i)->toVariant(sessionVar);
+    }
   }
   String json;
   if(!Json::generate(dataVar, json))
