@@ -1,33 +1,48 @@
 
 #pragma once
 
-class BuyBot
-{};
+#include <nstd/Variant.h>
 
-/*
 #include "Tools/Market.h"
-#include "Tools/Websocket.h"
+#include "Tools/HttpRequest.h"
 
-class BitstampUsd : public Market
+class BitstampMarket : public Market
 {
 public:
-  BitstampUsd() : lastPingTime(0), lastTickerTimer(0) {}
-
-  virtual String getChannelName() const {return String("Bitstamp/USD");}
-  virtual bool_t connect();
-  virtual void_t close() {websocket.close();}
-  virtual bool_t isOpen() const {return websocket.isOpen();}
-  virtual const String& getErrorString() const {return error;}
-  virtual bool_t process(Callback& callback);
+  BitstampMarket(const String& userName, const String& key, const String& secret);
 
 private:
-  Websocket websocket;
-  String error;
-  timestamp_t localToServerTime;
-  timestamp_t lastPingTime;
-  timestamp_t lastTickerTimer;
+  String userName;
+  String key;
+  String secret;
 
-  timestamp_t toServerTime(timestamp_t localTime) const {return localTime + localToServerTime;}
-  bool_t handleStreamData(const Buffer& data, Callback& callback);
+  BotProtocol::MarketBalance balance;
+  bool balanceLoaded;
+  HashMap<String, BotProtocol::Order> orders;
+
+  String error;
+
+  HttpRequest httpRequest;
+
+  timestamp_t lastRequestTime;
+  uint64_t lastNonce;
+  timestamp_t lastLiveTradeUpdateTime;
+
+  bool request(const char_t* url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result);
+
+  void avoidSpamming();
+
+  double getOrderCharge(double amount, double price) const;
+  double getMaxSellAmout() const;
+  double getMaxBuyAmout(double price) const;
+
+  bool loadBalanceAndFee();
+
+private: // Market
+  virtual const String& getLastError() const;
+  virtual bool_t loadOrders(List<BotProtocol::Order>& orders);
+  virtual bool_t loadBalance(BotProtocol::MarketBalance& balance);
+  virtual bool_t loadTransactions(List<BotProtocol::Transaction>& transactions);
+  virtual bool_t createOrder(double amount, double price, BotProtocol::Order& order);
+  virtual bool_t cancelOrder(const String& id);
 };
-*/

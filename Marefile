@@ -21,7 +21,7 @@ targets = {
     output = "Build/$(configuration)/botd$(if $(Win32),.exe,)"
     includePaths = { "Ext/libnstd/include" }
     libPaths = { "Build/$(configuration)/libnstd" }
-    libs = { "nstd", "curl" }
+    libs = { "nstd" }
     root = "Src"
     files = {
       "Src/**.cpp" = cppSource
@@ -33,17 +33,7 @@ targets = {
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
-      dependencies += { "libcurl" }
       linkFlags += { "/SUBSYSTEM:CONSOLE" }
-      defines += { "CURL_STATICLIB" }
-      includePaths += {
-        "Ext/curl/include",
-        "Build/$(configuration)/libcurl/include"
-        "Build/$(configuration)/libcurl/include/curl"
-      }
-      libPaths += {
-        "Build/$(configuration)/libcurl"
-      }
     }
     if platform == "Linux" {
       libs += { "pthread", "rt" }
@@ -65,7 +55,7 @@ targets = {
     libPaths = {
       "Build/$(configuration)/libnstd"
     }
-    libs = { "nstd", "curl" }
+    libs = { "nstd" }
     root = { "Src/Bots", "Src" }
     files = {
       "Src/Bots/$(target).cpp" = cppSource
@@ -79,17 +69,7 @@ targets = {
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
-      dependencies += { "libcurl" }
       linkFlags += { "/SUBSYSTEM:CONSOLE" }
-      defines += { "CURL_STATICLIB" }
-      includePaths += {
-        "Ext/curl/include",
-        "Build/$(configuration)/libcurl/include"
-        "Build/$(configuration)/libcurl/include/curl"
-      }
-      libPaths += {
-        "Build/$(configuration)/libcurl"
-      }
     }
     if platform == "Linux" {
       libs += { "pthread", "rt" }

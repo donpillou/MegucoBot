@@ -21,6 +21,9 @@
 //const char* botName = "BuyBot";
 //#endif
 
+bool_t handleMessage(const BotProtocol::Header& header, byte_t* data);
+bool_t handelRequestEntites(BotProtocol::EntityType entityType);
+
 int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
@@ -45,8 +48,35 @@ int_t main(int_t argc, char_t* argv[])
     }
 
     // handle message
-    // todo:
-
+    if(!handleMessage(header, data))
+    {
+      Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
   }
   return 0;
+}
+
+bool_t handleMessage(const BotProtocol::Header& header, byte_t* data)
+{
+  switch((BotProtocol::MessageType)header.messageType)
+  {
+  case BotProtocol::requestEntities:
+    return handelRequestEntites((BotProtocol::EntityType)header.entityType);
+  default:
+    break;
+  }
+  return true;
+}
+
+bool_t handelRequestEntites(BotProtocol::EntityType entityType)
+{
+  switch(entityType)
+  {
+  case BotProtocol::marketTransaction:
+    break;
+  default:
+    break;
+  }
+  return true;
 }

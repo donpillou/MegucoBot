@@ -34,6 +34,9 @@ public:
     sessionTransaction,
     sessionOrder,
     market,
+    marketTransaction,
+    marketOrder,
+    marketBalance,
   };
 
 #pragma pack(push, 1)
@@ -135,6 +138,15 @@ public:
 
     uint32_t marketAdapterId;
     uint8_t state;
+  };
+
+  struct MarketBalance
+  {
+    double reservedUsd;
+    double reservedBtc;
+    double availableUsd;
+    double availableBtc;
+    double fee;
   };
 
   struct RegisterBotRequest
