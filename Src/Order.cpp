@@ -2,14 +2,18 @@
 #include <nstd/Time.h>
 
 #include "Order.h"
+#include "ClientHandler.h"
+#include "Session.h"
 
-Order::Order(uint32_t id, double price, double amount, double fee, BotProtocol::Order::Type type) :
+Order::Order(Session& session, uint32_t id, double price, double amount, double fee, BotProtocol::Order::Type type) :
+  session(session),
   id(id), price(price), amount(amount), fee(fee), type(type)
 {
   date = Time::time();
 }
 
-Order::Order(const Variant& variant)
+Order::Order(Session& session, const Variant& variant) :
+  session(session)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -29,4 +33,18 @@ void_t Order::toVariant(Variant& variant)
   data.append("fee", fee);
   data.append("type", (uint_t)type);
   data.append("date", date);
+}
+
+void_t Order::send(ClientHandler* client)
+{
+  BotProtocol::Order orderData;
+  orderData.price = price;
+  orderData.amount = amount;
+  orderData.fee = fee;
+  orderData.type = type;
+  orderData.date = date;
+  if(client)
+    client->sendEntity(BotProtocol::order, id, &orderData, sizeof(orderData));
+  else
+    session.sendEntity(BotProtocol::order, id, &orderData, sizeof(orderData));
 }

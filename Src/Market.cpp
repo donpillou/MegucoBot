@@ -56,7 +56,6 @@ bool_t Market::start()
     return false;
   serverHandler.registerMarket(pid, *this);
   state = BotProtocol::Market::starting;
-  send();
   return true;
 }
 
@@ -68,7 +67,6 @@ bool_t Market::stop()
     return false;
   pid = 0;
   state = BotProtocol::Market::stopped;
-  send();
   return true;
 }
 
@@ -80,7 +78,6 @@ bool_t Market::registerClient(ClientHandler& client, bool_t adapter)
       return false;
     adapterClient = &client;
     state = BotProtocol::Market::running;
-    send();
   }
   else
     clients.append(&client);
@@ -93,7 +90,6 @@ void_t Market::unregisterClient(ClientHandler& client)
   {
     adapterClient = 0;
     state = BotProtocol::Market::stopped;
-    send();
   }
   else
     clients.remove(&client);

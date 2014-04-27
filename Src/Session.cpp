@@ -28,7 +28,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   const List<Variant>& transactionsVar = data.find("transactions")->toList();
   for(List<Variant>::Iterator i = transactionsVar.begin(), end = transactionsVar.end(); i != end; ++i)
   {
-    Transaction* transaction = new Transaction(*i);
+    Transaction* transaction = new Transaction(*this, *i);
     uint32_t id = transaction->getId();
     if(transactions.find(id) != transactions.end())
     {
@@ -42,7 +42,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   const List<Variant>& ordersVar = data.find("orders")->toList();
   for(List<Variant>::Iterator i = ordersVar.begin(), end = ordersVar.end(); i != end; ++i)
   {
-    Order* order = new Order(*i);
+    Order* order = new Order(*this, *i);
     uint32_t id = order->getId();
     if(transactions.find(id) != transactions.end())
     {
@@ -106,7 +106,6 @@ bool_t Session::startSimulation()
     return false;
   serverHandler.registerSession(pid, *this);
   state = BotProtocol::Session::starting;
-  send();
   return true;
 }
 
@@ -118,7 +117,6 @@ bool_t Session::stop()
     return false;
   pid = 0;
   state = BotProtocol::Session::stopped;
-  send();
   return true;
 }
 
@@ -130,7 +128,7 @@ bool_t Session::registerClient(ClientHandler& client, bool_t bot)
       return false;
     botClient = &client;
     state = simulation ? BotProtocol::Session::simulating : BotProtocol::Session::running;
-    send();
+    clients.append(&client);
   }
   else
     clients.append(&client);
@@ -143,7 +141,7 @@ void_t Session::unregisterClient(ClientHandler& client)
   {
     botClient = 0;
     state = BotProtocol::Session::stopped;
-    send();
+    clients.remove(&client);
   }
   else
     clients.remove(&client);
@@ -158,7 +156,7 @@ void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) cons
 Transaction* Session::createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type)
 {
   uint32_t id = nextEntityId++;
-  Transaction* transaction = new Transaction(id, price, amount, fee, type);
+  Transaction* transaction = new Transaction(*this, id, price, amount, fee, type);
   transactions.append(id, transaction);
   return transaction;
 }
@@ -176,7 +174,7 @@ bool_t Session::deleteTransaction(uint32_t id)
 Order* Session::createOrder(double price, double amount, double fee, BotProtocol::Order::Type type)
 {
   uint32_t id = nextEntityId++;
-  Order* order = new Order(id, price, amount, fee, type);
+  Order* order = new Order(*this, id, price, amount, fee, type);
   orders.append(id, order);
   return order;
 }

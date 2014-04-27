@@ -21,9 +21,17 @@ ClientHandler::~ClientHandler()
   if(user)
     user->unregisterClient(*this);
   if(session)
+  {
     session->unregisterClient(*this);
+    if(state == botState)
+      session->send();
+  }
   if(market)
+  {
     market->unregisterClient(*this);
+    if(state == adapterState)
+      market->send();
+  }
 }
 
 void_t ClientHandler::deselectSession()
@@ -214,6 +222,8 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;
   state = botState;
+
+  session->send();
 }
 
 void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& registerMarketRequest)
@@ -233,6 +243,8 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
   sendMessage(BotProtocol::registerMarketResponse, 0, 0);
   this->market = market;
   state = adapterState;
+
+  market->send();
 }
 
 void_t ClientHandler::handlePing(const byte_t* data, size_t size)
@@ -359,15 +371,17 @@ void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMa
     sendError("Could not create market.");
     return;
   }
-
   market->send();
   user->saveData();
 
   market->start();
+  market->send();
 }
 
 void_t ClientHandler::handleRemoveMarket(uint32_t id)
 {
+  // todo: do not remove markts that are in use by a bot session
+
   if(!user->deleteMarket(id))
   {
     sendError("Unknown market.");
@@ -430,9 +444,11 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
   {
   case BotProtocol::ControlSessionArgs::startSimulation:
     session->startSimulation();
+    session->send();
     break;
   case BotProtocol::ControlSessionArgs::stop:
     session->stop();
+    session->send();
     break;
   case BotProtocol::ControlSessionArgs::select:
     if(this->session)
@@ -440,35 +456,15 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
     session->registerClient(*this, false);
     this->session = session;
     {
-      BotProtocol::Transaction transactionData;
       const HashMap<uint32_t, Transaction*>& transactions = session->getTransactions();
       for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-      {
-        const Transaction* transaction = *i;
-        transactionData.price = transaction->getPrice();
-        transactionData.amount = transaction->getAmount();
-        transactionData.fee = transaction->getFee();
-        transactionData.type = transaction->getType();
-        transactionData.date = transaction->getDate();
-        sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
-      }
-      BotProtocol::Order orderData;
+        (*i)->send(this);
       const HashMap<uint32_t, Order*>& orders = session->getOrders();
       for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-      {
-        const Order* order = *i;
-        orderData.price = order->getPrice();
-        orderData.amount = order->getAmount();
-        orderData.fee = order->getFee();
-        orderData.type = order->getType();
-        orderData.date = order->getDate();
-        sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
-      }
+        (*i)->send(this);
     }
-    return;
+    break;
   }
-
-  session->send();
 }
 
 void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
@@ -480,14 +476,7 @@ void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs
     return;
   }
 
-  BotProtocol::Transaction transactionData;
-  transactionData.price = transaction->getPrice();
-  transactionData.amount = transaction->getAmount();
-  transactionData.fee = transaction->getFee();
-  transactionData.type = transaction->getType();
-  transactionData.date = transaction->getDate();
-  sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
-  session->sendEntity(BotProtocol::transaction, transaction->getId(), &transactionData, sizeof(transactionData));
+  transaction->send();
   session->saveData();
 }
 
@@ -512,14 +501,7 @@ void_t ClientHandler::handleCreateOrder(BotProtocol::CreateOrderArgs& createOrde
     return;
   }
 
-  BotProtocol::Order orderData;
-  orderData.price = order->getPrice();
-  orderData.amount = order->getAmount();
-  orderData.fee = order->getFee();
-  orderData.type = order->getType();
-  orderData.date = order->getDate();
-  sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
-  session->sendEntity(BotProtocol::order, order->getId(), &orderData, sizeof(orderData));
+  order->send();
   session->saveData();
 }
 

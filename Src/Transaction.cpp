@@ -2,14 +2,18 @@
 #include <nstd/Time.h>
 
 #include "Transaction.h"
+#include "ClientHandler.h"
+#include "Session.h"
 
-Transaction::Transaction(uint32_t id, double price, double amount, double fee, BotProtocol::Transaction::Type type) :
+Transaction::Transaction(Session& session, uint32_t id, double price, double amount, double fee, BotProtocol::Transaction::Type type) :
+  session(session),
   id(id), price(price), amount(amount), fee(fee), type(type)
 {
   date = Time::time();
 }
 
-Transaction::Transaction(const Variant& variant)
+Transaction::Transaction(Session& session, const Variant& variant) :
+   session(session)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -29,4 +33,18 @@ void_t Transaction::toVariant(Variant& variant)
   data.append("fee", fee);
   data.append("type", (uint_t)type);
   data.append("date", date);
+}
+
+void_t Transaction::send(ClientHandler* client)
+{
+  BotProtocol::Transaction transactionData;
+  transactionData.price = price;
+  transactionData.amount = amount;
+  transactionData.fee = fee;
+  transactionData.type = type;
+  transactionData.date = date;
+  if(client)
+    client->sendEntity(BotProtocol::transaction, id, &transactionData, sizeof(transactionData));
+  else
+    session.sendEntity(BotProtocol::transaction, id, &transactionData, sizeof(transactionData));
 }
