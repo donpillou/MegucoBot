@@ -25,6 +25,7 @@ int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
 
+  // create connection to bot server
   BotConnection connection;
   if(!connection.connect(port))
   {
@@ -32,6 +33,20 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
+  // wait for requests
+  BotProtocol::Header header;
+  byte_t* data;
+  for(;;)
+  {
+    if(!connection.receiveMessage(header, data))
+    {
+      Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
 
+    // handle message
+    // todo:
+
+  }
   return 0;
 }

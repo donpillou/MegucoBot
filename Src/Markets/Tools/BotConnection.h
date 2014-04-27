@@ -17,6 +17,8 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
+  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
+
 private:
   Socket socket;
   String error;
@@ -27,5 +29,4 @@ private:
   bool_t removeEntity(uint32_t type, uint32_t id);
   bool_t sendPing();
   bool_t requestEntities(BotProtocol::EntityType entityType);
-  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
 };
