@@ -60,12 +60,7 @@ bool_t User::deleteSession(uint32_t id)
 Market* User::createMarket(MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret)
 {
   uint32_t id = nextEntityId++;
-  Market* market = new Market(serverHandler, id, marketAdapter, username, key, secret);
-  if(!market->start())
-  {
-    delete market;
-    return 0;
-  }
+  Market* market = new Market(serverHandler, *this, id, marketAdapter, username, key, secret);
   markets.append(id, market);
   return market;
 }
@@ -107,7 +102,7 @@ bool_t User::loadData()
     const List<Variant>& marketsVar = dataVar.toMap().find("markets")->toList();
     for(List<Variant>::Iterator i = marketsVar.begin(), end = marketsVar.end(); i != end; ++i)
     {
-      Market* market = new Market(serverHandler, *i);
+      Market* market = new Market(serverHandler, *this, *i);
       uint32_t id = market->getId();
       if(markets.find(id) != markets.end() || !market->getMarketAdapter() ||
          !market->start())

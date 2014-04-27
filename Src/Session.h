@@ -38,6 +38,7 @@ public:
   Engine* getEngine() const {return engine;}
   MarketAdapter* getMarketAdapter() const {return marketAdapter;}
   BotProtocol::Session::State getState() const {return state;}
+  bool isSimulation() const {return simulation;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
   Transaction* createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type);
@@ -48,6 +49,7 @@ public:
   const HashMap<uint32_t, Order*>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
+  void_t send(ClientHandler* client = 0);
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
@@ -58,6 +60,7 @@ private:
   String name;
   Engine* engine;
   MarketAdapter* marketAdapter;
+  bool simulation;
   double balanceBase;
   double balanceComm;
   BotProtocol::Session::State state;

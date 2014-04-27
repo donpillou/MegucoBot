@@ -22,6 +22,8 @@ ClientHandler::~ClientHandler()
     user->unregisterClient(*this);
   if(session)
     session->unregisterClient(*this);
+  if(market)
+    market->unregisterClient(*this);
 }
 
 void_t ClientHandler::deselectSession()
@@ -119,7 +121,7 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
 
 void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
 {
-  String username = getString(loginRequest.username);
+  String username = BotProtocol::getString(loginRequest.username);
   user = serverHandler.findUser(username);
   if(!user)
   {
@@ -158,7 +160,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
     for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
     {
       const Engine* engine = *i;
-      setString(engineData.name, engine->getName());
+      BotProtocol::setString(engineData.name, engine->getName());
       sendEntity(BotProtocol::engine, engine->getId(), &engineData, sizeof(engineData));
     }
   }
@@ -170,39 +172,25 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
     for(HashMap<uint32_t, MarketAdapter*>::Iterator i = marketAdapters.begin(), end = marketAdapters.end(); i != end; ++i)
     {
       const MarketAdapter* marketAdapter = *i;
-      setString(marketAdapterData.name, marketAdapter->getName());
-      setString(marketAdapterData.currencyBase, marketAdapter->getCurrencyBase());
-      setString(marketAdapterData.currencyComm, marketAdapter->getCurrencyComm());
+      BotProtocol::setString(marketAdapterData.name, marketAdapter->getName());
+      BotProtocol::setString(marketAdapterData.currencyBase, marketAdapter->getCurrencyBase());
+      BotProtocol::setString(marketAdapterData.currencyComm, marketAdapter->getCurrencyComm());
       sendEntity(BotProtocol::marketAdapter, marketAdapter->getId(), &marketAdapterData, sizeof(marketAdapterData));
     }
   }
 
   // send market list
   {
-    BotProtocol::Market marketData;
     const HashMap<uint32_t, Market*>& markets = user->getMarkets();
     for(HashMap<uint32_t, Market*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
-    {
-      const Market* market = *i;
-      marketData.marketAdapterId = market->getMarketAdapter()->getId();
-      marketData.state = market->getState();
-      sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
-    }
+      (*i)->send(this);
   }
 
   // send session list
   {
-    BotProtocol::Session sessionData;
     const HashMap<uint32_t, Session*>& sessions = user->getSessions();
     for(HashMap<uint32_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
-    {
-      const Session* session = *i;
-      setString(sessionData.name, session->getName());
-      sessionData.engineId = session->getEngine()->getId();
-      sessionData.marketId = session->getMarketAdapter()->getId();
-      sessionData.state = session->getState();
-      sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
-    }
+      (*i)->send(this);
   }
 }
 
@@ -221,18 +209,11 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   } 
 
   BotProtocol::RegisterBotResponse response;
-  response.isSimulation = session->getState() != BotProtocol::Session::active;
+  response.isSimulation = session->isSimulation();
   session->getInitialBalance(response.balanceBase, response.balanceComm);
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
   this->session = session;
   state = botState;
-
-  //BotProtocol::Session sessionData;
-  //setString(sessionData.name, session->getName());
-  //sessionData.engineId = session->getEngine()->getId();
-  //sessionData.marketId = session->getMarketAdapter()->getId();
-  //sessionData.state = session->getState();
-  //session->getUser().sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
 }
 
 void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& registerMarketRequest)
@@ -252,11 +233,6 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
   sendMessage(BotProtocol::registerMarketResponse, 0, 0);
   this->market = market;
   state = adapterState;
-
-  //BotProtocol::Market marketData;
-  //marketData.marketAdapterId = market->getMarketAdapter()->getId();
-  //marketData.state = market->getState();
-  //market->getUser().sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
 }
 
 void_t ClientHandler::handlePing(const byte_t* data, size_t size)
@@ -374,9 +350,9 @@ void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMa
     return;
   }
   
-  String username = getString(createMarketArgs.username);
-  String key = getString(createMarketArgs.key);
-  String secret = getString(createMarketArgs.secret);
+  String username = BotProtocol::getString(createMarketArgs.username);
+  String key = BotProtocol::getString(createMarketArgs.key);
+  String secret = BotProtocol::getString(createMarketArgs.secret);
   Market* market = user->createMarket(*marketAdapter, username, key, secret);
   if(!market)
   {
@@ -384,11 +360,10 @@ void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMa
     return;
   }
 
-  BotProtocol::Market marketData;
-  marketData.marketAdapterId = market->getMarketAdapter()->getId();
-  marketData.state = market->getState();
-  user->sendEntity(BotProtocol::market, market->getId(), &marketData, sizeof(marketData));
+  market->send();
   user->saveData();
+
+  market->start();
 }
 
 void_t ClientHandler::handleRemoveMarket(uint32_t id)
@@ -405,7 +380,7 @@ void_t ClientHandler::handleRemoveMarket(uint32_t id)
 
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
 {
-  String name = getString(createSessionArgs.name);
+  String name = BotProtocol::getString(createSessionArgs.name);
   Engine* engine = serverHandler.findEngine(createSessionArgs.engineId);
   if(!engine)
   {
@@ -426,12 +401,7 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
     return;
   }
 
-  BotProtocol::Session sessionData;
-  setString(sessionData.name, session->getName());
-  sessionData.engineId = session->getEngine()->getId();
-  sessionData.marketId = session->getMarketAdapter()->getId();
-  sessionData.state = session->getState();
-  user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
+  session->send();
   user->saveData();
 }
 
@@ -498,12 +468,7 @@ void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSess
     return;
   }
 
-  BotProtocol::Session sessionData;
-  setString(sessionData.name, session->getName());
-  sessionData.engineId = session->getEngine()->getId();
-  sessionData.marketId = session->getMarketAdapter()->getId();
-  sessionData.state = session->getState();
-  user->sendEntity(BotProtocol::session, session->getId(), &sessionData, sizeof(sessionData));
+  session->send();
 }
 
 void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
@@ -609,6 +574,6 @@ void_t ClientHandler::removeEntity(BotProtocol::EntityType type, uint32_t id)
 void_t ClientHandler::sendError(const String& errorMessage)
 {
   BotProtocol::Error error;
-  setString(error.errorMessage, errorMessage);
+  BotProtocol::setString(error.errorMessage, errorMessage);
   sendEntity(BotProtocol::error, 0, &error, sizeof(error));
 }

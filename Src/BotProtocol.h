@@ -71,7 +71,8 @@ public:
     enum State
     {
       stopped,
-      active,
+      starting,
+      running,
       simulating,
     };
 
@@ -128,6 +129,7 @@ public:
     enum State
     {
       stopped,
+      starting,
       running,
     };
 
@@ -198,5 +200,22 @@ public:
   };
 
 #pragma pack(pop)
+
+  template<size_t N> static void_t setString(char_t(&str)[N], const String& value)
+  {
+    size_t size = value.length() + 1;
+    if(size > N - 1)
+      size = N - 1;
+    Memory::copy(str, (const char_t*)value, size);
+    str[N - 1] = '\0';
+  }
+  
+  template<size_t N> static String getString(char_t(&str)[N])
+  {
+    str[N - 1] = '\0';
+    String result;
+    result.attach(str, String::length(str));
+    return result;
+  }
 
 };

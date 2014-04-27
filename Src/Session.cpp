@@ -10,7 +10,8 @@
 
 Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, MarketAdapter& marketAdapter, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
-  id(id), name(name), engine(&engine), marketAdapter(&marketAdapter), balanceBase(balanceBase), balanceComm(balanceComm),
+  id(id), name(name), engine(&engine), marketAdapter(&marketAdapter),
+  simulation(true), balanceBase(balanceBase), balanceComm(balanceComm),
   state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1) {}
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
@@ -99,11 +100,13 @@ bool_t Session::startSimulation()
 {
   if(pid != 0)
     return false;
+  simulation = true;
   pid = process.start(engine->getPath());
   if(!pid)
     return false;
   serverHandler.registerSession(pid, *this);
-  state = BotProtocol::Session::simulating;
+  state = BotProtocol::Session::starting;
+  send();
   return true;
 }
 
@@ -115,6 +118,7 @@ bool_t Session::stop()
     return false;
   pid = 0;
   state = BotProtocol::Session::stopped;
+  send();
   return true;
 }
 
@@ -125,6 +129,8 @@ bool_t Session::registerClient(ClientHandler& client, bool_t bot)
     if(botClient)
       return false;
     botClient = &client;
+    state = simulation ? BotProtocol::Session::simulating : BotProtocol::Session::running;
+    send();
   }
   else
     clients.append(&client);
@@ -134,7 +140,11 @@ bool_t Session::registerClient(ClientHandler& client, bool_t bot)
 void_t Session::unregisterClient(ClientHandler& client)
 {
   if(&client == botClient)
+  {
     botClient = 0;
+    state = BotProtocol::Session::stopped;
+    send();
+  }
   else
     clients.remove(&client);
 }
@@ -179,6 +189,19 @@ bool_t Session::deleteOrder(uint32_t id)
   delete *it;
   orders.remove(it);
   return true;
+}
+
+void_t Session::send(ClientHandler* client)
+{
+  BotProtocol::Session sessionData;
+  BotProtocol::setString(sessionData.name, name);
+  sessionData.engineId = engine->getId();
+  sessionData.marketId = marketAdapter->getId();
+  sessionData.state = state;
+  if(client)
+    client->sendEntity(BotProtocol::session, id, &sessionData, sizeof(sessionData));
+  else
+    user.sendEntity(BotProtocol::session, id, &sessionData, sizeof(sessionData));
 }
 
 void_t Session::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)

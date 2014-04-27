@@ -6,16 +6,16 @@
 //#include "Engine.h"
 //#include "MarketAdapter.h"
 //#include "Transaction.h"
-//#include "User.h"
+#include "User.h"
 //#include "Order.h"
 
-Market::Market(ServerHandler& serverHandler, uint32_t id, MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret) :
-  serverHandler(serverHandler),
+Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret) :
+  serverHandler(serverHandler), user(user),
   id(id), marketAdapter(&marketAdapter), username(username), key(key), secret(secret),
   state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextEntityId(1) {}
 
-Market::Market(ServerHandler& serverHandler, const Variant& variant) :
-  serverHandler(serverHandler),
+Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant) :
+  serverHandler(serverHandler), user(user),
   state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextEntityId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
@@ -55,7 +55,8 @@ bool_t Market::start()
   if(!pid)
     return false;
   serverHandler.registerMarket(pid, *this);
-  state = BotProtocol::Market::running;
+  state = BotProtocol::Market::starting;
+  send();
   return true;
 }
 
@@ -67,6 +68,7 @@ bool_t Market::stop()
     return false;
   pid = 0;
   state = BotProtocol::Market::stopped;
+  send();
   return true;
 }
 
@@ -77,6 +79,8 @@ bool_t Market::registerClient(ClientHandler& client, bool_t adapter)
     if(adapterClient)
       return false;
     adapterClient = &client;
+    state = BotProtocol::Market::running;
+    send();
   }
   else
     clients.append(&client);
@@ -86,9 +90,25 @@ bool_t Market::registerClient(ClientHandler& client, bool_t adapter)
 void_t Market::unregisterClient(ClientHandler& client)
 {
   if(&client == adapterClient)
+  {
     adapterClient = 0;
+    state = BotProtocol::Market::stopped;
+    send();
+  }
   else
     clients.remove(&client);
+}
+
+void_t Market::send(ClientHandler* client)
+{
+  BotProtocol::Market marketData;
+  marketData.marketAdapterId = marketAdapter->getId();
+  marketData.state = state;
+
+  if(client)
+    client->sendEntity(BotProtocol::market, id, &marketData, sizeof(marketData));
+  else
+    user.sendEntity(BotProtocol::market, id, &marketData, sizeof(marketData));
 }
 
 void_t Market::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)

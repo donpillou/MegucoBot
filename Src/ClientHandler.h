@@ -75,23 +75,6 @@ private:
 
   void_t sendError(const String& errorMessage);
 
-  template<size_t N> void_t setString(char_t(&str)[N], const String& value)
-  {
-    size_t size = value.length() + 1;
-    if(size > N - 1)
-      size = N - 1;
-    Memory::copy(str, (const char_t*)value, size);
-    str[N - 1] = '\0';
-  }
-  
-  template<size_t N> String getString(char_t(&str)[N])
-  {
-    str[N - 1] = '\0';
-    String result;
-    result.attach(str, String::length(str));
-    return result;
-  }
-
 private: // Server::Client::Listener
   virtual size_t handle(byte_t* data, size_t size);
   virtual void_t write() {};

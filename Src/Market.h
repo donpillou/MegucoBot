@@ -12,12 +12,13 @@
 class ServerHandler;
 class MarketAdapter;
 class ClientHandler;
+class User;
 
 class Market
 {
 public:
-  Market(ServerHandler& serverHandler, uint32_t id, MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret);
-  Market(ServerHandler& serverHandler, const Variant& variant);
+  Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret);
+  Market(ServerHandler& serverHandler, User& user, const Variant& variant);
   ~Market();
   void_t toVariant(Variant& variant);
 
@@ -31,11 +32,13 @@ public:
   MarketAdapter* getMarketAdapter() const {return marketAdapter;}
   BotProtocol::Market::State getState() const {return state;}
 
+  void_t send(ClientHandler* client = 0);
   void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
 private:
   ServerHandler& serverHandler;
+  User& user;
   uint32_t id;
   MarketAdapter* marketAdapter;
   String username;
