@@ -25,7 +25,7 @@ bool_t BotConnection::connect(uint16_t port)
     header->messageType = BotProtocol::registerBotRequest;
     header->entityId = header->entityType = 0;
     registerBotRequest->pid = Process::getCurrentProcessId();
-    if(socket.send2(message, sizeof(message)) != sizeof(message))
+    if(socket.send(message, sizeof(message)) != sizeof(message))
     {
       error = Socket::getLastErrorString();
       return false;
@@ -36,7 +36,7 @@ bool_t BotConnection::connect(uint16_t port)
   {
     BotProtocol::Header header;
     BotProtocol::RegisterBotResponse response;
-    if(socket.recv2((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
+    if(socket.recv((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
     {
       error = Socket::getLastErrorString();
       return false;
@@ -46,7 +46,7 @@ bool_t BotConnection::connect(uint16_t port)
       error = "Could not receive register bot response.";
       return false;
     }
-    if(socket.recv2((byte_t*)&response, sizeof(response), sizeof(response)) != sizeof(response))
+    if(socket.recv((byte_t*)&response, sizeof(response), sizeof(response)) != sizeof(response))
     {
       error = Socket::getLastErrorString();
       return false;
@@ -112,8 +112,8 @@ template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType ty
     header.messageType = BotProtocol::createEntity;
     header.entityType = type;
     header.entityId = 0;
-    if(socket.send2((const byte_t*)&header, sizeof(header)) != sizeof(header) ||
-       (size > 0 && socket.send2((const byte_t*)data, size) != size))
+    if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header) ||
+       (size > 0 && socket.send((const byte_t*)data, size) != size))
     {
       error = Socket::getLastErrorString();
       return false;
@@ -123,7 +123,7 @@ template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType ty
   // receive response
   {
     byte_t message[sizeof(BotProtocol::Header) + sizeof(E)];
-    if(socket.recv2(message, sizeof(message), sizeof(message)) != sizeof(message))
+    if(socket.recv(message, sizeof(message), sizeof(message)) != sizeof(message))
     {
       error = Socket::getLastErrorString();
       return false;
@@ -151,7 +151,7 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
   header.messageType = BotProtocol::removeEntity;
   header.entityType = type;
   header.entityId = id;
-  if(socket.send2((const byte_t*)&header, sizeof(header)) != sizeof(header))
+  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
   {
     error = Socket::getLastErrorString();
     return false;
@@ -166,7 +166,7 @@ bool_t BotConnection::sendPing()
   header.messageType = BotProtocol::pingRequest;
   header.entityType = 0;
   header.entityId = 0;
-  if(socket.send2((const byte_t*)&header, sizeof(header)) != sizeof(header))
+  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
   {
     error = Socket::getLastErrorString();
     return false;
@@ -181,7 +181,7 @@ bool_t BotConnection::requestEntities(BotProtocol::EntityType entityType)
   header.messageType = BotProtocol::requestEntities;
   header.entityType = entityType;
   header.entityId = 0;
-  if(socket.send2((const byte_t*)&header, sizeof(header)) != sizeof(header))
+  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
   {
     error = Socket::getLastErrorString();
     return false;
@@ -191,7 +191,7 @@ bool_t BotConnection::requestEntities(BotProtocol::EntityType entityType)
 
 bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data)
 {
-  if(socket.recv2((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
+  if(socket.recv((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
   {
     error = Socket::getLastErrorString();
     return false;
@@ -204,7 +204,7 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data)
   Buffer recvBuffer;
   recvBuffer.resize(header.size);
   data = recvBuffer;
-  if(socket.recv2(data, header.size, header.size) != header.size)
+  if(socket.recv(data, header.size, header.size) != header.size)
   {
     error = Socket::getLastErrorString();
     return false;

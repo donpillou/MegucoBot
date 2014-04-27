@@ -20,14 +20,14 @@ bool DataConnection::connect()
   header.size = sizeof(header);
   header.destination = header.source = 0;
   header.messageType = DataProtocol::timeRequest;
-  if(socket.send2((byte_t*)&header, sizeof(header)) != sizeof(header))
+  if(socket.send((byte_t*)&header, sizeof(header)) != sizeof(header))
   {
     error = socket.getLastErrorString();
     return false;
   }
   int64_t localRequestTime = Time::time();
   byte_t recvBuffer[sizeof(DataProtocol::Header) + sizeof(DataProtocol::TimeResponse)];
-  if(socket.recv2(recvBuffer, sizeof(recvBuffer), sizeof(recvBuffer)) != sizeof(recvBuffer))
+  if(socket.recv(recvBuffer, sizeof(recvBuffer), sizeof(recvBuffer)) != sizeof(recvBuffer))
   {
     error = socket.getLastErrorString();
     return false;
@@ -58,7 +58,7 @@ bool DataConnection::process(Callback& callback)
 
   size_t bufferSize = recvBuffer.size();
   recvBuffer.resize(bufferSize + 1500);
-  ssize_t bytesRead = socket.recv2(recvBuffer + bufferSize, recvBuffer.size() - bufferSize);
+  ssize_t bytesRead = socket.recv(recvBuffer + bufferSize, recvBuffer.size() - bufferSize);
   if(bytesRead <= 0)
   {
     error = socket.getLastErrorString();
@@ -172,7 +172,7 @@ bool DataConnection::loadChannelList()
   header.size = sizeof(header);
   header.destination = header.source = 0;
   header.messageType = DataProtocol::channelRequest;
-  if(socket.send2((byte_t*)&header, sizeof(header)) != sizeof(header))
+  if(socket.send((byte_t*)&header, sizeof(header)) != sizeof(header))
   {
     error = socket.getLastErrorString();
     return false;
@@ -200,7 +200,7 @@ bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTrade
     subscribeRequest->maxAge = 24ULL * 60ULL * 60ULL * 1000ULL * 7ULL;
     subscribeRequest->sinceId =  0;
   }
-  if(socket.send2(message, sizeof(message)) != sizeof(message))
+  if(socket.send(message, sizeof(message)) != sizeof(message))
   {
     error = socket.getLastErrorString();
     return false;
@@ -218,7 +218,7 @@ bool DataConnection::unsubscribe(const String& channel)
   header->messageType = DataProtocol::unsubscribeRequest;
   Memory::copy(unsubscribeRequest->channel, (const char_t*)channel, Math::min(channel.length() + 1, sizeof(unsubscribeRequest->channel) - 1));
   unsubscribeRequest->channel[sizeof(unsubscribeRequest->channel) - 1] = '\0';
-  if(socket.send2(message, sizeof(message)) != sizeof(message))
+  if(socket.send(message, sizeof(message)) != sizeof(message))
   {
     error = socket.getLastErrorString();
     return false;
