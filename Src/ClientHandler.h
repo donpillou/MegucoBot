@@ -31,7 +31,7 @@ private:
     loginState,
     userState,
     botState,
-    adapterState,
+    marketState,
   };
 
 private:

@@ -29,7 +29,7 @@ ClientHandler::~ClientHandler()
   if(market)
   {
     market->unregisterClient(*this);
-    if(state == adapterState)
+    if(state == marketState)
       market->send();
   }
 }
@@ -44,7 +44,7 @@ void_t ClientHandler::deselectSession()
 void_t ClientHandler::deselectMarket()
 {
   market = 0;
-  if(state == adapterState)
+  if(state == marketState)
     client.close();
 }
 
@@ -242,7 +242,7 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
 
   sendMessage(BotProtocol::registerMarketResponse, 0, 0);
   this->market = market;
-  state = adapterState;
+  state = marketState;
 
   market->send();
 }
