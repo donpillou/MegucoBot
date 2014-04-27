@@ -1,11 +1,17 @@
 
+#include <nstd/Time.h>
+#include <nstd/Thread.h>
+
 #include "Tools/Math.h"
+#include "Tools/Sha256.h"
+#include "Tools/Hex.h"
+#include "Tools/Json.h"
 
 #include "BitstampUsd.h"
-#if 0
-BitstampMarket::BitstampMarket(const String& userName, const String& key, const String& secret) :
-  userName(userName), key(key), secret(secret),
-  balanceLoaded(false), lastNonce(0) {}
+
+BitstampMarket::BitstampMarket(const String& clientId, const String& key, const String& secret) :
+  clientId(clientId), key(key), secret(secret),
+  balanceLoaded(false), lastRequestTime(0), lastNonce(0), lastLiveTradeUpdateTime(0), nextEntityId(1) {}
 
 bool_t BitstampMarket::loadBalanceAndFee()
 {
@@ -30,44 +36,49 @@ bool_t BitstampMarket::createOrder(double amount, double price, BotProtocol::Ord
   args.append("amount", Math::abs(amount));
   args.append("price", price);
 
-  const char_t* url = amount > 0. ? "https://www.bitstamp.net/api/buy/" : "https://www.bitstamp.net/api/sell/";
+  String url = amount > 0. ? String("https://www.bitstamp.net/api/buy/") : String("https://www.bitstamp.net/api/sell/");
   Variant result;
   if(!request(url, false, args, result))
     return false;
 
   const HashMap<String, Variant>& orderData = result.toMap();
 
-  order.id = orderData.find("id")->toString();
-  QString type = orderData["type"].toString();
+  String id = String("order_") + orderData.find("id")->toString();
+  order.entityType = BotProtocol::marketOrder;
+  order.entityId = getEntityId(id);
+  String type = orderData.find("type")->toString();
   if(type != "0" && type != "1")
   {
-    error = "Received invalid response.";
+    error = "Received invalid order type.";
     return false;
   }
 
   bool buy = type == "0";
+  order.type = buy ? BotProtocol::Order::buy : BotProtocol::Order::sell;
 
-  QString dateStr = orderData["datetime"].toString();
-  int lastDot = dateStr.lastIndexOf('.');
-  if(lastDot >= 0)
-    dateStr.resize(lastDot);
-  QDateTime date = QDateTime::fromString(dateStr, "yyyy-MM-dd hh:mm:ss");
-  date.setTimeSpec(Qt::UTC);
-  order.date = date.toTime_t();
+  String dateStr = orderData.find("datetime")->toString();
+  const tchar_t* lastDot = dateStr.findLast('.');
+  if(lastDot)
+    dateStr.resize(lastDot - (const tchar_t*)dateStr);
+  Time time(true);
+  if(dateStr.scanf("%d-%d-%d %d:%d:%d", &time.year, &time.month, &time.day, &time.hour, &time.min, &time.sec) != 6)
+  {
+    error = "Received invalid order date.";
+    return false;
+  }
+  order.date = time.toTimestamp();
 
-  order.price = orderData["price"].toDouble();
-  order.amount = fabs(orderData["amount"].toDouble());
-  if(!buy)
-    order.amount = -order.amount;
-  order.total = getOrderCharge(order.amount, order.price);
-  order.fee = qAbs(order.total) - qAbs(order.price * order.amount);
-  this->orders.insert(order.id, order);
+  order.price = orderData.find("price")->toDouble();
+  order.amount = Math::abs(orderData.find("amount")->toDouble());
+  double total = getOrderCharge(buy ? order.amount : -order.amount, order.price);
+  order.fee = Math::abs(total) - Math::abs(order.price * order.amount);
+  this->orders.append(order.entityId, order);
 
   // update balance
   if(order.amount > 0) // buy order
   {
-    balance.availableUsd -= order.total;
-    balance.reservedUsd += order.total;
+    balance.availableUsd -= total;
+    balance.reservedUsd += total;
   }
   else // sell order
   {
@@ -77,130 +88,148 @@ bool_t BitstampMarket::createOrder(double amount, double price, BotProtocol::Ord
   return true;
 }
 
-bool BitstampMarket::cancelOrder(const QString& id)
+bool_t BitstampMarket::cancelOrder(uint32_t entityId)
 {
-  QHash<QString, Market::Order>::const_iterator it = orders.find(id);
+  String id = *entityIds.find(entityId);
+  if(!id.startsWith("order_"))
+  {
+    error = "Unknown order.";
+    return false;
+  }
+  id = id.substr(6);
+
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(id);
   if(it == orders.end())
   {
     error = "Unknown order.";
-    return false; // unknown order
+    return false;
   }
-  const Market::Order& order = it.value();
+  const BotProtocol::Order& order = *it;
 
-  QVariantMap args;
-  args["id"] = id;
-  VariantBugWorkaround result;
+  HashMap<String, Variant> args;
+  args.append("id", id);
+  Variant result;
   if(!request("https://www.bitstamp.net/api/cancel_order/", false, args, result))
     return false;
 
   // update balance
-  if(order.amount > 0) // buy order
+  if(order.type == BotProtocol::Order::buy) // buy order
   {
-    double orderValue = order.amount * order.price;
-    balance.availableUsd += orderValue;
-    balance.reservedUsd -= orderValue;
+    double total = Math::abs(getOrderCharge(order.amount, order.price));
+    balance.availableUsd += total;
+    balance.reservedUsd -= total;
   }
   else // sell order
   {
     balance.availableBtc += order.amount;
     balance.reservedBtc -= order.amount;
   }
+  orders.remove(it);
+  removeEntityId(entityId);
   return true;
 }
 
-bool BitstampMarket::loadOrders(QList<Order>& orders)
+bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
 {
   if(!loadBalanceAndFee())
     return false;
 
-  VariantBugWorkaround result;
-  if(!request("https://www.bitstamp.net/api/open_orders/", false, QVariantMap(), result))
+  Variant result;
+  if(!request("https://www.bitstamp.net/api/open_orders/", false, HashMap<String, Variant>(), result))
     return false;
 
-  QVariantList ordersData = result.toList();
-  orders.reserve(ordersData.size());
+  const List<Variant>& ordersData = result.toList();
   this->orders.clear();
-  this->orders.reserve(ordersData.size());
-  foreach(const QVariant& orderDataVar, ordersData)
+  BotProtocol::Order order;
+  order.entityType = BotProtocol::marketOrder;
+  Time time(true);
+  for(List<Variant>::Iterator i = ordersData.begin(), end = ordersData.end(); i != end; ++i)
   {
-    QVariantMap orderData = orderDataVar.toMap();
+    const Variant& orderDataVar = *i;
+    HashMap<String, Variant> orderData = orderDataVar.toMap();
     
-    QString id = orderData["id"].toString();
-    QString type = orderData["type"].toString();
+    String id = String("order_") + orderData.find("id")->toString();
+    String type = orderData.find("type")->toString();
     if(type != "0" && type != "1")
       continue;
 
-    orders.append(Market::Order());
-    Market::Order& order = orders.back();
-    order.id = id;
+    order.entityId = getEntityId(id);
     bool buy = type == "0";
+    order.type = buy ? BotProtocol::Order::buy : BotProtocol::Order::sell;
 
-    QString dateStr = orderData["datetime"].toString();
-    QDateTime date = QDateTime::fromString(dateStr, "yyyy-MM-dd hh:mm:ss");
-    date.setTimeSpec(Qt::UTC);
-    order.date = date.toTime_t();
+    String dateStr = orderData.find("datetime")->toString();
 
-    order.price = orderData["price"].toDouble();
-    order.amount = fabs(orderData["amount"].toDouble());
-    if(!buy)
-      order.amount = -order.amount;
-    order.total = getOrderCharge(order.amount, order.price);
-    this->orders.insert(order.id, order);
+    if(dateStr.scanf("%d-%d-%d %d:%d:%d", &time.year, &time.month, &time.day, &time.hour, &time.min, &time.sec) != 6)
+      continue;
+    order.date = time.toTimestamp();
+
+    order.price = orderData.find("price")->toDouble();
+    order.amount = Math::abs(orderData.find("amount")->toDouble());
+    double total = getOrderCharge(buy ? order.amount : -order.amount, order.price);
+    order.fee = Math::abs(total) - Math::abs(order.price * order.amount);
+
+    this->orders.append(order.entityId, order);
+    orders.append(order);
   }
   return true;
 }
 
-bool BitstampMarket::loadBalance(Balance& balance)
+bool_t BitstampMarket::loadBalance(BotProtocol::MarketBalance& balance)
 {
-  VariantBugWorkaround result;
-  if(!request("https://www.bitstamp.net/api/balance/", false, QVariantMap(), result))
+  Variant result;
+  if(!request("https://www.bitstamp.net/api/balance/", false, HashMap<String, Variant>(), result))
     return false;
 
-  QVariantMap balanceData = result.toMap();
-  balance.reservedUsd = balanceData["usd_reserved"].toDouble();
-  balance.reservedBtc = balanceData["btc_reserved"].toDouble();
-  balance.availableUsd = balanceData["usd_available"].toDouble();
-  balance.availableBtc = balanceData["btc_available"].toDouble();
-  balance.fee =  balanceData["fee"].toDouble() * 0.01;
+  const HashMap<String, Variant>& balanceData = result.toMap();
+  balance.entityType = BotProtocol::marketBalance;
+  balance.entityId = 0;
+  balance.reservedUsd = balanceData.find("usd_reserved")->toDouble();
+  balance.reservedBtc = balanceData.find("btc_reserved")->toDouble();
+  balance.availableUsd = balanceData.find("usd_available")->toDouble();
+  balance.availableBtc = balanceData.find("btc_available")->toDouble();
+  balance.fee =  balanceData.find("fee")->toDouble() * 0.01;
   this->balance = balance;
   this->balanceLoaded = true;
   return true;
 }
 
-bool BitstampMarket::loadTransactions(QList<Transaction>& transactions)
+bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transactions)
 {
-  VariantBugWorkaround result;
-  if(!request("https://www.bitstamp.net/api/user_transactions/", false, QVariantMap(), result))
+  Variant result;
+  if(!request("https://www.bitstamp.net/api/user_transactions/", false, HashMap<String, Variant>(), result))
     return false;
 
-  QVariantList transactionData = result.toList();
-  transactions.reserve(transactionData.size());
-  foreach(const QVariant& transactionDataVar, transactionData)
+  BotProtocol::Transaction transaction;
+  transaction.entityType = BotProtocol::marketTransaction;
+  const List<Variant>& transactionData = result.toList();
+  Time time(true);
+  for(List<Variant>::Iterator i = transactionData.begin(), end = transactionData.end(); i != end; ++i)
   {
-    QVariantMap transactionData = transactionDataVar.toMap();
+    const Variant& transactionDataVar = *i;
+    const HashMap<String, Variant>& transactionData = transactionDataVar.toMap();
     
-    QString id = transactionData["id"].toString();
-    QString type = transactionData["type"].toString();
+    String id = String("transaction_") + transactionData.find("id")->toString();
+    String type = transactionData.find("type")->toString();
     if(type != "2")
       continue;
 
-    transactions.append(Market::Transaction());
-    Market::Transaction& transaction = transactions.back();
-    transaction.id = id;
+    transaction.entityId = getEntityId(id);
 
-    QString dateStr = transactionData["datetime"].toString();
-    QDateTime date = QDateTime::fromString(dateStr, "yyyy-MM-dd hh:mm:ss");
-    date.setTimeSpec(Qt::UTC);
-    transaction.date = date.toTime_t();
-    transaction.fee = transactionData["fee"].toDouble();
+    String dateStr = transactionData.find("datetime")->toString();
+    if(dateStr.scanf("%d-%d-%d %d:%d:%d", &time.year, &time.month, &time.day, &time.hour, &time.min, &time.sec) != 6)
+      continue;
+    transaction.date = time.toTimestamp();
 
-    double value = transactionData["usd"].toDouble();
+    transaction.fee = transactionData.find("fee")->toDouble();
+
+    double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
-    transaction.total = buy ? -(fabs(value) + transaction.fee) : (fabs(value) - transaction.fee);
-    transaction.amount = fabs(transactionData["btc"].toDouble());
-    if(!buy)
-      transaction.amount = -transaction.amount;
-    transaction.price = fabs(value) / fabs(transaction.amount);
+    transaction.type = buy ? BotProtocol::Transaction::buy : BotProtocol::Transaction::sell;
+    //transaction.total = buy ? -(Math::abs(value) + transaction.fee) : (fabs(value) - transaction.fee);
+    transaction.amount = Math::abs(transactionData.find("btc")->toDouble());
+    transaction.price = Math::abs(value) / Math::abs(transaction.amount);
+
+    transactions.append(transaction);
   }
 
   return true;
@@ -217,110 +246,91 @@ double BitstampMarket::getMaxBuyAmout(double price) const
   double availableUsd = balance.availableUsd;
   double additionalAvailableUsd = 0.; //floor(canceledAmount * canceledPrice * (1. + fee) * 100.) / 100.;
   double usdAmount = availableUsd + additionalAvailableUsd;
-  double result = floor(((100. / ( 100. + (fee * 100.))) * usdAmount) * 100.) / 100.;
+  double result = Math::floor(((100. / ( 100. + (fee * 100.))) * usdAmount) * 100.) / 100.;
   result /= price;
-  result = floor(result * 100000000.) / 100000000.;
+  result = Math::floor(result * 100000000.) / 100000000.;
   return result;
 }
 
 double BitstampMarket::getOrderCharge(double amount, double price) const
 {
   if(amount < 0.) // sell order
-    return floor(-amount * price / (1. + balance.fee) * 100.) / 100.;
+    return Math::floor(-amount * price / (1. + balance.fee) * 100.) / 100.;
   else // buy order
-    return floor(amount * price * (1. + balance.fee) * -100.) / 100.;
+    return Math::floor(amount * price * (1. + balance.fee) * -100.) / 100.;
 }
 
-bool BitstampMarket::request(const char* url, bool isPublic, const QVariantMap& params, QVariant& result)
+bool_t BitstampMarket::request(const String& url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result)
 {
   avoidSpamming();
 
-  QByteArray buffer;
+  Buffer buffer;
   if (isPublic)
   {
     if(!httpRequest.get(url, buffer))
     {
-      error = httpRequest.getLastError();
+      error = httpRequest.getErrorString();
       return false;
     }
   }
   else
   {
-    QByteArray clientId(this->userName.toUtf8());
-    QByteArray key(this->key.toUtf8());
-    QByteArray secret(this->secret.toUtf8());
-
-    quint64 newNonce = QDateTime::currentDateTime().toTime_t();
+    uint64_t newNonce = Time::time() / 1000LL;
     if(newNonce <= lastNonce)
       newNonce = lastNonce + 1;
     lastNonce = newNonce;
 
-    QByteArray nonce(QString::number(newNonce).toAscii());
-    QByteArray message = nonce + clientId + key;
-    QByteArray signature = Sha256::hmac(secret, message).toHex().toUpper();
+    String nonce;
+    nonce.printf("%llu", newNonce);
+    String message = nonce + clientId + key;
+    byte_t signatureBuffer[Sha256::digestSize];
+    Sha256::hmac((const byte_t*)(const char_t*)secret, secret.length(), (const byte_t*)(const char_t*)message, message.length(), signatureBuffer);
+    String signature = Hex::toString(signatureBuffer, sizeof(signatureBuffer));
+    signature.toUpperCase();
     
-    QMap<QString, QString> formData;
-    formData["key"] = key;
-    formData["signature"] = signature;
-    formData["nonce"] = nonce;
-    for(QVariantMap::const_iterator j = params.begin(), end = params.end(); j != end; ++j)
-      formData[j.key()] = j.value().toString();
+    HashMap<String, String> formData;
+    formData.append("key", key);
+    formData.append("signature", signature);
+    formData.append("nonce", nonce);
+    for(HashMap<String, Variant>::Iterator j = params.begin(), end = params.end(); j != end; ++j)
+      formData.append(j.key(), j->toString());
 
     if(!httpRequest.post(url, formData, buffer))
     {
-      error = httpRequest.getLastError();
+      error = httpRequest.getErrorString();
       return false;
     }
   }
 
-  if(strcmp(url, "https://www.bitstamp.net/api/cancel_order/") == 0) // does not return JSON if successful
-  {
-    QString answer(buffer);
-    if(answer != "true")
-    {
-      result = Json::parse(buffer);
-      if(!result.toMap().contains("error"))
-      {
-        QVariantMap cancelData;
-        cancelData["error"] = answer;
-        result = cancelData;
-      }
-    }
-    else
-      result = true;
-  }
-  else
-    result = Json::parse(buffer);
-
-  if(!result.isValid())
+  if(!Json::parse(buffer, result) || result.isNull())
   {
     error = "Received unparsable data.";
     return false;
   }
   else if(result.toMap().contains("error"))
   {
-    QStringList errors;
+    List<String> errors;
     struct ErrorStringCollector
     {
-      static void collect(QVariant var, QStringList& errors)
+      static void collect(const Variant& var, List<String>& errors)
       {
-        switch(var.type())
+        switch(var.getType())
         {
-        case QVariant::String:
-          errors.push_back(var.toString());
+        case Variant::stringType:
+          errors.append(var.toString());
           break;
-        case QVariant::List:
+        case Variant::listType:
           {
-            QVariantList list = var.toList();
-            foreach(const QVariant& var, list)
-              collect(var, errors);
+            const List<Variant>& list = var.toList();
+            for(List<Variant>::Iterator i = list.begin(), end = list.end(); i != end; ++i)
+              collect(*i, errors);
           }
           break;
-        case QVariant::Map:
+        case Variant::mapType:
           {
-            QVariantMap map = var.toMap();
-            for(QVariantMap::iterator i = map.begin(), end = map.end(); i != end; ++i)
-              collect(i.value(), errors);
+            const HashMap<String, Variant>& map = var.toMap();
+            for(HashMap<String, Variant>::Iterator i = map.begin(), end = map.end(); i != end; ++i)
+              collect(*i, errors);
           }
           break;
         default:
@@ -329,63 +339,56 @@ bool BitstampMarket::request(const char* url, bool isPublic, const QVariantMap& 
       }
     };
     ErrorStringCollector::collect(result, errors);
-    error = errors.join(" ");
+    error.clear();
+    if(!errors.isEmpty())
+      for(List<String>::Iterator i = errors.begin(), end = errors.end();; ++i)
+      {
+        error += *i;
+        if(i == end)
+          break;
+        error += ' ';
+      }
     return false;
   }
   else
     return true;
 }
 
-void BitstampMarket::avoidSpamming()
+void_t BitstampMarket::avoidSpamming()
 {
-  const qint64 queryDelay = 1337LL;
-  QDateTime now = QDateTime::currentDateTime();
-  qint64 elapsed = lastRequestTime.isNull() ? queryDelay : lastRequestTime.msecsTo(now);
+  const timestamp_t queryDelay = 1337LL;
+  timestamp_t now = Time::time();
+  timestamp_t elapsed = lastRequestTime == 0 ? queryDelay : (now - lastRequestTime);
   if(elapsed < queryDelay)
   {
-    QMutex mutex;
-    QWaitCondition condition;
-    condition.wait(&mutex, queryDelay - elapsed); // wait without processing messages while waiting
-    lastRequestTime = now;
-    lastRequestTime  = lastRequestTime.addMSecs(queryDelay - elapsed);
+    timestamp_t sleepMs = queryDelay - elapsed;
+    Thread::sleep(sleepMs);
+    lastRequestTime = now + sleepMs;
   }
   else
     lastRequestTime = now;
   // TODO: allow more than 1 request per second but limit requests to 600 per 10 minutes
 }
 
-BitstampMarket::VariantBugWorkaround::~VariantBugWorkaround()
+uint32_t BitstampMarket::getEntityId(const String& id)
 {
-  // Something is wrong with Qt. The QVariant destructor crashes when it tries to free a variant list.
-  // So, lets prevent the destructor from doing so:
-  struct VariantListDestructorBugfix
+  HashMap<String, uint32_t>::Iterator it = entityIdsById.find(id);
+  if(it == entityIdsById.end())
   {
-    static void findLists(const QVariant& var, QList<QVariantList>& lists)
-    {
-      switch(var.type())
-      {
-      case QVariant::List:
-        {
-          QVariantList list = var.toList();
-          lists.append(list);
-          foreach(const QVariant& var, list)
-            findLists(var, lists);
-        }
-        break;
-      case QVariant::Map:
-        {
-          QVariantMap map = var.toMap();
-          for(QVariantMap::iterator i = map.begin(), end = map.end(); i != end; ++i)
-            findLists(i.value(), lists);
-        }
-        break;
-      default:
-        break;
-      }
-    }
-  };
-  QList<QVariantList> lists;
-  VariantListDestructorBugfix::findLists(*this, lists);
-  this->clear();
+    uint32_t entityId = nextEntityId++;
+    entityIds.append(entityId, id);
+    entityIdsById.append(id, entityId);
+    return entityId;
+  }
+  return *it;
 }
-#endif
+
+void_t BitstampMarket::removeEntityId(uint32_t entityId)
+{
+  HashMap<uint32_t, String>::Iterator it = entityIds.find(entityId);
+  if(it != entityIds.end())
+  {
+    entityIdsById.remove(*it);
+    entityIds.remove(it);
+  }
+}

@@ -95,8 +95,8 @@ targets = {
     files = {
       "Src/Markets/$(target).cpp" = cppSource
       "Src/Markets/$(target).h"
-      "Src/Tools/Socket.cpp" = cppSource
-      "Src/Tools/Socket.h"
+      "Src/Tools/*.cpp" = cppSource
+      "Src/Tools/*.h"
       "Src/BotProtocol.h"
       "Src/Markets/Tools/**.cpp" = cppSource
       "Src/Markets/Tools/**.h"

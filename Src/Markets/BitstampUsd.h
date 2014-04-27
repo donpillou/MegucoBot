@@ -9,16 +9,16 @@
 class BitstampMarket : public Market
 {
 public:
-  BitstampMarket(const String& userName, const String& key, const String& secret);
+  BitstampMarket(const String& clientId, const String& key, const String& secret);
 
 private:
-  String userName;
+  String clientId;
   String key;
   String secret;
 
   BotProtocol::MarketBalance balance;
-  bool balanceLoaded;
-  HashMap<String, BotProtocol::Order> orders;
+  bool_t balanceLoaded;
+  HashMap<uint32_t, BotProtocol::Order> orders;
 
   String error;
 
@@ -28,21 +28,29 @@ private:
   uint64_t lastNonce;
   timestamp_t lastLiveTradeUpdateTime;
 
-  bool request(const char_t* url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result);
+  HashMap<uint32_t, String> entityIds;
+  HashMap<String, uint32_t> entityIdsById;
+  uint32_t nextEntityId;
 
-  void avoidSpamming();
+private:
+  bool_t request(const String& url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result);
+
+  void_t avoidSpamming();
 
   double getOrderCharge(double amount, double price) const;
   double getMaxSellAmout() const;
   double getMaxBuyAmout(double price) const;
 
-  bool loadBalanceAndFee();
+  bool_t loadBalanceAndFee();
+
+  uint32_t getEntityId(const String& id);
+  void_t removeEntityId(uint32_t entityId);
 
 private: // Market
-  virtual const String& getLastError() const;
+  virtual const String& getLastError() const {return error;}
   virtual bool_t loadOrders(List<BotProtocol::Order>& orders);
   virtual bool_t loadBalance(BotProtocol::MarketBalance& balance);
   virtual bool_t loadTransactions(List<BotProtocol::Transaction>& transactions);
   virtual bool_t createOrder(double amount, double price, BotProtocol::Order& order);
-  virtual bool_t cancelOrder(const String& id);
+  virtual bool_t cancelOrder(uint32_t id);
 };
