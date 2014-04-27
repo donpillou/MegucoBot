@@ -163,28 +163,16 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
 
   // send engine list
   {
-    BotProtocol::Engine engineData;
     const HashMap<uint32_t, Engine*>& engines = serverHandler.getEngines();
     for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
-    {
-      const Engine* engine = *i;
-      BotProtocol::setString(engineData.name, engine->getName());
-      sendEntity(BotProtocol::engine, engine->getId(), &engineData, sizeof(engineData));
-    }
+      (*i)->send(*this);
   }
 
   // send market adapter list
   {
-    BotProtocol::MarketAdapter marketAdapterData;
     const HashMap<uint32_t, MarketAdapter*>& marketAdapters = serverHandler.getMarketAdapters();
     for(HashMap<uint32_t, MarketAdapter*>::Iterator i = marketAdapters.begin(), end = marketAdapters.end(); i != end; ++i)
-    {
-      const MarketAdapter* marketAdapter = *i;
-      BotProtocol::setString(marketAdapterData.name, marketAdapter->getName());
-      BotProtocol::setString(marketAdapterData.currencyBase, marketAdapter->getCurrencyBase());
-      BotProtocol::setString(marketAdapterData.currencyComm, marketAdapter->getCurrencyComm());
-      sendEntity(BotProtocol::marketAdapter, marketAdapter->getId(), &marketAdapterData, sizeof(marketAdapterData));
-    }
+      (*i)->send(*this);
   }
 
   // send market list
