@@ -31,8 +31,8 @@ public:
     session,
     botEngine,
     marketAdapter,
-    transaction,
-    order,
+    sessionTransaction,
+    sessionOrder,
     market,
   };
 

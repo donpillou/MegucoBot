@@ -44,7 +44,7 @@ void_t Order::send(ClientHandler* client)
   orderData.type = type;
   orderData.date = date;
   if(client)
-    client->sendEntity(BotProtocol::order, id, &orderData, sizeof(orderData));
+    client->sendEntity(BotProtocol::sessionOrder, id, &orderData, sizeof(orderData));
   else
-    session.sendEntity(BotProtocol::order, id, &orderData, sizeof(orderData));
+    session.sendEntity(BotProtocol::sessionOrder, id, &orderData, sizeof(orderData));
 }

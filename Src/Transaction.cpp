@@ -44,7 +44,7 @@ void_t Transaction::send(ClientHandler* client)
   transactionData.type = type;
   transactionData.date = date;
   if(client)
-    client->sendEntity(BotProtocol::transaction, id, &transactionData, sizeof(transactionData));
+    client->sendEntity(BotProtocol::sessionTransaction, id, &transactionData, sizeof(transactionData));
   else
-    session.sendEntity(BotProtocol::transaction, id, &transactionData, sizeof(transactionData));
+    session.sendEntity(BotProtocol::sessionTransaction, id, &transactionData, sizeof(transactionData));
 }

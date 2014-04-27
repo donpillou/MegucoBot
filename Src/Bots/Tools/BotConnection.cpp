@@ -58,7 +58,7 @@ bool_t BotConnection::connect(uint16_t port)
 
 bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactions)
 {
-  if(!requestEntities(BotProtocol::transaction))
+  if(!requestEntities(BotProtocol::sessionTransaction))
     return false;
   if(!sendPing())
     return false;
@@ -85,22 +85,22 @@ bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactio
 
 bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs& transaction, uint32_t& id)
 {
-  return createEntity<BotProtocol::Transaction>(BotProtocol::transaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs), id);
+  return createEntity<BotProtocol::Transaction>(BotProtocol::sessionTransaction, &transaction, sizeof(BotProtocol::CreateTransactionArgs), id);
 }
 
 bool_t BotConnection::removeTransaction(uint32_t id)
 {
-  return removeEntity(BotProtocol::transaction, id);
+  return removeEntity(BotProtocol::sessionTransaction, id);
 }
 
 bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id)
 {
-  return createEntity<BotProtocol::Order>(BotProtocol::order, &order, sizeof(BotProtocol::CreateOrderArgs), id);
+  return createEntity<BotProtocol::Order>(BotProtocol::sessionOrder, &order, sizeof(BotProtocol::CreateOrderArgs), id);
 }
 
 bool_t BotConnection::removeOrder(uint32_t id)
 {
-  return removeEntity(BotProtocol::order, id);
+  return removeEntity(BotProtocol::sessionOrder, id);
 }
 
 template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id)

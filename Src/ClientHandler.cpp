@@ -269,11 +269,11 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
   case botState:
     switch(type)
     {
-    case BotProtocol::transaction:
+    case BotProtocol::sessionTransaction:
       if(size >= sizeof(BotProtocol::CreateTransactionArgs))
         handleCreateTransaction(*(BotProtocol::CreateTransactionArgs*)data);
       break;
-    case BotProtocol::order:
+    case BotProtocol::sessionOrder:
       if(size >= sizeof(BotProtocol::CreateOrderArgs))
         handleCreateOrder(*(BotProtocol::CreateOrderArgs*)data);
       break;
@@ -305,10 +305,10 @@ void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t 
   case botState:
     switch(type)
     {
-    case BotProtocol::transaction:
+    case BotProtocol::sessionTransaction:
       handleRemoveTransaction(id);
       break;
-    case BotProtocol::order:
+    case BotProtocol::sessionOrder:
       handleRemoveOrder(id);
       break;
     default:
@@ -478,7 +478,7 @@ void_t ClientHandler::handleRemoveTransaction(uint32_t id)
     return;
   }
 
-  session->removeEntity(BotProtocol::transaction, id);
+  session->removeEntity(BotProtocol::sessionTransaction, id);
   session->saveData();
 }
 
@@ -503,7 +503,7 @@ void_t ClientHandler::handleRemoveOrder(uint32_t id)
     return;
   }
 
-  session->removeEntity(BotProtocol::order, id);
+  session->removeEntity(BotProtocol::sessionOrder, id);
   session->saveData();
 }
 
