@@ -2,13 +2,13 @@
 #include "Session.h"
 #include "ServerHandler.h"
 #include "ClientHandler.h"
-#include "Engine.h"
+#include "BotEngine.h"
 #include "MarketAdapter.h"
 #include "Transaction.h"
 #include "User.h"
 #include "Order.h"
 
-Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, Engine& engine, MarketAdapter& marketAdapter, double balanceBase, double balanceComm) :
+Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, MarketAdapter& marketAdapter, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
   id(id), name(name), engine(&engine), marketAdapter(&marketAdapter),
   simulation(true), balanceBase(balanceBase), balanceComm(balanceComm),
@@ -21,7 +21,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
   name = data.find("name")->toString();
-  engine = serverHandler.findEngine(data.find("engine")->toString());
+  engine = serverHandler.findBotEngine(data.find("engine")->toString());
   marketAdapter = serverHandler.findMarketAdapter(data.find("market")->toString());
   balanceBase = data.find("balanceBase")->toDouble();
   balanceComm = data.find("balanceComm")->toDouble();

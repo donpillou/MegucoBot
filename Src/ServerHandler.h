@@ -8,7 +8,7 @@
 class ClientHandler;
 class User;
 class Session;
-class Engine;
+class BotEngine;
 class MarketAdapter;
 class Market;
 
@@ -18,10 +18,10 @@ public:
   ServerHandler(uint16_t port) : port(port), nextEntityId(1) {}
   ~ServerHandler();
 
-  void_t addEngine(const String& name, const String& path);
-  const HashMap<uint32_t, Engine*>& getEngines() const {return engines;}
-  Engine* findEngine(const String& name) const {return *enginesByName.find(name);}
-  Engine* findEngine(uint32_t id) const {return *engines.find(id);}
+  void_t addBotEngine(const String& name, const String& path);
+  const HashMap<uint32_t, BotEngine*>& getBotEngines() const {return botEngines;}
+  BotEngine* findBotEngine(const String& name) const {return *botEnginesByName.find(name);}
+  BotEngine* findBotEngine(uint32_t id) const {return *botEngines.find(id);}
 
   bool_t addUser(const String& userName, const String& password);
   User* findUser(const String& userName) {return *users.find(userName);}
@@ -49,8 +49,8 @@ private:
   HashMap<String, User*> users;
   HashMap<uint32_t, Session*> sessionsByPid;
   HashMap<uint32_t, Market*> marketsByPid;
-  HashMap<uint32_t, Engine*> engines;
-  HashMap<String, Engine*> enginesByName;
+  HashMap<uint32_t, BotEngine*> botEngines;
+  HashMap<String, BotEngine*> botEnginesByName;
   HashMap<uint32_t, MarketAdapter*> marketAdapters;
   HashMap<String, MarketAdapter*> marketAdaptersByName;
 

@@ -10,7 +10,7 @@
 class ServerHandler;
 class ClientHandler;
 class Session;
-class Engine;
+class BotEngine;
 class MarketAdapter;
 class Market;
 
@@ -22,7 +22,7 @@ public:
 
   void_t registerClient(ClientHandler& client);
   void_t unregisterClient(ClientHandler& client);
-  Session* createSession(const String& name, Engine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm);
+  Session* createSession(const String& name, BotEngine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm);
   Session* findSession(uint32_t id);
   bool_t deleteSession(uint32_t id);
 

@@ -7,7 +7,7 @@
 #include "ServerHandler.h"
 #include "User.h"
 #include "Session.h"
-#include "Engine.h"
+#include "BotEngine.h"
 #include "MarketAdapter.h"
 #include "Transaction.h"
 #include "Order.h"
@@ -163,8 +163,8 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
 
   // send engine list
   {
-    const HashMap<uint32_t, Engine*>& engines = serverHandler.getEngines();
-    for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
+    const HashMap<uint32_t, BotEngine*>& botEngines = serverHandler.getBotEngines();
+    for(HashMap<uint32_t, BotEngine*>::Iterator i = botEngines.begin(), end = botEngines.end(); i != end; ++i)
       (*i)->send(*this);
   }
 
@@ -383,12 +383,14 @@ void_t ClientHandler::handleRemoveMarket(uint32_t id)
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
 {
   String name = BotProtocol::getString(createSessionArgs.name);
-  Engine* engine = serverHandler.findEngine(createSessionArgs.engineId);
-  if(!engine)
+  BotEngine* botEngine = serverHandler.findBotEngine(createSessionArgs.botEngineId);
+  if(!botEngine)
   {
-    sendError("Unknown engine.");
+    sendError("Unknown bot engine.");
     return;
   }
+
+  // todo: use market here!
   MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createSessionArgs.marketId);
   if(!marketAdapter)
   {
@@ -396,7 +398,7 @@ void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& create
     return;
   }
 
-  Session* session = user->createSession(name, *engine, *marketAdapter, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
+  Session* session = user->createSession(name, *botEngine, *marketAdapter, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
   if(!session)
   {
     sendError("Could not create session.");

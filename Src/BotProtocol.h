@@ -29,7 +29,7 @@ public:
   {
     error,
     session,
-    engine,
+    botEngine,
     marketAdapter,
     transaction,
     order,
@@ -82,7 +82,7 @@ public:
     uint8_t state;
   }; 
 
-  struct Engine
+  struct BotEngine
   {
     char_t name[33];
   };
@@ -157,7 +157,7 @@ public:
   struct CreateSessionArgs
   {
     char_t name[33];
-    uint32_t engineId;
+    uint32_t botEngineId;
     uint32_t marketId;
     double balanceBase;
     double balanceComm;

@@ -5,12 +5,12 @@
 
 class ClientHandler;
 
-class Engine
+class BotEngine
 {
 public:
 
 public:
-  Engine(uint32_t id, const String& path);
+  BotEngine(uint32_t id, const String& path);
 
   uint32_t getId() const {return id;}
   const String& getName() const {return name;}

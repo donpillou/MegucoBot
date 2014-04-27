@@ -8,7 +8,7 @@
 #include "ServerHandler.h"
 #include "ClientHandler.h"
 #include "User.h"
-#include "Engine.h"
+#include "BotEngine.h"
 #include "MarketAdapter.h"
 
 ServerHandler::~ServerHandler()
@@ -17,7 +17,7 @@ ServerHandler::~ServerHandler()
     delete *i;
   for(HashMap<String, User*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
     delete *i;
-  for(HashMap<uint32_t, Engine*>::Iterator i = engines.begin(), end = engines.end(); i != end; ++i)
+  for(HashMap<uint32_t, BotEngine*>::Iterator i = botEngines.begin(), end = botEngines.end(); i != end; ++i)
     delete *i;
   for(HashMap<uint32_t, MarketAdapter*>::Iterator i = marketAdapters.begin(), end = marketAdapters.end(); i != end; ++i)
     delete *i;
@@ -53,12 +53,12 @@ bool_t ServerHandler::addUser(const String& userName, const String& password)
   return true;
 }
 
-void_t ServerHandler::addEngine(const String& name, const String& path)
+void_t ServerHandler::addBotEngine(const String& name, const String& path)
 {
   uint32_t id = nextEntityId++;
-  Engine* engine = new Engine(id, path);
-  engines.append(id, engine);
-  enginesByName.append(name, engine);
+  BotEngine* engine = new BotEngine(id, path);
+  botEngines.append(id, engine);
+  botEnginesByName.append(name, engine);
 }
 
 void_t ServerHandler::addMarketAdapter(const String& name, const String& path, const String& currencyBase, const String& currencyComm)

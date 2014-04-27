@@ -34,7 +34,7 @@ void_t User::unregisterClient(ClientHandler& client)
   clients.remove(&client);
 }
 
-Session* User::createSession(const String& name, Engine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm)
+Session* User::createSession(const String& name, BotEngine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm)
 {
   uint32_t id = nextEntityId++;
   Session* session = new Session(serverHandler, *this, id, name, engine, marketAdapater, balanceBase, balanceComm);
