@@ -190,7 +190,7 @@ int_t Socket::getAndResetErrorStatus()
   return optVal;
 }
 
-bool_t Socket::send(const byte_t* data, size_t size, size_t& sent)
+ssize_t Socket::send2(const byte_t* data, size_t size)
 {
   int r = ::send((SOCKET)s, (const char*)data, size, MSG_NOSIGNAL);
   if(r == SOCKET_ERROR)
@@ -201,16 +201,18 @@ bool_t Socket::send(const byte_t* data, size_t size, size_t& sent)
 #endif
       )
     {
-      sent = 0;
-      return true;
+#ifdef _WIN32
+      WSASetLastError(0);
+#else
+      errno = 0;
+#endif
     }
-    return false;
+    return -1;
   }
-  sent = r;
-  return true;
+  return r;
 }
 
-bool_t Socket::recv(byte_t* data, size_t maxSize, size_t& received)
+ssize_t Socket::recv2(byte_t* data, size_t maxSize, size_t minSize)
 {
   int r = ::recv((SOCKET)s, (char*)data, maxSize, 0);
   switch(r)
@@ -222,41 +224,115 @@ bool_t Socket::recv(byte_t* data, size_t maxSize, size_t& received)
 #endif
       )
     {
-      received = 0;
-      return true;
+#ifdef _WIN32
+      WSASetLastError(0);
+#else
+      errno = 0;
+#endif
     }
-    return false;
+    return -1;
   case 0:
-    received = 0;
-    return false;
+    return 0;
   }
-  received = r;
-  return true;
+  if(r >= minSize)
+    return r;
+  size_t received = r;
+  for(;;)
+  {
+    r = ::recv((SOCKET)s, (char*)data + received, maxSize - received, 0);
+    switch(r)
+    {
+    case SOCKET_ERROR:
+      if(ERRNO == EWOULDBLOCK 
+  #ifndef _WIN32
+        || ERRNO == EAGAIN
+  #endif
+        )
+      {
+  #ifdef _WIN32
+        WSASetLastError(0);
+  #else
+        errno = 0;
+  #endif
+        return received;
+      }
+      return -1;
+    case 0:
+      return 0;
+    }
+    received += r;
+    if(received >= minSize)
+      return received;
+  }
 }
 
-bool_t Socket::send(const byte_t* data, size_t size)
-{
-  size_t sent, totalSent = 0;
-  while(totalSent < size)
-  {
-    if(!send(data, size, sent))
-      return false;
-    totalSent += sent;
-  }
-  return true;
-}
-
-bool_t Socket::recv(byte_t* data, size_t size)
-{
-  size_t received, totalReceived = 0;
-  while(totalReceived < size)
-  {
-    if(!recv(data, size, received))
-      return false;
-    totalReceived += received;
-  }
-  return true;
-}
+//bool_t Socket::send(const byte_t* data, size_t size, size_t& sent)
+//{
+//  int r = ::send((SOCKET)s, (const char*)data, size, MSG_NOSIGNAL);
+//  if(r == SOCKET_ERROR)
+//  {
+//    if(ERRNO == EWOULDBLOCK 
+//#ifndef _WIN32
+//      || ERRNO == EAGAIN
+//#endif
+//      )
+//    {
+//      sent = 0;
+//      return true;
+//    }
+//    return false;
+//  }
+//  sent = r;
+//  return true;
+//}
+//
+//bool_t Socket::recv(byte_t* data, size_t maxSize, size_t& received)
+//{
+//  int r = ::recv((SOCKET)s, (char*)data, maxSize, 0);
+//  switch(r)
+//  {
+//  case SOCKET_ERROR:
+//    if(ERRNO == EWOULDBLOCK 
+//#ifndef _WIN32
+//      || ERRNO == EAGAIN
+//#endif
+//      )
+//    {
+//      received = 0;
+//      return true;
+//    }
+//    return false;
+//  case 0:
+//    received = 0;
+//    return false;
+//  }
+//  received = r;
+//  return true;
+//}
+//
+//bool_t Socket::send(const byte_t* data, size_t size)
+//{
+//  size_t sent, totalSent = 0;
+//  while(totalSent < size)
+//  {
+//    if(!send(data, size, sent))
+//      return false;
+//    totalSent += sent;
+//  }
+//  return true;
+//}
+//
+//bool_t Socket::recv(byte_t* data, size_t size)
+//{
+//  size_t received, totalReceived = 0;
+//  while(totalReceived < size)
+//  {
+//    if(!recv(data, size, received))
+//      return false;
+//    totalReceived += received;
+//  }
+//  return true;
+//}
 
 int_t Socket::getLastError()
 {

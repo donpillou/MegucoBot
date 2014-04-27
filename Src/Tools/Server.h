@@ -140,9 +140,14 @@ private:
     {
       size_t bufferSize = recvBuffer.size();
       recvBuffer.resize(bufferSize + 1500);
-      size_t received;
-      if(!recv(recvBuffer + bufferSize, 1500, received))
+      ssize_t received = Socket::recv2(recvBuffer + bufferSize, 1500);
+      switch(received)
       {
+      case -1:
+        if(getLastError() == 0) // EWOULDBLOCK
+          return;
+        // no break
+      case 0:
         server.close(*this);
         return;
       }
@@ -156,9 +161,14 @@ private:
     {
       if(sendBuffer.isEmpty())
         return;
-      size_t sent;
-      if(!Socket::send(sendBuffer, sendBuffer.size(), sent))
+      ssize_t sent = Socket::send2(sendBuffer, sendBuffer.size());
+      switch(sent)
       {
+      case -1:
+        if(getLastError() == 0) // EWOULDBLOCK
+          return;
+        // no break
+      case 0:
         server.close(*this);
         return;
       }
