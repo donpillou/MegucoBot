@@ -50,7 +50,7 @@ public:
   bool_t deleteOrder(uint32_t id);
 
   void_t send(ClientHandler* client = 0);
-  void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
+  void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
 private:

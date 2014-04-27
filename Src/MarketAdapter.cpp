@@ -9,8 +9,10 @@ MarketAdapter::MarketAdapter(uint32_t id, const String& name, const String& path
 void_t MarketAdapter::send(ClientHandler& client)
 {
   BotProtocol::MarketAdapter marketAdapterData;
+  marketAdapterData.entityType = BotProtocol::marketAdapter;
+  marketAdapterData.entityId = id;
   BotProtocol::setString(marketAdapterData.name, name);
   BotProtocol::setString(marketAdapterData.currencyBase, currencyBase);
   BotProtocol::setString(marketAdapterData.currencyComm, currencyComm);
-  client.sendEntity(BotProtocol::marketAdapter, id, &marketAdapterData, sizeof(marketAdapterData));
+  client.sendEntity(&marketAdapterData, sizeof(marketAdapterData));
 }

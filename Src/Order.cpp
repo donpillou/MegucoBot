@@ -38,13 +38,15 @@ void_t Order::toVariant(Variant& variant)
 void_t Order::send(ClientHandler* client)
 {
   BotProtocol::Order orderData;
+  orderData.entityType = BotProtocol::sessionOrder;
+  orderData.entityId = id;
   orderData.price = price;
   orderData.amount = amount;
   orderData.fee = fee;
   orderData.type = type;
   orderData.date = date;
   if(client)
-    client->sendEntity(BotProtocol::sessionOrder, id, &orderData, sizeof(orderData));
+    client->sendEntity(&orderData, sizeof(orderData));
   else
-    session.sendEntity(BotProtocol::sessionOrder, id, &orderData, sizeof(orderData));
+    session.sendEntity(&orderData, sizeof(orderData));
 }

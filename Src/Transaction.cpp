@@ -38,13 +38,15 @@ void_t Transaction::toVariant(Variant& variant)
 void_t Transaction::send(ClientHandler* client)
 {
   BotProtocol::Transaction transactionData;
+  transactionData.entityType = BotProtocol::sessionTransaction;
+  transactionData.entityId = id;
   transactionData.price = price;
   transactionData.amount = amount;
   transactionData.fee = fee;
   transactionData.type = type;
   transactionData.date = date;
   if(client)
-    client->sendEntity(BotProtocol::sessionTransaction, id, &transactionData, sizeof(transactionData));
+    client->sendEntity(&transactionData, sizeof(transactionData));
   else
-    session.sendEntity(BotProtocol::sessionTransaction, id, &transactionData, sizeof(transactionData));
+    session.sendEntity(&transactionData, sizeof(transactionData));
 }

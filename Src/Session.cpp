@@ -192,20 +192,22 @@ bool_t Session::deleteOrder(uint32_t id)
 void_t Session::send(ClientHandler* client)
 {
   BotProtocol::Session sessionData;
+  sessionData.entityType = BotProtocol::session;
+  sessionData.entityId = id;
   BotProtocol::setString(sessionData.name, name);
   sessionData.engineId = engine->getId();
   sessionData.marketId = marketAdapter->getId();
   sessionData.state = state;
   if(client)
-    client->sendEntity(BotProtocol::session, id, &sessionData, sizeof(sessionData));
+    client->sendEntity(&sessionData, sizeof(sessionData));
   else
-    user.sendEntity(BotProtocol::session, id, &sessionData, sizeof(sessionData));
+    user.sendEntity(&sessionData, sizeof(sessionData));
 }
 
-void_t Session::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)
+void_t Session::sendEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(type, id, data, size);
+    (*i)->sendEntity(data, size);
 }
 
 void_t Session::removeEntity(BotProtocol::EntityType type, uint32_t id)

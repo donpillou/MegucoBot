@@ -1,5 +1,6 @@
 
 #include <nstd/File.h>
+#include <nstd/Debug.h>
 
 #include "Tools/Math.h"
 #include "Tools/Sha256.h"
@@ -111,13 +112,16 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       handlePing(data, size);
       break;
     case BotProtocol::createEntity:
-      handleCreateEntity((BotProtocol::EntityType)messageHeader.entityType, data, size);
+      if(size >= sizeof(BotProtocol::Entity))
+        handleCreateEntity(*(BotProtocol::Entity*)data, size);
       break;
     case BotProtocol::controlEntity:
-      handleControlEntity((BotProtocol::EntityType)messageHeader.entityType, messageHeader.entityId, data, size);
+      if(size >= sizeof(BotProtocol::Entity))
+        handleControlEntity(*(BotProtocol::Entity*)data, size);
       break;
     case BotProtocol::removeEntity:
-      handleRemoveEntity((BotProtocol::EntityType)messageHeader.entityType, messageHeader.entityId);
+      if(size >= sizeof(BotProtocol::Entity))
+        handleRemoveEntity(*(const BotProtocol::Entity*)data);
     default:
       break;
     }
@@ -240,42 +244,40 @@ void_t ClientHandler::handlePing(const byte_t* data, size_t size)
   BotProtocol::Header header;
   header.size = sizeof(header) + size;
   header.messageType = BotProtocol::pingResponse;
-  header.entityType = 0;
-  header.entityId = 0;
   client.reserve(header.size);
   client.send((const byte_t*)&header, sizeof(header));
   if(size > 0)
     client.send(data, size);
 }
 
-void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* data, size_t size)
+void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t size)
 {
   switch(state)
   {
   case userState:
-    switch(type)
+    switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::session:
       if(size >= sizeof(BotProtocol::CreateSessionArgs))
-        handleCreateSession(*(BotProtocol::CreateSessionArgs*)data);
+        handleCreateSession(*(BotProtocol::CreateSessionArgs*)&entity);
       break;
     case BotProtocol::market:
       if(size >= sizeof(BotProtocol::CreateMarketArgs))
-        handleCreateMarket(*(BotProtocol::CreateMarketArgs*)data);
+        handleCreateMarket(*(BotProtocol::CreateMarketArgs*)&entity);
     default:
       break;
     }
     break;
   case botState:
-    switch(type)
+    switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::sessionTransaction:
       if(size >= sizeof(BotProtocol::CreateTransactionArgs))
-        handleCreateTransaction(*(BotProtocol::CreateTransactionArgs*)data);
+        handleCreateTransaction(*(BotProtocol::CreateTransactionArgs*)&entity);
       break;
     case BotProtocol::sessionOrder:
       if(size >= sizeof(BotProtocol::CreateOrderArgs))
-        handleCreateOrder(*(BotProtocol::CreateOrderArgs*)data);
+        handleCreateOrder(*(BotProtocol::CreateOrderArgs*)&entity);
       break;
     default:
       break;
@@ -286,30 +288,30 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::EntityType type, byte_t* d
   }
 }
 
-void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t id)
+void_t ClientHandler::handleRemoveEntity(const BotProtocol::Entity& entity)
 {
   switch(state)
   {
   case userState:
-    switch(type)
+    switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::session:
-      handleRemoveSession(id);
+      handleRemoveSession(entity.entityId);
       break;
     case BotProtocol::market:
-      handleRemoveMarket(id);
+      handleRemoveMarket(entity.entityId);
     default:
       break;
     }
     break;
   case botState:
-    switch(type)
+    switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::sessionTransaction:
-      handleRemoveTransaction(id);
+      handleRemoveTransaction(entity.entityId);
       break;
     case BotProtocol::sessionOrder:
-      handleRemoveOrder(id);
+      handleRemoveOrder(entity.entityId);
       break;
     default:
       break;
@@ -320,16 +322,16 @@ void_t ClientHandler::handleRemoveEntity(BotProtocol::EntityType type, uint32_t 
   }
 }
 
-void_t ClientHandler::handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size)
+void_t ClientHandler::handleControlEntity(BotProtocol::Entity& entity, size_t size)
 {
   switch(state)
   {
   case userState:
-    switch(type)
+    switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::session:
       if(size >= sizeof(BotProtocol::ControlSessionArgs))
-        handleControlSession(id, *(BotProtocol::ControlSessionArgs*)data);
+        handleControlSession(*(BotProtocol::ControlSessionArgs*)&entity);
       break;
     default:
       break;
@@ -421,9 +423,9 @@ void_t ClientHandler::handleRemoveSession(uint32_t id)
   user->saveData();
 }
 
-void_t ClientHandler::handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs)
+void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& controlSessionArgs)
 {
-  Session* session = user->findSession(id);
+  Session* session = user->findSession(controlSessionArgs.entityId);
   if(!session)
   {
     sendError("Unknown session.");
@@ -512,40 +514,40 @@ void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* d
   BotProtocol::Header header;
   header.size = sizeof(header) + size;
   header.messageType = type;
-  header.entityType = 0;
-  header.entityId = 0;
   client.reserve(header.size);
   client.send((const byte_t*)&header, sizeof(header));
   if(size > 0)
     client.send((const byte_t*)data, size);
 }
 
-void_t ClientHandler::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)
+void_t ClientHandler::sendEntity(const void_t* data, size_t size)
 {
+  ASSERT(size >= sizeof(BotProtocol::Entity));
   BotProtocol::Header header;
   header.size = sizeof(header) + size;
   header.messageType = BotProtocol::updateEntity;
-  header.entityType = type;
-  header.entityId = id;
   client.reserve(header.size);
   client.send((const byte_t*)&header, sizeof(header));
-  if(size > 0)
-    client.send((const byte_t*)data, size);
+  client.send((const byte_t*)data, size);
 }
 
 void_t ClientHandler::removeEntity(BotProtocol::EntityType type, uint32_t id)
 {
-  BotProtocol::Header header;
-  header.size = sizeof(header);
-  header.messageType = BotProtocol::removeEntity;
-  header.entityType = type;
-  header.entityId = id;
-  client.send((const byte_t*)&header, sizeof(header));
+  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
+  BotProtocol::Header* header = (BotProtocol::Header*)message;
+  BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
+  header->size = sizeof(message);
+  header->messageType = BotProtocol::removeEntity;
+  entity->entityType = type;
+  entity->entityId = id;
+  client.send(message, sizeof(message));
 }
 
 void_t ClientHandler::sendError(const String& errorMessage)
 {
   BotProtocol::Error error;
+  error.entityType = BotProtocol::error;
+  error.entityId = 0;
   BotProtocol::setString(error.errorMessage, errorMessage);
-  sendEntity(BotProtocol::error, 0, &error, sizeof(error));
+  sendEntity(&error, sizeof(error));
 }

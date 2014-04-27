@@ -21,7 +21,7 @@
 //const char* botName = "BuyBot";
 //#endif
 
-bool_t handleMessage(const BotProtocol::Header& header, byte_t* data);
+bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size);
 bool_t handelRequestEntites(BotProtocol::EntityType entityType);
 
 int_t main(int_t argc, char_t* argv[])
@@ -48,7 +48,7 @@ int_t main(int_t argc, char_t* argv[])
     }
 
     // handle message
-    if(!handleMessage(header, data))
+    if(!handleMessage(header, data, header.size - sizeof(header)))
     {
       Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)connection.getErrorString());
       return -1;
@@ -57,12 +57,13 @@ int_t main(int_t argc, char_t* argv[])
   return 0;
 }
 
-bool_t handleMessage(const BotProtocol::Header& header, byte_t* data)
+bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size)
 {
   switch((BotProtocol::MessageType)header.messageType)
   {
   case BotProtocol::requestEntities:
-    return handelRequestEntites((BotProtocol::EntityType)header.entityType);
+    if(size >= sizeof(BotProtocol::Entity))
+      return handelRequestEntites((BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType);
   default:
     break;
   }

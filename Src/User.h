@@ -29,7 +29,7 @@ public:
   Market* createMarket(MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret);
   bool_t deleteMarket(uint32_t id);
 
-  void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
+  void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
   
   const String& getUserName() const {return userName;}

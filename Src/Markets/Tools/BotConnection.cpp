@@ -23,7 +23,6 @@ bool_t BotConnection::connect(uint16_t port)
     BotProtocol::RegisterMarketRequest* registerMarketRequest = (BotProtocol::RegisterMarketRequest*)(header + 1);
     header->size = sizeof(message);
     header->messageType = BotProtocol::registerMarketRequest;
-    header->entityId = header->entityType = 0;
     registerMarketRequest->pid = Process::getCurrentProcessId();
     if(socket.send(message, sizeof(message)) != sizeof(message))
     {
@@ -93,12 +92,14 @@ template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType ty
 
 bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
 {
-  BotProtocol::Header header;
-  header.size = sizeof(header);
-  header.messageType = BotProtocol::removeEntity;
-  header.entityType = type;
-  header.entityId = id;
-  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
+  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
+  BotProtocol::Header* header = (BotProtocol::Header*)message;
+  BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
+  header->size = sizeof(message);
+  header->messageType = BotProtocol::removeEntity;
+  entity->entityType = type;
+  entity->entityId = id;
+  if(socket.send(message, sizeof(message)) != sizeof(message))
   {
     error = Socket::getLastErrorString();
     return false;
@@ -109,10 +110,8 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
 bool_t BotConnection::sendPing()
 {
   BotProtocol::Header header;
-  header.size = 0;
+  header.size = sizeof(header);
   header.messageType = BotProtocol::pingRequest;
-  header.entityType = 0;
-  header.entityId = 0;
   if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
   {
     error = Socket::getLastErrorString();
@@ -123,12 +122,14 @@ bool_t BotConnection::sendPing()
 
 bool_t BotConnection::requestEntities(BotProtocol::EntityType entityType)
 {
-  BotProtocol::Header header;
-  header.size = 0;
-  header.messageType = BotProtocol::requestEntities;
-  header.entityType = entityType;
-  header.entityId = 0;
-  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
+  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
+  BotProtocol::Header* header = (BotProtocol::Header*)message;
+  BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
+  header->size = sizeof(message);
+  header->messageType = BotProtocol::requestEntities;
+  entity->entityType = entityType;
+  entity->entityId = 0;
+  if(socket.send(message, sizeof(message)) != sizeof(message))
   {
     error = Socket::getLastErrorString();
     return false;

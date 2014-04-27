@@ -98,19 +98,21 @@ void_t Market::unregisterClient(ClientHandler& client)
 void_t Market::send(ClientHandler* client)
 {
   BotProtocol::Market marketData;
+  marketData.entityType = BotProtocol::market;
+  marketData.entityId = id;
   marketData.marketAdapterId = marketAdapter->getId();
   marketData.state = state;
 
   if(client)
-    client->sendEntity(BotProtocol::market, id, &marketData, sizeof(marketData));
+    client->sendEntity(&marketData, sizeof(marketData));
   else
-    user.sendEntity(BotProtocol::market, id, &marketData, sizeof(marketData));
+    user.sendEntity(&marketData, sizeof(marketData));
 }
 
-void_t Market::sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size)
+void_t Market::sendEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(type, id, data, size);
+    (*i)->sendEntity(data, size);
 }
 
 void_t Market::removeEntity(BotProtocol::EntityType type, uint32_t id)

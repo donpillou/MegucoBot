@@ -13,6 +13,8 @@ BotEngine::BotEngine(uint32_t id, const String& path) : id(id), path(path)
 void_t BotEngine::send(ClientHandler& client)
 {
   BotProtocol::BotEngine botEngine;
+  botEngine.entityType = BotProtocol::botEngine;
+  botEngine.entityId = id;
   BotProtocol::setString(botEngine.name, name);
-  client.sendEntity(BotProtocol::botEngine, id, &botEngine, sizeof(botEngine));
+  client.sendEntity(&botEngine, sizeof(botEngine));
 }

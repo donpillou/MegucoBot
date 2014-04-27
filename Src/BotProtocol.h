@@ -44,13 +44,12 @@ public:
   {
     uint32_t size; // including header
     uint16_t messageType; // MessageType
-    uint16_t entityType; // EntityType
-    uint32_t entityId;
   };
 
-  struct Error
+  struct Entity
   {
-    char_t errorMessage[129];
+    uint16_t entityType; // EntityType
+    uint32_t entityId;
   };
 
   struct LoginRequest
@@ -67,86 +66,6 @@ public:
   struct AuthRequest
   {
     byte_t signature[32];
-  };
-
-  struct Session
-  {
-    enum State
-    {
-      stopped,
-      starting,
-      running,
-      simulating,
-    };
-
-    char_t name[33];
-    uint32_t engineId;
-    uint32_t marketId;
-    uint8_t state;
-  }; 
-
-  struct BotEngine
-  {
-    char_t name[33];
-  };
-
-  struct MarketAdapter
-  {
-    char_t name[33];
-    char_t currencyBase[33];
-    char_t currencyComm[33];
-  };
-
-  struct Transaction
-  {
-    enum Type
-    {
-      buy,
-      sell
-    };
-
-    uint8_t type;
-    int64_t date;
-    double price;
-    double amount;
-    double fee;
-  };
-
-  struct Order
-  {
-    enum Type
-    {
-      buy,
-      sell,
-    };
-
-    uint8_t type;
-    int64_t date;
-    double price;
-    double amount;
-    double fee;
-  };
-
-  struct Market
-  {
-    enum State
-    {
-      stopped,
-      starting,
-      running,
-    };
-
-    uint32_t marketAdapterId;
-    uint8_t state;
-  };
-
-  struct MarketBalance
-  {
-    double reservedUsd;
-    double reservedBtc;
-    double availableUsd;
-    double availableBtc;
-    double fee;
   };
 
   struct RegisterBotRequest
@@ -166,7 +85,92 @@ public:
     uint32_t pid;
   };
 
-  struct CreateSessionArgs
+  struct Error : public Entity
+  {
+    char_t errorMessage[129];
+  };
+
+  struct Session : public Entity
+  {
+    enum State
+    {
+      stopped,
+      starting,
+      running,
+      simulating,
+    };
+
+    char_t name[33];
+    uint32_t engineId;
+    uint32_t marketId;
+    uint8_t state;
+  }; 
+
+  struct BotEngine : public Entity
+  {
+    char_t name[33];
+  };
+
+  struct MarketAdapter : public Entity
+  {
+    char_t name[33];
+    char_t currencyBase[33];
+    char_t currencyComm[33];
+  };
+
+  struct Transaction : public Entity
+  {
+    enum Type
+    {
+      buy,
+      sell
+    };
+
+    uint8_t type;
+    int64_t date;
+    double price;
+    double amount;
+    double fee;
+  };
+
+  struct Order : public Entity
+  {
+    enum Type
+    {
+      buy,
+      sell,
+    };
+
+    uint8_t type;
+    int64_t date;
+    double price;
+    double amount;
+    double fee;
+  };
+
+  struct Market : public Entity
+  {
+    enum State
+    {
+      stopped,
+      starting,
+      running,
+    };
+
+    uint32_t marketAdapterId;
+    uint8_t state;
+  };
+
+  struct MarketBalance : public Entity
+  {
+    double reservedUsd;
+    double reservedBtc;
+    double availableUsd;
+    double availableBtc;
+    double fee;
+  };
+
+  struct CreateSessionArgs : public Entity
   {
     char_t name[33];
     uint32_t botEngineId;
@@ -175,7 +179,7 @@ public:
     double balanceComm;
   };
 
-  struct ControlSessionArgs
+  struct ControlSessionArgs : public Entity
   {
     enum Command
     {
@@ -187,7 +191,7 @@ public:
     uint8_t cmd;
   };
 
-  struct CreateTransactionArgs
+  struct CreateTransactionArgs : public Entity
   {
     uint8_t type; // see Transaction::Type
     double price;
@@ -195,7 +199,7 @@ public:
     double fee;
   };
 
-  struct CreateOrderArgs
+  struct CreateOrderArgs : public Entity
   {
     uint8_t type; // see Order::Type
     double price;
@@ -203,7 +207,7 @@ public:
     double fee;
   };
   
-  struct CreateMarketArgs
+  struct CreateMarketArgs : public Entity
   {
     uint32_t marketAdapterId;
     char_t username[33];
@@ -229,5 +233,4 @@ public:
     result.attach(str, String::length(str));
     return result;
   }
-
 };

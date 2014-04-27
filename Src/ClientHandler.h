@@ -21,7 +21,7 @@ public:
   void_t deselectMarket();
 
   void_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
-  void_t sendEntity(BotProtocol::EntityType type, uint32_t id, const void_t* data, size_t size);
+  void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
 
 private:
@@ -55,9 +55,9 @@ private:
 
   void_t handlePing(const byte_t* data, size_t size);
 
-  void_t handleCreateEntity(BotProtocol::EntityType type, byte_t* data, size_t size);
-  void_t handleRemoveEntity(BotProtocol::EntityType type, uint32_t id);
-  void_t handleControlEntity(BotProtocol::EntityType type, uint32_t id, byte_t* data, size_t size);
+  void_t handleCreateEntity(BotProtocol::Entity& entity, size_t size);
+  void_t handleRemoveEntity(const BotProtocol::Entity& entity);
+  void_t handleControlEntity(BotProtocol::Entity& entity, size_t size);
 
   void_t handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs);
   void_t handleRemoveMarket(uint32_t id);
@@ -71,7 +71,7 @@ private:
   void_t handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs);
   void_t handleRemoveOrder(uint32_t id);
 
-  void_t handleControlSession(uint32_t id, BotProtocol::ControlSessionArgs& controlSessionArgs);
+  void_t handleControlSession(BotProtocol::ControlSessionArgs& controlSessionArgs);
 
   void_t sendError(const String& errorMessage);
 
