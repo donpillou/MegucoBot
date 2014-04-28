@@ -33,17 +33,25 @@ bool_t BotConnection::connect(uint16_t port)
 
   // receive register market response
   {
-    BotProtocol::Header header;
-    if(socket.recv((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::RegisterMarketResponse)];
+    if(socket.recv(message, sizeof(message), sizeof(message)) != sizeof(message))
     {
       error = Socket::getLastErrorString();
       return false;
     }
-    if(header.messageType != BotProtocol::registerMarketResponse || header.size != sizeof(header))
+    BotProtocol::Header* header = (BotProtocol::Header*)message;
+    BotProtocol::RegisterMarketResponse* registerMarketResponse = (BotProtocol::RegisterMarketResponse*)(header + 1);
+    if(header->messageType != BotProtocol::registerMarketResponse || header->size != sizeof(message))
     {
       error = "Could not receive register market response.";
       return false;
     }
+    registerMarketResponse->username[sizeof(registerMarketResponse->username) - 1] = '\0';
+    registerMarketResponse->key[sizeof(registerMarketResponse->key) - 1] = '\0';
+    registerMarketResponse->secret[sizeof(registerMarketResponse->secret) - 1] = '\0';
+    userName = String(registerMarketResponse->username, String::length(registerMarketResponse->username));
+    key = String(registerMarketResponse->key, String::length(registerMarketResponse->key));
+    secret = String(registerMarketResponse->secret, String::length(registerMarketResponse->secret));
   }
 
   return true;

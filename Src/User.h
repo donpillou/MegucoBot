@@ -20,14 +20,16 @@ public:
   User(ServerHandler& serverHandler, const String& userName, const byte_t (&key)[32], const byte_t (&pwhmac)[32]);
   ~User();
 
-  void_t registerClient(ClientHandler& client);
-  void_t unregisterClient(ClientHandler& client);
+  void_t registerClient(ClientHandler& client) {clients.append(&client);}
+  void_t unregisterClient(ClientHandler& client) {clients.remove(&client);}
+
   Session* createSession(const String& name, BotEngine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm);
-  Session* findSession(uint32_t id);
   bool_t deleteSession(uint32_t id);
+  Session* findSession(uint32_t id) {return *sessions.find(id);}
 
   Market* createMarket(MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret);
   bool_t deleteMarket(uint32_t id);
+  Market* findMarket(uint32_t id) {return *markets.find(id);}
 
   void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);

@@ -15,21 +15,114 @@
 
 #include "Tools/BotConnection.h"
 
-//#ifdef BOT_BUYBOT
-//#include "Bots/BuyBot.h"
-//typedef BuyBot MarketConnection;
-//const char* botName = "BuyBot";
-//#endif
+#ifdef MARKET_BITSTAMPUSD
+#include "Markets/BitstampUsd.h"
+typedef BitstampMarket MarketAdapter;
+#endif
 
-bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size);
-bool_t handelRequestEntites(BotProtocol::EntityType entityType);
+class BotConnectionHandler
+{
+public:
+
+  BotConnectionHandler() : market(0) {}
+  ~BotConnectionHandler()
+  {
+    delete market;
+  }
+
+  bool_t connect(uint16_t port)
+  {
+    if(market)
+      return false;
+
+    if(!connection.connect(port))
+      return false;
+
+    market = new MarketAdapter(connection.getUserName(), connection.getKey(), connection.getSecret());
+    return true;
+  }
+
+  bool_t process()
+  {
+    BotProtocol::Header header;
+    byte_t* data;
+    for(;;)
+    {
+      if(!connection.receiveMessage(header, data))
+        return false;
+      if(!handleMessage(header, data, header.size - sizeof(header)))
+        return false;
+    }
+  }
+
+  const String& getErrorString() const {return connection.getErrorString();}
+
+private:
+  BotConnection connection;
+  Market* market;
+
+private:
+  bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size)
+  {
+    switch((BotProtocol::MessageType)header.messageType)
+    {
+    case BotProtocol::controlEntity:
+      if(size >= sizeof(BotProtocol::Entity))
+        return handleControlEntity(*(BotProtocol::Entity*)data, size);
+    default:
+      break;
+    }
+    return true;
+  }
+
+  bool_t handleControlEntity(BotProtocol::Entity& entity, size_t size)
+  {
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::market:
+      if(size >= sizeof(BotProtocol::ControlMarketArgs))
+        return handleControlMarket(*(BotProtocol::ControlMarketArgs*)&entity);
+      break;
+    default:
+      break;
+    }
+    return true;
+  }
+
+  bool_t handleControlMarket(BotProtocol::ControlMarketArgs& controlMarketArgs)
+  {
+    switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
+    {
+    case BotProtocol::ControlMarketArgs::refreshOrders:
+      {
+        List<BotProtocol::Order> orders;
+        if(market->loadOrders(orders))
+        {
+          // todo: send orders
+        }
+        else
+        {
+          // todo:
+          //return connection.sendError(market->getErrorString());
+        }
+      }
+      break;
+    case BotProtocol::ControlMarketArgs::refreshTransactions:
+      // todo
+      break;
+    default:
+      break;
+    }
+    return true;
+  }
+};
 
 int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
 
   // create connection to bot server
-  BotConnection connection;
+  BotConnectionHandler connection;
   if(!connection.connect(port))
   {
     Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)connection.getErrorString());
@@ -37,47 +130,11 @@ int_t main(int_t argc, char_t* argv[])
   }
 
   // wait for requests
-  BotProtocol::Header header;
-  byte_t* data;
-  for(;;)
+  if(!connection.process())
   {
-    if(!connection.receiveMessage(header, data))
-    {
-      Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)connection.getErrorString());
-      return -1;
-    }
-
-    // handle message
-    if(!handleMessage(header, data, header.size - sizeof(header)))
-    {
-      Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)connection.getErrorString());
-      return -1;
-    }
+    Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)connection.getErrorString());
+    return -1;
   }
+
   return 0;
-}
-
-bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size)
-{
-  switch((BotProtocol::MessageType)header.messageType)
-  {
-  case BotProtocol::requestEntities:
-    if(size >= sizeof(BotProtocol::Entity))
-      return handelRequestEntites((BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType);
-  default:
-    break;
-  }
-  return true;
-}
-
-bool_t handelRequestEntites(BotProtocol::EntityType entityType)
-{
-  switch(entityType)
-  {
-  case BotProtocol::marketTransaction:
-    break;
-  default:
-    break;
-  }
-  return true;
 }

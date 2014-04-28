@@ -61,9 +61,11 @@ private:
 
   void_t handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs);
   void_t handleRemoveMarket(uint32_t id);
+  void_t handleControlMarket(BotProtocol::ControlMarketArgs& controlMarketArgs);
 
   void_t handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs);
   void_t handleRemoveSession(uint32_t id);
+  void_t handleControlSession(BotProtocol::ControlSessionArgs& controlSessionArgs);
 
   void_t handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs);
   void_t handleRemoveTransaction(uint32_t id);
@@ -71,7 +73,6 @@ private:
   void_t handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs);
   void_t handleRemoveOrder(uint32_t id);
 
-  void_t handleControlSession(BotProtocol::ControlSessionArgs& controlSessionArgs);
 
   void_t sendError(const String& errorMessage);
 

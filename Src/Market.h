@@ -31,6 +31,7 @@ public:
   uint32_t getId() const {return id;}
   MarketAdapter* getMarketAdapter() const {return marketAdapter;}
   BotProtocol::Market::State getState() const {return state;}
+  ClientHandler* getAdapaterClient() const {return adapterClient;}
 
   void_t send(ClientHandler* client = 0);
   void_t sendEntity(const void_t* data, size_t size);

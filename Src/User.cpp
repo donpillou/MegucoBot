@@ -24,27 +24,12 @@ User::~User()
     delete *i;
 }
 
-void_t User::registerClient(ClientHandler& client)
-{
-  clients.append(&client);
-}
-
-void_t User::unregisterClient(ClientHandler& client)
-{
-  clients.remove(&client);
-}
-
 Session* User::createSession(const String& name, BotEngine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm)
 {
   uint32_t id = nextEntityId++;
   Session* session = new Session(serverHandler, *this, id, name, engine, marketAdapater, balanceBase, balanceComm);
   sessions.append(id, session);
   return session;
-}
-
-Session* User::findSession(uint32_t id)
-{
-  return *sessions.find(id);
 }
 
 bool_t User::deleteSession(uint32_t id)

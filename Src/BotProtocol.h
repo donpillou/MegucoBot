@@ -85,6 +85,13 @@ public:
     uint32_t pid;
   };
 
+  struct RegisterMarketResponse
+  {
+    char_t username[33];
+    char_t key[65];
+    char_t secret[65];
+  };
+
   struct Error : public Entity
   {
     char_t errorMessage[129];
@@ -214,6 +221,18 @@ public:
     char_t key[65];
     char_t secret[65];
   };
+
+  struct ControlMarketArgs : public Entity
+  {
+    enum Command
+    {
+      refreshTransactions,
+      refreshOrders,
+    };
+
+    uint8_t cmd;
+  };
+
 
 #pragma pack(pop)
 

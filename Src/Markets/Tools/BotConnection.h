@@ -17,12 +17,20 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
+  const String& getUserName() const {return userName;}
+  const String& getKey() const {return key;}
+  const String& getSecret() const {return secret;}
+
   bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
 
 private:
   Socket socket;
   String error;
   Buffer recvBuffer;
+
+  String userName;
+  String key;
+  String secret;
 
 private:
   template <class E> bool_t createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id);

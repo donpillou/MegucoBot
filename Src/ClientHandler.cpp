@@ -382,6 +382,27 @@ void_t ClientHandler::handleRemoveMarket(uint32_t id)
   user->saveData();
 }
 
+void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& controlMarketArgs)
+{
+  Market* market = user->findMarket(controlMarketArgs.entityId);
+  if(!market)
+  {
+    sendError("Unknown market.");
+    return;
+  }
+
+  switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
+  {
+  case BotProtocol::ControlMarketArgs::refreshTransactions:
+  case BotProtocol::ControlMarketArgs::refreshOrders:
+    {
+      ClientHandler* adapterClient = market->getAdapaterClient();
+      if(adapterClient)
+        adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarketArgs, sizeof(controlMarketArgs));
+    }
+  }
+}
+
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
 {
   String name = BotProtocol::getString(createSessionArgs.name);
