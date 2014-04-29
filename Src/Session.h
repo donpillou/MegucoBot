@@ -41,12 +41,12 @@ public:
   bool isSimulation() const {return simulation;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
-  Transaction* createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type);
-  const HashMap<uint32_t, Transaction*>& getTransactions() const {return transactions;}
+  BotProtocol::Transaction* createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type);
+  const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
-  Order* createOrder(double price, double amount, double fee, BotProtocol::Order::Type type);
-  const HashMap<uint32_t, Order*>& getOrders() const {return orders;}
+  BotProtocol::Order* createOrder(double price, double amount, double fee, BotProtocol::Order::Type type);
+  const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
   void_t send(ClientHandler* client = 0);
@@ -68,7 +68,7 @@ private:
   uint32_t pid;
   ClientHandler* botClient;
   HashSet<ClientHandler*> clients;
-  HashMap<uint32_t, Transaction*> transactions;
-  HashMap<uint32_t, Order*> orders;
+  HashMap<uint32_t, BotProtocol::Transaction> transactions;
+  HashMap<uint32_t, BotProtocol::Order> orders;
   uint32_t nextEntityId;
 };

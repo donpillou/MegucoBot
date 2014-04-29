@@ -10,8 +10,6 @@
 #include "Session.h"
 #include "BotEngine.h"
 #include "MarketAdapter.h"
-#include "Transaction.h"
-#include "Order.h"
 #include "Market.h"
 
 ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
@@ -489,12 +487,12 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
     session->registerClient(*this, false);
     this->session = session;
     {
-      const HashMap<uint32_t, Transaction*>& transactions = session->getTransactions();
-      for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-        (*i)->send(this);
-      const HashMap<uint32_t, Order*>& orders = session->getOrders();
-      for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-        (*i)->send(this);
+      const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
+      for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Transaction));
+      const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
+      for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Order));
     }
     break;
   }
@@ -502,14 +500,14 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
 
 void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
 {
-  Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
+  BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
   if(!transaction)
   {
     sendError("Could not create transaction.");
     return;
   }
 
-  transaction->send();
+  session->sendEntity(transaction, sizeof(BotProtocol::Transaction));
   session->saveData();
 }
 
@@ -527,14 +525,14 @@ void_t ClientHandler::handleRemoveTransaction(uint32_t id)
 
 void_t ClientHandler::handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
 {
-  Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
+  BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
   if(!order)
   {
     sendError("Could not create order.");
     return;
   }
 
-  order->send();
+  session->sendEntity(order, sizeof(BotProtocol::Order));
   session->saveData();
 }
 
