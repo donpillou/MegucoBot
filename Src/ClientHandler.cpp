@@ -133,8 +133,8 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
 
 void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
 {
-  String username = BotProtocol::getString(loginRequest.username);
-  user = serverHandler.findUser(username);
+  String userName = BotProtocol::getString(loginRequest.userName);
+  user = serverHandler.findUser(userName);
   if(!user)
   {
     sendError("Unknown user.");
@@ -145,8 +145,8 @@ void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
     *p = Math::random();
 
   BotProtocol::LoginResponse loginResponse;
-  Memory::copy(loginResponse.userkey, user->getKey(), sizeof(loginResponse.userkey));
-  Memory::copy(loginResponse.loginkey, loginkey, sizeof(loginResponse.loginkey));
+  Memory::copy(loginResponse.userKey, user->getKey(), sizeof(loginResponse.userKey));
+  Memory::copy(loginResponse.loginKey, loginkey, sizeof(loginResponse.loginKey));
   sendMessage(BotProtocol::loginResponse, &loginResponse, sizeof(loginResponse));
   state = loginState;
 }
@@ -209,9 +209,10 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   } 
 
   BotProtocol::RegisterBotResponse response;
-  response.isSimulation = session->isSimulation();
+  response.simulation = session->isSimulation();
   session->getInitialBalance(response.balanceBase, response.balanceComm);
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));
+
   this->session = session;
   state = botState;
 
@@ -232,7 +233,12 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
     return;
   } 
 
-  sendMessage(BotProtocol::registerMarketResponse, 0, 0);
+  BotProtocol::RegisterMarketResponse response;
+  BotProtocol::setString(response.userName, market->getUserName());
+  BotProtocol::setString(response.key, market->getKey());
+  BotProtocol::setString(response.secret, market->getSecret());
+  sendMessage(BotProtocol::registerMarketResponse, &response, sizeof(response));
+
   this->market = market;
   state = marketState;
 
@@ -352,7 +358,7 @@ void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMa
     return;
   }
   
-  String username = BotProtocol::getString(createMarketArgs.username);
+  String username = BotProtocol::getString(createMarketArgs.userName);
   String key = BotProtocol::getString(createMarketArgs.key);
   String secret = BotProtocol::getString(createMarketArgs.secret);
   Market* market = user->createMarket(*marketAdapter, username, key, secret);

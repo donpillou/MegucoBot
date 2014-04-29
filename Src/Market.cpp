@@ -9,9 +9,9 @@
 #include "User.h"
 //#include "Order.h"
 
-Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret) :
+Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& userName, const String& key, const String& secret) :
   serverHandler(serverHandler), user(user),
-  id(id), marketAdapter(&marketAdapter), username(username), key(key), secret(secret),
+  id(id), marketAdapter(&marketAdapter), userName(userName), key(key), secret(secret),
   state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextEntityId(1) {}
 
 Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant) :
@@ -21,7 +21,7 @@ Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant)
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
   marketAdapter = serverHandler.findMarketAdapter(data.find("market")->toString());
-  username = data.find("username")->toString();
+  userName = data.find("userName")->toString();
   key = data.find("key")->toString();
   secret = data.find("secret")->toString();
 }
@@ -42,7 +42,7 @@ void_t Market::toVariant(Variant& variant)
   HashMap<String, Variant>& data = variant.toMap();
   data.append("id", id);
   data.append("market", marketAdapter->getName());
-  data.append("username", username);
+  data.append("userName", userName);
   data.append("key", key);
   data.append("secret", secret);
 }

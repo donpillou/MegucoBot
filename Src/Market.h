@@ -17,7 +17,7 @@ class User;
 class Market
 {
 public:
-  Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& username, const String& key, const String& secret);
+  Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& userName, const String& key, const String& secret);
   Market(ServerHandler& serverHandler, User& user, const Variant& variant);
   ~Market();
   void_t toVariant(Variant& variant);
@@ -30,6 +30,9 @@ public:
 
   uint32_t getId() const {return id;}
   MarketAdapter* getMarketAdapter() const {return marketAdapter;}
+  const String& getUserName() const {return userName;}
+  const String& getKey() const {return key;}
+  const String& getSecret() const {return secret;}
   BotProtocol::Market::State getState() const {return state;}
   ClientHandler* getAdapaterClient() const {return adapterClient;}
 
@@ -42,7 +45,7 @@ private:
   User& user;
   uint32_t id;
   MarketAdapter* marketAdapter;
-  String username;
+  String userName;
   String key;
   String secret;
   BotProtocol::Market::State state;

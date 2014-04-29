@@ -114,14 +114,32 @@ private:
           for(HashSet<uint32_t>::Iterator i = ordersToRemove.begin(), end = ordersToRemove.end(); i != end; ++i)
             if(!connection.removeEntity(BotProtocol::marketOrder, *i))
               return false;
-          // todo: send orders
         }
         else
           return connection.sendError(market->getLastError());
       }
       break;
     case BotProtocol::ControlMarketArgs::refreshTransactions:
-      // todo
+      {
+        List<BotProtocol::Transaction> transactions;
+        if(market->loadTransactions(transactions))
+        {
+          HashSet<uint32_t> transactionsToRemove;
+          transactionsToRemove.swap(this->transactions);
+          for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+          {
+            this->transactions.append(i->entityId);
+            if(!connection.sendEntity(&*i, sizeof(BotProtocol::Transaction)))
+              return false;
+            transactionsToRemove.remove(i->entityId);
+          }
+          for(HashSet<uint32_t>::Iterator i = transactionsToRemove.begin(), end = transactionsToRemove.end(); i != end; ++i)
+            if(!connection.removeEntity(BotProtocol::marketTransaction, *i))
+              return false;
+        }
+        else
+          return connection.sendError(market->getLastError());
+      }
       break;
     default:
       break;

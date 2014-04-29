@@ -54,13 +54,13 @@ public:
 
   struct LoginRequest
   {
-    char_t username[33];
+    char_t userName[33];
   };
 
   struct LoginResponse
   {
-    byte_t userkey[32];
-    byte_t loginkey[32];
+    byte_t userKey[32];
+    byte_t loginKey[32];
   };
 
   struct AuthRequest
@@ -75,7 +75,7 @@ public:
   
   struct RegisterBotResponse
   {
-    uint8_t isSimulation;
+    uint8_t simulation;
     double balanceBase;
     double balanceComm;
   };
@@ -87,7 +87,7 @@ public:
 
   struct RegisterMarketResponse
   {
-    char_t username[33];
+    char_t userName[33];
     char_t key[65];
     char_t secret[65];
   };
@@ -217,7 +217,7 @@ public:
   struct CreateMarketArgs : public Entity
   {
     uint32_t marketAdapterId;
-    char_t username[33];
+    char_t userName[33];
     char_t key[65];
     char_t secret[65];
   };

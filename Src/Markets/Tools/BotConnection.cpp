@@ -47,10 +47,10 @@ bool_t BotConnection::connect(uint16_t port)
       error = "Could not receive register market response.";
       return false;
     }
-    registerMarketResponse->username[sizeof(registerMarketResponse->username) - 1] = '\0';
+    registerMarketResponse->userName[sizeof(registerMarketResponse->userName) - 1] = '\0';
     registerMarketResponse->key[sizeof(registerMarketResponse->key) - 1] = '\0';
     registerMarketResponse->secret[sizeof(registerMarketResponse->secret) - 1] = '\0';
-    userName = String(registerMarketResponse->username, String::length(registerMarketResponse->username));
+    userName = String(registerMarketResponse->userName, String::length(registerMarketResponse->userName));
     key = String(registerMarketResponse->key, String::length(registerMarketResponse->key));
     secret = String(registerMarketResponse->secret, String::length(registerMarketResponse->secret));
   }
