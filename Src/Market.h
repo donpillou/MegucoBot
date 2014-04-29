@@ -36,6 +36,14 @@ public:
   BotProtocol::Market::State getState() const {return state;}
   ClientHandler* getAdapaterClient() const {return adapterClient;}
 
+  void_t updateTransaction(const BotProtocol::Transaction& transaction) {transactions.append(id, transaction);}
+  const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
+  bool_t deleteTransaction(uint32_t id);
+
+  void_t updateOrder(const BotProtocol::Order& order) {orders.append(id, order);}
+  const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
+  bool_t deleteOrder(uint32_t id);
+
   void_t send(ClientHandler* client = 0);
   void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
@@ -53,5 +61,6 @@ private:
   uint32_t pid;
   ClientHandler* adapterClient;
   HashSet<ClientHandler*> clients;
-  uint32_t nextEntityId;
+  HashMap<uint32_t, BotProtocol::Transaction> transactions;
+  HashMap<uint32_t, BotProtocol::Order> orders;
 };

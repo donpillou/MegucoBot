@@ -58,6 +58,7 @@ private:
   void_t handleCreateEntity(BotProtocol::Entity& entity, size_t size);
   void_t handleRemoveEntity(const BotProtocol::Entity& entity);
   void_t handleControlEntity(BotProtocol::Entity& entity, size_t size);
+  void_t handleUpdateEntity(BotProtocol::Entity& entity, size_t size);
 
   void_t handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs);
   void_t handleRemoveMarket(uint32_t id);
@@ -67,11 +68,17 @@ private:
   void_t handleRemoveSession(uint32_t id);
   void_t handleControlSession(BotProtocol::ControlSessionArgs& controlSessionArgs);
 
-  void_t handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs);
-  void_t handleRemoveTransaction(uint32_t id);
+  void_t handleCreateSessionTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs);
+  void_t handleRemoveSessionTransaction(uint32_t id);
 
-  void_t handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs);
-  void_t handleRemoveOrder(uint32_t id);
+  void_t handleCreateSessionOrder(BotProtocol::CreateOrderArgs& createOrderArgs);
+  void_t handleRemoveSessionOrder(uint32_t id);
+
+  void_t handleUpdateMarketTransaction(BotProtocol::Transaction& transaction);
+  void_t handleRemoveMarketTransaction(uint32_t id);
+
+  void_t handleUpdateMarketOrder(BotProtocol::Order& order);
+  void_t handleRemoveMarketOrder(uint32_t id);
 
   void_t sendError(const String& errorMessage);
 

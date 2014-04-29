@@ -120,6 +120,21 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
     case BotProtocol::removeEntity:
       if(size >= sizeof(BotProtocol::Entity))
         handleRemoveEntity(*(const BotProtocol::Entity*)data);
+      break;
+    default:
+      break;
+    }
+    break;
+  case marketState:
+    switch((BotProtocol::MessageType)messageHeader.messageType)
+    {
+    case BotProtocol::pingRequest:
+      handlePing(data, size);
+      break;
+    case BotProtocol::updateEntity:
+      if(size >= sizeof(BotProtocol::Entity))
+        handleUpdateEntity(*(BotProtocol::Entity*)data, size);
+      break;
     default:
       break;
     }
@@ -277,11 +292,11 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t siz
     {
     case BotProtocol::sessionTransaction:
       if(size >= sizeof(BotProtocol::CreateTransactionArgs))
-        handleCreateTransaction(*(BotProtocol::CreateTransactionArgs*)&entity);
+        handleCreateSessionTransaction(*(BotProtocol::CreateTransactionArgs*)&entity);
       break;
     case BotProtocol::sessionOrder:
       if(size >= sizeof(BotProtocol::CreateOrderArgs))
-        handleCreateOrder(*(BotProtocol::CreateOrderArgs*)&entity);
+        handleCreateSessionOrder(*(BotProtocol::CreateOrderArgs*)&entity);
       break;
     default:
       break;
@@ -312,10 +327,23 @@ void_t ClientHandler::handleRemoveEntity(const BotProtocol::Entity& entity)
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::sessionTransaction:
-      handleRemoveTransaction(entity.entityId);
+      handleRemoveSessionTransaction(entity.entityId);
       break;
     case BotProtocol::sessionOrder:
-      handleRemoveOrder(entity.entityId);
+      handleRemoveSessionOrder(entity.entityId);
+      break;
+    default:
+      break;
+    }
+    break;
+  case marketState:
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::marketTransaction:
+      handleRemoveMarketTransaction(entity.entityId);
+      break;
+    case BotProtocol::marketOrder:
+      handleRemoveMarketOrder(entity.entityId);
       break;
     default:
       break;
@@ -342,6 +370,29 @@ void_t ClientHandler::handleControlEntity(BotProtocol::Entity& entity, size_t si
     }
   case botState:
     break;
+  default:
+    break;
+  }
+}
+
+void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t size)
+{
+  switch(state)
+  {
+  case marketState:
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::marketTransaction:
+      if(size >= sizeof(BotProtocol::Transaction))
+        handleUpdateMarketTransaction(*(BotProtocol::Transaction*)&entity);
+      break;
+    case BotProtocol::marketOrder:
+      if(size >= sizeof(BotProtocol::Order))
+        handleUpdateMarketOrder(*(BotProtocol::Order*)&entity);
+      break;
+    default:
+      break;
+    }
   default:
     break;
   }
@@ -402,14 +453,14 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
       this->market->unregisterClient(*this);
     market->registerClient(*this, false);
     this->market = market;
-    //{
-    //  const HashMap<uint32_t, Transaction*>& transactions = market->getTransactions();
-    //  for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-    //    (*i)->send(this);
-    //  const HashMap<uint32_t, Order*>& orders = market->getOrders();
-    //  for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-    //    (*i)->send(this);
-    //}
+    {
+      const HashMap<uint32_t, BotProtocol::Transaction>& transactions = market->getTransactions();
+      for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Transaction));
+      const HashMap<uint32_t, BotProtocol::Order>& orders = market->getOrders();
+      for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Order));
+    }
     break;
   case BotProtocol::ControlMarketArgs::refreshTransactions:
   case BotProtocol::ControlMarketArgs::refreshOrders:
@@ -498,7 +549,7 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
   }
 }
 
-void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
+void_t ClientHandler::handleCreateSessionTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
 {
   BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
   if(!transaction)
@@ -511,7 +562,7 @@ void_t ClientHandler::handleCreateTransaction(BotProtocol::CreateTransactionArgs
   session->saveData();
 }
 
-void_t ClientHandler::handleRemoveTransaction(uint32_t id)
+void_t ClientHandler::handleRemoveSessionTransaction(uint32_t id)
 {
   if(!session->deleteTransaction(id))
   {
@@ -523,7 +574,7 @@ void_t ClientHandler::handleRemoveTransaction(uint32_t id)
   session->saveData();
 }
 
-void_t ClientHandler::handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
+void_t ClientHandler::handleCreateSessionOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
 {
   BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
   if(!order)
@@ -536,7 +587,7 @@ void_t ClientHandler::handleCreateOrder(BotProtocol::CreateOrderArgs& createOrde
   session->saveData();
 }
 
-void_t ClientHandler::handleRemoveOrder(uint32_t id)
+void_t ClientHandler::handleRemoveSessionOrder(uint32_t id)
 {
   if(!session->deleteOrder(id))
   {
@@ -546,6 +597,30 @@ void_t ClientHandler::handleRemoveOrder(uint32_t id)
 
   session->removeEntity(BotProtocol::sessionOrder, id);
   session->saveData();
+}
+
+void_t ClientHandler::handleUpdateMarketTransaction(BotProtocol::Transaction& transaction)
+{
+  market->updateTransaction(transaction);
+  market->sendEntity(&transaction, sizeof(BotProtocol::Transaction));
+}
+
+void_t ClientHandler::handleRemoveMarketTransaction(uint32_t id)
+{
+  market->deleteTransaction(id);
+  market->removeEntity(BotProtocol::marketTransaction, id);
+}
+
+void_t ClientHandler::handleUpdateMarketOrder(BotProtocol::Order& order)
+{
+  market->updateOrder(order);
+  market->sendEntity(&order, sizeof(BotProtocol::Order));
+}
+
+void_t ClientHandler::handleRemoveMarketOrder(uint32_t id)
+{
+  market->deleteOrder(id);
+  market->removeEntity(BotProtocol::marketOrder, id);
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)

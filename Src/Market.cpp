@@ -1,4 +1,6 @@
 
+#include <nstd/Time.h>
+
 #include "Market.h"
 #include "ServerHandler.h"
 #include "MarketAdapter.h"
@@ -12,11 +14,11 @@
 Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& userName, const String& key, const String& secret) :
   serverHandler(serverHandler), user(user),
   id(id), marketAdapter(&marketAdapter), userName(userName), key(key), secret(secret),
-  state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextEntityId(1) {}
+  state(BotProtocol::Market::stopped), pid(0), adapterClient(0) {}
 
 Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
-  state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextEntityId(1)
+  state(BotProtocol::Market::stopped), pid(0), adapterClient(0)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   id = data.find("id")->toUInt();
@@ -95,6 +97,25 @@ void_t Market::unregisterClient(ClientHandler& client)
     clients.remove(&client);
 }
 
+bool_t Market::deleteTransaction(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
+  if(it == transactions.end())
+    return false;
+  transactions.remove(it);
+  return true;
+}
+
+bool_t Market::deleteOrder(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(id);
+  if(it == orders.end())
+    return false;
+  orders.remove(it);
+  return true;
+}
+
+
 void_t Market::send(ClientHandler* client)
 {
   BotProtocol::Market marketData;
@@ -120,3 +141,4 @@ void_t Market::removeEntity(BotProtocol::EntityType type, uint32_t id)
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->removeEntity(type, id);
 }
+
