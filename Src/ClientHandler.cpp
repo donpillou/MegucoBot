@@ -399,6 +399,20 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
 
   switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
   {
+  case BotProtocol::ControlMarketArgs::select:
+    if(this->market)
+      this->market->unregisterClient(*this);
+    market->registerClient(*this, false);
+    this->market = market;
+    //{
+    //  const HashMap<uint32_t, Transaction*>& transactions = market->getTransactions();
+    //  for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+    //    (*i)->send(this);
+    //  const HashMap<uint32_t, Order*>& orders = market->getOrders();
+    //  for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+    //    (*i)->send(this);
+    //}
+    break;
   case BotProtocol::ControlMarketArgs::refreshTransactions:
   case BotProtocol::ControlMarketArgs::refreshOrders:
     {

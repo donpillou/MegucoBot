@@ -226,6 +226,7 @@ public:
   {
     enum Command
     {
+      select,
       refreshTransactions,
       refreshOrders,
     };
