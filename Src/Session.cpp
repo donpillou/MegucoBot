@@ -66,6 +66,8 @@ Session::~Session()
     (*i)->deselectSession();
   for(HashMap<uint32_t, Transaction*>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
     delete *i;
+  for(HashMap<uint32_t, Order*>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+    delete *i;
 }
 
 void_t Session::toVariant(Variant& variant)
