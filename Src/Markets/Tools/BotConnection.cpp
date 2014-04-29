@@ -1,5 +1,6 @@
 
 #include <nstd/Process.h>
+#include <nstd/Debug.h>
 
 #include "BotConnection.h"
 
@@ -57,43 +58,17 @@ bool_t BotConnection::connect(uint16_t port)
   return true;
 }
 
-template <class E> bool_t BotConnection::createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id)
+bool_t BotConnection::sendEntity(const void_t* data, size_t size)
 {
-  // send create request
+  ASSERT(size >= sizeof(BotProtocol::Entity));
+  BotProtocol::Header header;
+  header.size = sizeof(header) + size;
+  header.messageType = BotProtocol::updateEntity;
+  if(!socket.send((const byte_t*)&header, sizeof(header)) ||
+     !socket.send((const byte_t*)data, size))
   {
-    BotProtocol::Header header;
-    header.size = sizeof(header) + size;
-    header.messageType = BotProtocol::createEntity;
-    header.entityType = type;
-    header.entityId = 0;
-    if(!socket.send((const byte_t*)&header, sizeof(header)) ||
-       (size > 0 && !socket.send((const byte_t*)data, size)))
-    {
-      error = Socket::getLastErrorString();
-      return false;
-    }
-  }
-  
-  // receive response
-  {
-    byte_t message[sizeof(BotProtocol::Header) + sizeof(E)];
-    if(!socket.recv(message, sizeof(message)))
-    {
-      error = Socket::getLastErrorString();
-      return false;
-    }
-    BotProtocol::Header* header = (BotProtocol::Header*)message;
-    if(header->messageType != BotProtocol::updateEntity)
-    {
-      error = "Received invalid response.";
-      return false;
-    }
-    if(header->entityType != type)
-    {
-      error = "Received invalid response.";
-      return false;
-    }
-    id = header->entityId;
+    error = Socket::getLastErrorString();
+    return false;
   }
   return true;
 }
@@ -107,36 +82,6 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
   header->messageType = BotProtocol::removeEntity;
   entity->entityType = type;
   entity->entityId = id;
-  if(socket.send(message, sizeof(message)) != sizeof(message))
-  {
-    error = Socket::getLastErrorString();
-    return false;
-  }
-  return true;
-}
-
-bool_t BotConnection::sendPing()
-{
-  BotProtocol::Header header;
-  header.size = sizeof(header);
-  header.messageType = BotProtocol::pingRequest;
-  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
-  {
-    error = Socket::getLastErrorString();
-    return false;
-  }
-  return true;
-}
-
-bool_t BotConnection::requestEntities(BotProtocol::EntityType entityType)
-{
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
-  BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
-  header->size = sizeof(message);
-  header->messageType = BotProtocol::requestEntities;
-  entity->entityType = entityType;
-  entity->entityId = 0;
   if(socket.send(message, sizeof(message)) != sizeof(message))
   {
     error = Socket::getLastErrorString();
@@ -168,3 +113,11 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data)
   return true;
 }
 
+bool_t BotConnection::sendError(const String& errorMessage)
+{
+  BotProtocol::Error error;
+  error.entityType = BotProtocol::error;
+  error.entityId = 0;
+  BotProtocol::setString(error.errorMessage, errorMessage);
+  return sendEntity(&error, sizeof(error));
+}

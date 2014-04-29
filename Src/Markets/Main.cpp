@@ -11,6 +11,7 @@
 #include <nstd/Console.h>
 #include <nstd/String.h>
 #include <nstd/Thread.h> // sleep
+#include <nstd/HashSet.h>
 //#include <nstd/Error.h>
 
 #include "Tools/BotConnection.h"
@@ -61,6 +62,9 @@ private:
   BotConnection connection;
   Market* market;
 
+  HashSet<uint32_t> orders;
+  HashSet<uint32_t> transactions;
+
 private:
   bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size)
   {
@@ -98,13 +102,22 @@ private:
         List<BotProtocol::Order> orders;
         if(market->loadOrders(orders))
         {
+          HashSet<uint32_t> ordersToRemove;
+          ordersToRemove.swap(this->orders);
+          for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+          {
+            this->orders.append(i->entityId);
+            if(!connection.sendEntity(&*i, sizeof(BotProtocol::Order)))
+              return false;
+            ordersToRemove.remove(i->entityId);
+          }
+          for(HashSet<uint32_t>::Iterator i = ordersToRemove.begin(), end = ordersToRemove.end(); i != end; ++i)
+            if(!connection.removeEntity(BotProtocol::marketOrder, *i))
+              return false;
           // todo: send orders
         }
         else
-        {
-          // todo:
-          //return connection.sendError(market->getErrorString());
-        }
+          return connection.sendError(market->getLastError());
       }
       break;
     case BotProtocol::ControlMarketArgs::refreshTransactions:

@@ -22,6 +22,9 @@ public:
   const String& getSecret() const {return secret;}
 
   bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
+  bool_t sendError(const String& errorMessage);
+  bool_t sendEntity(const void_t* data, size_t size);
+  bool_t removeEntity(uint32_t type, uint32_t id);
 
 private:
   Socket socket;
@@ -33,8 +36,5 @@ private:
   String secret;
 
 private:
-  template <class E> bool_t createEntity(BotProtocol::EntityType type, const void_t* data, size_t size, uint32_t& id);
-  bool_t removeEntity(uint32_t type, uint32_t id);
-  bool_t sendPing();
-  bool_t requestEntities(BotProtocol::EntityType entityType);
+  bool_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
 };
