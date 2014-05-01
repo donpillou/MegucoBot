@@ -17,8 +17,7 @@ targets = {
 
   MegucoBot = cppApplication + {
     dependencies = { "libnstd" } + bots + markets
-    buildDir = "Build/$(configuration)/$(target)"
-    output = "Build/$(configuration)/botd$(if $(Win32),.exe,)"
+    buildDir = "Build/$(configuration)"
     includePaths = { "Ext/libnstd/include" }
     libPaths = { "Build/$(configuration)/libnstd" }
     libs = { "nstd" }
