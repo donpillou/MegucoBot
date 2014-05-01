@@ -21,6 +21,7 @@ public:
     updateEntity,
     removeEntity,
     controlEntity,
+    controlEntityResponse,
     createEntity,
     requestEntities,
   };
@@ -198,6 +199,12 @@ public:
     uint8_t cmd;
   };
 
+  struct ControlSessionResponse : public Entity
+  {
+    uint8_t cmd;
+    uint8_t success;
+  };
+
   struct CreateTransactionArgs : public Entity
   {
     uint8_t type; // see Transaction::Type
@@ -234,6 +241,11 @@ public:
     uint8_t cmd;
   };
 
+  struct ControlMarketResponse : public Entity
+  {
+    uint8_t cmd;
+    uint8_t success;
+  };
 
 #pragma pack(pop)
 

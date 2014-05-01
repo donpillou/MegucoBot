@@ -81,6 +81,7 @@ private:
   void_t handleRemoveMarketOrder(uint32_t id);
 
   void_t sendError(const String& errorMessage);
+  void_t sendControlEntityResponse(const void_t* data, size_t size);
 
 private: // Server::Client::Listener
   virtual size_t handle(byte_t* data, size_t size);
