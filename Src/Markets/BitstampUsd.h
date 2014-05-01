@@ -51,6 +51,6 @@ private: // Market
   virtual bool_t loadOrders(List<BotProtocol::Order>& orders);
   virtual bool_t loadBalance(BotProtocol::MarketBalance& balance);
   virtual bool_t loadTransactions(List<BotProtocol::Transaction>& transactions);
-  virtual bool_t createOrder(double amount, double price, BotProtocol::Order& order);
+  virtual bool_t createOrder(BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order);
   virtual bool_t cancelOrder(uint32_t id);
 };

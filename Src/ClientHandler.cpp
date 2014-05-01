@@ -290,6 +290,9 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t siz
     case BotProtocol::market:
       if(size >= sizeof(BotProtocol::CreateMarketArgs))
         handleCreateMarket(*(BotProtocol::CreateMarketArgs*)&entity);
+    case BotProtocol::marketOrder:
+      if(size >= sizeof(BotProtocol::CreateOrderArgs))
+        handleCreateMarketOrder(*(BotProtocol::CreateOrderArgs*)&entity);
     default:
       break;
     }
@@ -677,16 +680,32 @@ void_t ClientHandler::handleUpdateMarketOrder(BotProtocol::Order& order)
   market->sendEntity(&order, sizeof(order));
 }
 
+void_t ClientHandler::handleRemoveMarketOrder(uint32_t id)
+{
+  market->deleteOrder(id);
+  market->removeEntity(BotProtocol::marketOrder, id);
+}
+
 void_t ClientHandler::handleUpdateMarketBalance(BotProtocol::MarketBalance& balance)
 {
   market->updateBalance(balance);
   market->sendEntity(&balance, sizeof(balance));
 }
 
-void_t ClientHandler::handleRemoveMarketOrder(uint32_t id)
+void_t ClientHandler::handleCreateMarketOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
 {
-  market->deleteOrder(id);
-  market->removeEntity(BotProtocol::marketOrder, id);
+  if(!market)
+  {
+    sendError("Invalid market.");
+    return;
+  }
+  ClientHandler* marketAdapter = market->getAdapaterClient();
+  if(!marketAdapter)
+  {
+    sendError("Invalid market.");
+    return;
+  }
+  marketAdapter->sendMessage(BotProtocol::createEntity, &createOrderArgs, sizeof(createOrderArgs));
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)

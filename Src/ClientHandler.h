@@ -82,6 +82,8 @@ private:
 
   void_t handleUpdateMarketBalance(BotProtocol::MarketBalance& balance);
 
+  void_t handleCreateMarketOrder(BotProtocol::CreateOrderArgs& createOrderArgs);
+
   void_t sendError(const String& errorMessage);
   void_t sendControlEntityResponse(const void_t* data, size_t size);
 

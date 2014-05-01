@@ -23,20 +23,21 @@ bool_t BitstampMarket::loadBalanceAndFee()
   return true;
 }
 
-bool_t BitstampMarket::createOrder(double amount, double price, BotProtocol::Order& order)
+bool_t BitstampMarket::createOrder(BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order)
 {
   if(!loadBalanceAndFee())
     return false;
 
-  double maxAmount = Math::abs(amount > 0. ? getMaxBuyAmout(price) : getMaxSellAmout());
+  bool buy = type == BotProtocol::Order::Type::buy;
+  double maxAmount = Math::abs(buy ? getMaxBuyAmout(price) : getMaxSellAmout());
   if(Math::abs(amount) > maxAmount)
-    amount = amount > 0. ? maxAmount : -maxAmount;
+    amount = maxAmount;
 
   HashMap<String, Variant> args;
   args.append("amount", Math::abs(amount));
   args.append("price", price);
 
-  String url = amount > 0. ? String("https://www.bitstamp.net/api/buy/") : String("https://www.bitstamp.net/api/sell/");
+  String url = buy ? String("https://www.bitstamp.net/api/buy/") : String("https://www.bitstamp.net/api/sell/");
   Variant result;
   if(!request(url, false, args, result))
     return false;
@@ -46,14 +47,14 @@ bool_t BitstampMarket::createOrder(double amount, double price, BotProtocol::Ord
   String id = String("order_") + orderData.find("id")->toString();
   order.entityType = BotProtocol::marketOrder;
   order.entityId = getEntityId(id);
-  String type = orderData.find("type")->toString();
-  if(type != "0" && type != "1")
+  String btype = orderData.find("type")->toString();
+  if(btype != "0" && btype != "1")
   {
     error = "Received invalid order type.";
     return false;
   }
 
-  bool buy = type == "0";
+  buy = btype == "0";
   order.type = buy ? BotProtocol::Order::buy : BotProtocol::Order::sell;
 
   String dateStr = orderData.find("datetime")->toString();

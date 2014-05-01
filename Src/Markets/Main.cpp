@@ -70,9 +70,26 @@ private:
   {
     switch((BotProtocol::MessageType)header.messageType)
     {
+    case BotProtocol::createEntity:
+      if(size >= sizeof(BotProtocol::Entity))
+        return handleCreateEntity(*(BotProtocol::Entity*)data, size);
     case BotProtocol::controlEntity:
       if(size >= sizeof(BotProtocol::Entity))
         return handleControlEntity(*(BotProtocol::Entity*)data, size);
+    default:
+      break;
+    }
+    return true;
+  }
+
+  bool_t handleCreateEntity(BotProtocol::Entity& entity, size_t size)
+  {
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::marketOrder:
+      if(size >= sizeof(BotProtocol::CreateOrderArgs))
+        return handleCreateOrder(*(BotProtocol::CreateOrderArgs*)&entity);
+      break;
     default:
       break;
     }
@@ -90,6 +107,19 @@ private:
     default:
       break;
     }
+    return true;
+  }
+
+  bool_t handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
+  {
+    BotProtocol::Order order;
+    if(market->createOrder((BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
+    {
+      if(!connection.sendEntity(&order, sizeof(order)))
+        return false;
+    }
+    else
+      return connection.sendError(market->getLastError());
     return true;
   }
 
