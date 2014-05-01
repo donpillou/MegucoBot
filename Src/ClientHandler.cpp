@@ -256,6 +256,13 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
   state = marketState;
 
   market->send();
+
+  // request balance
+  BotProtocol::ControlMarketArgs controlMarketArgs;
+  controlMarketArgs.entityType = BotProtocol::market;
+  controlMarketArgs.entityId = market->getId();
+  controlMarketArgs.cmd = BotProtocol::ControlMarketArgs::refreshBalance;
+  sendMessage(BotProtocol::controlEntity, &controlMarketArgs, sizeof(controlMarketArgs));
 }
 
 void_t ClientHandler::handlePing(const byte_t* data, size_t size)
