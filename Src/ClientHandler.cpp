@@ -393,6 +393,10 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
   case marketState:
     switch((BotProtocol::EntityType)entity.entityType)
     {
+    case BotProtocol::error:
+      if(size >= sizeof(BotProtocol::Error))
+        market->sendEntity(&entity, sizeof(BotProtocol::Error));
+      break;
     case BotProtocol::marketTransaction:
       if(size >= sizeof(BotProtocol::Transaction))
         handleUpdateMarketTransaction(*(BotProtocol::Transaction*)&entity);
