@@ -207,7 +207,7 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data)
   Buffer recvBuffer;
   recvBuffer.resize(header.size);
   data = recvBuffer;
-  if(socket.recv(data, header.size, header.size) != header.size)
+  if(socket.recv(data, header.size, header.size) != (ssize_t)header.size)
   {
     error = Socket::getLastErrorString();
     return false;
