@@ -141,6 +141,18 @@ private:
           return connection.sendError(market->getLastError());
       }
       break;
+    case BotProtocol::ControlMarketArgs::refreshBalance:
+      {
+        BotProtocol::MarketBalance balance;
+        if(market->loadBalance(balance))
+        {
+          if(!connection.sendEntity(&balance, sizeof(balance)))
+            return false;
+        }
+        else
+          return connection.sendError(market->getLastError());
+      }
+      break;
     default:
       break;
     }

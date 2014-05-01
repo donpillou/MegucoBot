@@ -236,6 +236,7 @@ public:
       select,
       refreshTransactions,
       refreshOrders,
+      refreshBalance,
     };
 
     uint8_t cmd;

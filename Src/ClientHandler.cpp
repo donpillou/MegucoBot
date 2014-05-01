@@ -394,6 +394,10 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
       if(size >= sizeof(BotProtocol::Order))
         handleUpdateMarketOrder(*(BotProtocol::Order*)&entity);
       break;
+    case BotProtocol::marketBalance:
+      if(size >= sizeof(BotProtocol::MarketBalance))
+        handleUpdateMarketBalance(*(BotProtocol::MarketBalance*)&entity);
+      break;
     default:
       break;
     }
@@ -467,6 +471,9 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
     this->market = market;
     sendControlEntityResponse(&response, sizeof(response));
     {
+      const BotProtocol::MarketBalance& balance = market->getBalance();
+      if(balance.entityType == BotProtocol::marketBalance)
+        sendEntity(&balance, sizeof(balance));
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = market->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendEntity(&*i, sizeof(BotProtocol::Transaction));
@@ -477,6 +484,7 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
     break;
   case BotProtocol::ControlMarketArgs::refreshTransactions:
   case BotProtocol::ControlMarketArgs::refreshOrders:
+  case BotProtocol::ControlMarketArgs::refreshBalance:
     {
       ClientHandler* adapterClient = market->getAdapaterClient();
       if(!adapterClient)
@@ -643,7 +651,7 @@ void_t ClientHandler::handleRemoveSessionOrder(uint32_t id)
 void_t ClientHandler::handleUpdateMarketTransaction(BotProtocol::Transaction& transaction)
 {
   market->updateTransaction(transaction);
-  market->sendEntity(&transaction, sizeof(BotProtocol::Transaction));
+  market->sendEntity(&transaction, sizeof(transaction));
 }
 
 void_t ClientHandler::handleRemoveMarketTransaction(uint32_t id)
@@ -655,7 +663,13 @@ void_t ClientHandler::handleRemoveMarketTransaction(uint32_t id)
 void_t ClientHandler::handleUpdateMarketOrder(BotProtocol::Order& order)
 {
   market->updateOrder(order);
-  market->sendEntity(&order, sizeof(BotProtocol::Order));
+  market->sendEntity(&order, sizeof(order));
+}
+
+void_t ClientHandler::handleUpdateMarketBalance(BotProtocol::MarketBalance& balance)
+{
+  market->updateBalance(balance);
+  market->sendEntity(&balance, sizeof(balance));
 }
 
 void_t ClientHandler::handleRemoveMarketOrder(uint32_t id)

@@ -80,6 +80,8 @@ private:
   void_t handleUpdateMarketOrder(BotProtocol::Order& order);
   void_t handleRemoveMarketOrder(uint32_t id);
 
+  void_t handleUpdateMarketBalance(BotProtocol::MarketBalance& balance);
+
   void_t sendError(const String& errorMessage);
   void_t sendControlEntityResponse(const void_t* data, size_t size);
 

@@ -44,6 +44,9 @@ public:
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
+  void_t updateBalance(const BotProtocol::MarketBalance& balance) {this->balance = balance;}
+  const BotProtocol::MarketBalance& getBalance() const {return balance;}
+
   void_t send(ClientHandler* client = 0);
   void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
@@ -63,4 +66,5 @@ private:
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::Order> orders;
+  BotProtocol::MarketBalance balance;
 };
