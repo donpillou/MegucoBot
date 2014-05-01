@@ -307,7 +307,7 @@ bool_t BitstampMarket::request(const String& url, bool_t isPublic, const HashMap
     error = "Received unparsable data.";
     return false;
   }
-  else if(result.toMap().contains("error"))
+  else if(result.getType() == Variant::mapType && result.toMap().contains("error"))
   {
     List<String> errors;
     struct ErrorStringCollector

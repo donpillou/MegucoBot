@@ -452,38 +452,44 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
   Market* market = user->findMarket(controlMarketArgs.entityId);
   if(!market)
   {
+    response.success = 0;
+    sendControlEntityResponse(&response, sizeof(response));
     sendError("Unknown market.");
-    response.success = false;
-  }
-  else
-  {
-    switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
-    {
-    case BotProtocol::ControlMarketArgs::select:
-      if(this->market)
-        this->market->unregisterClient(*this);
-      market->registerClient(*this, false);
-      this->market = market;
-      {
-        const HashMap<uint32_t, BotProtocol::Transaction>& transactions = market->getTransactions();
-        for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-          sendEntity(&*i, sizeof(BotProtocol::Transaction));
-        const HashMap<uint32_t, BotProtocol::Order>& orders = market->getOrders();
-        for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-          sendEntity(&*i, sizeof(BotProtocol::Order));
-      }
-      break;
-    case BotProtocol::ControlMarketArgs::refreshTransactions:
-    case BotProtocol::ControlMarketArgs::refreshOrders:
-      {
-        ClientHandler* adapterClient = market->getAdapaterClient();
-        if(adapterClient)
-          adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarketArgs, sizeof(controlMarketArgs));
-      }
-    }
+    return;
   }
 
-  sendControlEntityResponse(&response, sizeof(response));
+  switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
+  {
+  case BotProtocol::ControlMarketArgs::select:
+    if(this->market)
+      this->market->unregisterClient(*this);
+    market->registerClient(*this, false);
+    this->market = market;
+    sendControlEntityResponse(&response, sizeof(response));
+    {
+      const HashMap<uint32_t, BotProtocol::Transaction>& transactions = market->getTransactions();
+      for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Transaction));
+      const HashMap<uint32_t, BotProtocol::Order>& orders = market->getOrders();
+      for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Order));
+    }
+    break;
+  case BotProtocol::ControlMarketArgs::refreshTransactions:
+  case BotProtocol::ControlMarketArgs::refreshOrders:
+    {
+      ClientHandler* adapterClient = market->getAdapaterClient();
+      if(!adapterClient)
+      {
+        response.success = 0;
+        sendControlEntityResponse(&response, sizeof(response));
+        return;
+      }
+      adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarketArgs, sizeof(controlMarketArgs));
+      sendControlEntityResponse(&response, sizeof(response));
+    }
+    break;
+  }
 }
 
 void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
@@ -538,43 +544,50 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
   Session* session = user->findSession(controlSessionArgs.entityId);
   if(!session)
   {
+    response.success = 0;
+    sendControlEntityResponse(&response, sizeof(response));
     sendError("Unknown session.");
-    response.success = false;
-  }
-  else
-  {
-    switch((BotProtocol::ControlSessionArgs::Command)controlSessionArgs.cmd)
-    {
-    case BotProtocol::ControlSessionArgs::startSimulation:
-      if(!session->startSimulation())
-        response.success = false;
-      else
-        session->send();
-      break;
-    case BotProtocol::ControlSessionArgs::stop:
-      if(!session->stop())
-        response.success = false;
-      else
-        session->send();
-      break;
-    case BotProtocol::ControlSessionArgs::select:
-      if(this->session)
-        this->session->unregisterClient(*this);
-      session->registerClient(*this, false);
-      this->session = session;
-      {
-        const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
-        for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-          sendEntity(&*i, sizeof(BotProtocol::Transaction));
-        const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
-        for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-          sendEntity(&*i, sizeof(BotProtocol::Order));
-      }
-      break;
-    }
+    return;
   }
 
-  sendControlEntityResponse(&response, sizeof(response));
+  switch((BotProtocol::ControlSessionArgs::Command)controlSessionArgs.cmd)
+  {
+  case BotProtocol::ControlSessionArgs::startSimulation:
+    if(!session->startSimulation())
+    {
+      response.success = 0;
+      sendControlEntityResponse(&response, sizeof(response));
+      return;
+    }
+    sendControlEntityResponse(&response, sizeof(response));
+    session->send();
+    break;
+  case BotProtocol::ControlSessionArgs::stop:
+    if(!session->stop())
+    {
+      response.success = 0;
+      sendControlEntityResponse(&response, sizeof(response));
+      return;
+    }
+    sendControlEntityResponse(&response, sizeof(response));
+    session->send();
+    break;
+  case BotProtocol::ControlSessionArgs::select:
+    if(this->session)
+      this->session->unregisterClient(*this);
+    session->registerClient(*this, false);
+    this->session = session;
+    sendControlEntityResponse(&response, sizeof(response));
+    {
+      const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
+      for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Transaction));
+      const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
+      for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Order));
+    }
+    break;
+  }
 }
 
 void_t ClientHandler::handleCreateSessionTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)

@@ -36,11 +36,11 @@ public:
   BotProtocol::Market::State getState() const {return state;}
   ClientHandler* getAdapaterClient() const {return adapterClient;}
 
-  void_t updateTransaction(const BotProtocol::Transaction& transaction) {transactions.append(id, transaction);}
+  void_t updateTransaction(const BotProtocol::Transaction& transaction) {transactions.append(transaction.entityId, transaction);}
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
-  void_t updateOrder(const BotProtocol::Order& order) {orders.append(id, order);}
+  void_t updateOrder(const BotProtocol::Order& order) {orders.append(order.entityId, order);}
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 

@@ -102,10 +102,11 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data)
     error = "Received invalid data.";
     return false;
   }
+  size_t dataSize = header.size - sizeof(header);
   Buffer recvBuffer;
-  recvBuffer.resize(header.size);
+  recvBuffer.resize(dataSize);
   data = recvBuffer;
-  if(socket.recv(data, header.size, header.size) != header.size)
+  if(socket.recv(data, dataSize, dataSize) != dataSize)
   {
     error = Socket::getLastErrorString();
     return false;
