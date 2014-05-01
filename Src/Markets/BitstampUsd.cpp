@@ -166,7 +166,7 @@ bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
     order.price = orderData.find("price")->toDouble();
     order.amount = Math::abs(orderData.find("amount")->toDouble());
     double total = getOrderCharge(buy ? order.amount : -order.amount, order.price);
-    order.fee = Math::abs(total) - Math::abs(order.price * order.amount);
+    order.fee = Math::abs(Math::abs(total) - order.price * order.amount);
 
     this->orders.append(order.entityId, order);
     orders.append(order);
@@ -220,7 +220,7 @@ bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transact
       continue;
     transaction.date = time.toTimestamp();
 
-    transaction.fee = transactionData.find("fee")->toDouble();
+    transaction.fee = Math::abs(transactionData.find("fee")->toDouble());
 
     double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
