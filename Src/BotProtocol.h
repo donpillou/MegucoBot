@@ -23,6 +23,7 @@ public:
     controlEntity,
     controlEntityResponse,
     createEntity,
+    createEntityResponse,
     requestEntities,
   };
   
@@ -51,6 +52,12 @@ public:
   {
     uint16_t entityType; // EntityType
     uint32_t entityId;
+  };
+
+  struct CreateResponse : public Entity
+  {
+    uint32_t id; // id of the created entity
+    uint8_t success;
   };
 
   struct LoginRequest

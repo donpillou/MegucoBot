@@ -422,9 +422,16 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
 
 void_t ClientHandler::handleCreateMarket(BotProtocol::Market& createMarketArgs)
 {
+  BotProtocol::CreateResponse response;
+  response.entityType = BotProtocol::market;
+  response.entityId = createMarketArgs.entityId;
+  response.id = 0;
+  response.success = 0;
+
   MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createMarketArgs.marketAdapterId);
   if(!marketAdapter)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Unknown market adapter.");
     return;
   }
@@ -435,9 +442,15 @@ void_t ClientHandler::handleCreateMarket(BotProtocol::Market& createMarketArgs)
   Market* market = user->createMarket(*marketAdapter, username, key, secret);
   if(!market)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Could not create market.");
     return;
   }
+
+  response.id = market->getId();
+  response.success = 1;
+  sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
+
   market->send();
   user->saveData();
 
@@ -516,10 +529,17 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarket& controlMar
 
 void_t ClientHandler::handleCreateSession(BotProtocol::Session& createSessionArgs)
 {
+  BotProtocol::CreateResponse response;
+  response.entityType = BotProtocol::session;
+  response.entityId = createSessionArgs.entityId;
+  response.id = 0;
+  response.success = 0;
+
   String name = BotProtocol::getString(createSessionArgs.name);
   BotEngine* botEngine = serverHandler.findBotEngine(createSessionArgs.botEngineId);
   if(!botEngine)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Unknown bot engine.");
     return;
   }
@@ -528,6 +548,7 @@ void_t ClientHandler::handleCreateSession(BotProtocol::Session& createSessionArg
   MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createSessionArgs.marketId);
   if(!marketAdapter)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Unknown market.");
     return;
   }
@@ -535,9 +556,14 @@ void_t ClientHandler::handleCreateSession(BotProtocol::Session& createSessionArg
   Session* session = user->createSession(name, *botEngine, *marketAdapter, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
   if(!session)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Could not create session.");
     return;
   }
+
+  response.id = session->getId();
+  response.success = 1;
+  sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->send();
   user->saveData();
@@ -614,12 +640,23 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSession& controlS
 
 void_t ClientHandler::handleCreateSessionTransaction(BotProtocol::Transaction& createTransactionArgs)
 {
+  BotProtocol::CreateResponse response;
+  response.entityType = BotProtocol::sessionTransaction;
+  response.entityId = createTransactionArgs.entityId;
+  response.id = 0;
+  response.success = 0;
+
   BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
   if(!transaction)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Could not create transaction.");
     return;
   }
+
+  response.id = transaction->entityId;
+  response.success = 1;
+  sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->sendEntity(transaction, sizeof(BotProtocol::Transaction));
   session->saveData();
@@ -639,12 +676,23 @@ void_t ClientHandler::handleRemoveSessionTransaction(uint32_t id)
 
 void_t ClientHandler::handleCreateSessionOrder(BotProtocol::Order& createOrderArgs)
 {
+  BotProtocol::CreateResponse response;
+  response.entityType = BotProtocol::sessionOrder;
+  response.entityId = createOrderArgs.entityId;
+  response.id = 0;
+  response.success = 0;
+
   BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
   if(!order)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Could not create order.");
     return;
   }
+
+  response.id = order->entityId;
+  response.success = 1;
+  sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->sendEntity(order, sizeof(BotProtocol::Order));
   session->saveData();
@@ -694,14 +742,22 @@ void_t ClientHandler::handleUpdateMarketBalance(BotProtocol::MarketBalance& bala
 
 void_t ClientHandler::handleCreateMarketOrder(BotProtocol::Order& createOrderArgs)
 {
+  BotProtocol::CreateResponse response;
+  response.entityType = BotProtocol::marketOrder;
+  response.entityId = createOrderArgs.entityId;
+  response.id = 0;
+  response.success = 0;
+
   if(!market)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Invalid market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Invalid market.");
     return;
   }
