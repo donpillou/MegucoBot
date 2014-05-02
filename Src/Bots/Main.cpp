@@ -88,7 +88,7 @@ int_t main(int_t argc, char_t* argv[])
 
   for(;;)
   {
-    BotProtocol::CreateTransactionArgs transaction;
+    BotProtocol::Transaction transaction;
     transaction.entityType = BotProtocol::sessionTransaction;
     transaction.amount = 1.;
     transaction.fee = 0.01;
@@ -109,7 +109,7 @@ int_t main(int_t argc, char_t* argv[])
     }
     Thread::sleep(1000);
 
-    BotProtocol::CreateOrderArgs order;
+    BotProtocol::Order order;
     order.amount = 1.;
     order.fee = 0.01;
     order.price = 1000.;

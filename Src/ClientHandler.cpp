@@ -284,15 +284,15 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t siz
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::session:
-      if(size >= sizeof(BotProtocol::CreateSessionArgs))
-        handleCreateSession(*(BotProtocol::CreateSessionArgs*)&entity);
+      if(size >= sizeof(BotProtocol::Session))
+        handleCreateSession(*(BotProtocol::Session*)&entity);
       break;
     case BotProtocol::market:
-      if(size >= sizeof(BotProtocol::CreateMarketArgs))
-        handleCreateMarket(*(BotProtocol::CreateMarketArgs*)&entity);
+      if(size >= sizeof(BotProtocol::Market))
+        handleCreateMarket(*(BotProtocol::Market*)&entity);
     case BotProtocol::marketOrder:
-      if(size >= sizeof(BotProtocol::CreateOrderArgs))
-        handleCreateMarketOrder(*(BotProtocol::CreateOrderArgs*)&entity);
+      if(size >= sizeof(BotProtocol::Order))
+        handleCreateMarketOrder(*(BotProtocol::Order*)&entity);
     default:
       break;
     }
@@ -301,12 +301,12 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t siz
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::sessionTransaction:
-      if(size >= sizeof(BotProtocol::CreateTransactionArgs))
-        handleCreateSessionTransaction(*(BotProtocol::CreateTransactionArgs*)&entity);
+      if(size >= sizeof(BotProtocol::Transaction))
+        handleCreateSessionTransaction(*(BotProtocol::Transaction*)&entity);
       break;
     case BotProtocol::sessionOrder:
-      if(size >= sizeof(BotProtocol::CreateOrderArgs))
-        handleCreateSessionOrder(*(BotProtocol::CreateOrderArgs*)&entity);
+      if(size >= sizeof(BotProtocol::Order))
+        handleCreateSessionOrder(*(BotProtocol::Order*)&entity);
       break;
     default:
       break;
@@ -420,7 +420,7 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
   }
 }
 
-void_t ClientHandler::handleCreateMarket(BotProtocol::CreateMarketArgs& createMarketArgs)
+void_t ClientHandler::handleCreateMarket(BotProtocol::Market& createMarketArgs)
 {
   MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createMarketArgs.marketAdapterId);
   if(!marketAdapter)
@@ -514,7 +514,7 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
   }
 }
 
-void_t ClientHandler::handleCreateSession(BotProtocol::CreateSessionArgs& createSessionArgs)
+void_t ClientHandler::handleCreateSession(BotProtocol::Session& createSessionArgs)
 {
   String name = BotProtocol::getString(createSessionArgs.name);
   BotEngine* botEngine = serverHandler.findBotEngine(createSessionArgs.botEngineId);
@@ -612,7 +612,7 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
   }
 }
 
-void_t ClientHandler::handleCreateSessionTransaction(BotProtocol::CreateTransactionArgs& createTransactionArgs)
+void_t ClientHandler::handleCreateSessionTransaction(BotProtocol::Transaction& createTransactionArgs)
 {
   BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
   if(!transaction)
@@ -637,7 +637,7 @@ void_t ClientHandler::handleRemoveSessionTransaction(uint32_t id)
   session->saveData();
 }
 
-void_t ClientHandler::handleCreateSessionOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
+void_t ClientHandler::handleCreateSessionOrder(BotProtocol::Order& createOrderArgs)
 {
   BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
   if(!order)
@@ -692,7 +692,7 @@ void_t ClientHandler::handleUpdateMarketBalance(BotProtocol::MarketBalance& bala
   market->sendEntity(&balance, sizeof(balance));
 }
 
-void_t ClientHandler::handleCreateMarketOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
+void_t ClientHandler::handleCreateMarketOrder(BotProtocol::Order& createOrderArgs)
 {
   if(!market)
   {

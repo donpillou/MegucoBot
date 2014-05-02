@@ -126,6 +126,9 @@ void_t Market::send(ClientHandler* client)
   market.entityId = id;
   market.marketAdapterId = marketAdapter->getId();
   market.state = state;
+  BotProtocol::setString(market.userName, String());
+  BotProtocol::setString(market.key, String());
+  BotProtocol::setString(market.secret, String());
 
   if(client)
     client->sendEntity(&market, sizeof(market));

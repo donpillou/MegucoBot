@@ -87,8 +87,8 @@ private:
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::marketOrder:
-      if(size >= sizeof(BotProtocol::CreateOrderArgs))
-        return handleCreateOrder(*(BotProtocol::CreateOrderArgs*)&entity);
+      if(size >= sizeof(BotProtocol::Order))
+        return handleCreateOrder(*(BotProtocol::Order*)&entity);
       break;
     default:
       break;
@@ -110,7 +110,7 @@ private:
     return true;
   }
 
-  bool_t handleCreateOrder(BotProtocol::CreateOrderArgs& createOrderArgs)
+  bool_t handleCreateOrder(BotProtocol::Order& createOrderArgs)
   {
     BotProtocol::Order order;
     if(market->createOrder((BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))

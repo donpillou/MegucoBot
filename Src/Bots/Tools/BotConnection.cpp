@@ -83,9 +83,9 @@ bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactio
   }
 }
 
-bool_t BotConnection::createTransaction(const BotProtocol::CreateTransactionArgs& transaction, uint32_t& id)
+bool_t BotConnection::createTransaction(const BotProtocol::Transaction& transaction, uint32_t& id)
 {
-  return createEntity<BotProtocol::Transaction>(&transaction, sizeof(BotProtocol::CreateTransactionArgs), id);
+  return createEntity<BotProtocol::Transaction>(&transaction, sizeof(transaction), id);
 }
 
 bool_t BotConnection::removeTransaction(uint32_t id)
@@ -93,9 +93,9 @@ bool_t BotConnection::removeTransaction(uint32_t id)
   return removeEntity(BotProtocol::sessionTransaction, id);
 }
 
-bool_t BotConnection::createOrder(const BotProtocol::CreateOrderArgs& order, uint32_t& id)
+bool_t BotConnection::createOrder(const BotProtocol::Order& order, uint32_t& id)
 {
-  return createEntity<BotProtocol::Order>(&order, sizeof(BotProtocol::CreateOrderArgs), id);
+  return createEntity<BotProtocol::Order>(&order, sizeof(order), id);
 }
 
 bool_t BotConnection::removeOrder(uint32_t id)

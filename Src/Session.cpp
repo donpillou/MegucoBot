@@ -221,9 +221,11 @@ void_t Session::send(ClientHandler* client)
   sessionData.entityType = BotProtocol::session;
   sessionData.entityId = id;
   BotProtocol::setString(sessionData.name, name);
-  sessionData.engineId = engine->getId();
+  sessionData.botEngineId = engine->getId();
   sessionData.marketId = marketAdapter->getId();
   sessionData.state = state;
+  sessionData.balanceBase = balanceBase;
+  sessionData.balanceComm = balanceComm;
   if(client)
     client->sendEntity(&sessionData, sizeof(sessionData));
   else

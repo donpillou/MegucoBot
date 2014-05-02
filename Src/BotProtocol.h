@@ -109,9 +109,11 @@ public:
     };
 
     char_t name[33];
-    uint32_t engineId;
+    uint32_t botEngineId;
     uint32_t marketId;
     uint8_t state;
+    double balanceBase;
+    double balanceComm;
   }; 
 
   struct BotEngine : public Entity
@@ -167,6 +169,9 @@ public:
 
     uint32_t marketAdapterId;
     uint8_t state;
+    char_t userName[33];
+    char_t key[65];
+    char_t secret[65];
   };
 
   struct MarketBalance : public Entity
@@ -176,15 +181,6 @@ public:
     double availableUsd;
     double availableBtc;
     double fee;
-  };
-
-  struct CreateSessionArgs : public Entity
-  {
-    char_t name[33];
-    uint32_t botEngineId;
-    uint32_t marketId;
-    double balanceBase;
-    double balanceComm;
   };
 
   struct ControlSessionArgs : public Entity
@@ -203,30 +199,6 @@ public:
   {
     uint8_t cmd;
     uint8_t success;
-  };
-
-  struct CreateTransactionArgs : public Entity
-  {
-    uint8_t type; // see Transaction::Type
-    double price;
-    double amount;
-    double fee;
-  };
-
-  struct CreateOrderArgs : public Entity
-  {
-    uint8_t type; // see Order::Type
-    double price;
-    double amount;
-    double fee;
-  };
-  
-  struct CreateMarketArgs : public Entity
-  {
-    uint32_t marketAdapterId;
-    char_t userName[33];
-    char_t key[65];
-    char_t secret[65];
   };
 
   struct ControlMarketArgs : public Entity
