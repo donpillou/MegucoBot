@@ -33,9 +33,13 @@ bool_t BitstampMarket::createOrder(BotProtocol::Order::Type type, double price, 
   if(Math::abs(amount) > maxAmount)
     amount = maxAmount;
 
+  String priceStr, amountStr;
+  priceStr.printf("%.2f", price);
+  amountStr.printf("%.8f", Math::abs(amount));
+
   HashMap<String, Variant> args;
-  args.append("amount", Math::abs(amount));
-  args.append("price", price);
+  args.append("amount", amountStr);
+  args.append("price", priceStr);
 
   String url = buy ? String("https://www.bitstamp.net/api/buy/") : String("https://www.bitstamp.net/api/sell/");
   Variant result;
