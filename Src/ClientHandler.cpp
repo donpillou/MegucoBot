@@ -258,11 +258,11 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
   market->send();
 
   // request balance
-  BotProtocol::ControlMarketArgs controlMarketArgs;
-  controlMarketArgs.entityType = BotProtocol::market;
-  controlMarketArgs.entityId = market->getId();
-  controlMarketArgs.cmd = BotProtocol::ControlMarketArgs::refreshBalance;
-  sendMessage(BotProtocol::controlEntity, &controlMarketArgs, sizeof(controlMarketArgs));
+  BotProtocol::ControlMarket controlMarket;
+  controlMarket.entityType = BotProtocol::market;
+  controlMarket.entityId = market->getId();
+  controlMarket.cmd = BotProtocol::ControlMarket::refreshBalance;
+  sendMessage(BotProtocol::controlEntity, &controlMarket, sizeof(controlMarket));
 }
 
 void_t ClientHandler::handlePing(const byte_t* data, size_t size)
@@ -372,12 +372,12 @@ void_t ClientHandler::handleControlEntity(BotProtocol::Entity& entity, size_t si
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::session:
-      if(size >= sizeof(BotProtocol::ControlSessionArgs))
-        handleControlSession(*(BotProtocol::ControlSessionArgs*)&entity);
+      if(size >= sizeof(BotProtocol::ControlSession))
+        handleControlSession(*(BotProtocol::ControlSession*)&entity);
       break;
     case BotProtocol::market:
-      if(size >= sizeof(BotProtocol::ControlMarketArgs))
-        handleControlMarket(*(BotProtocol::ControlMarketArgs*)&entity);
+      if(size >= sizeof(BotProtocol::ControlMarket))
+        handleControlMarket(*(BotProtocol::ControlMarket*)&entity);
       break;
     default:
       break;
@@ -459,15 +459,15 @@ void_t ClientHandler::handleRemoveMarket(uint32_t id)
   user->saveData();
 }
 
-void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& controlMarketArgs)
+void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarket& controlMarket)
 {
   BotProtocol::ControlMarketResponse response;
   response.entityType = BotProtocol::market;
-  response.entityId = controlMarketArgs.entityId;
-  response.cmd = controlMarketArgs.cmd;
+  response.entityId = controlMarket.entityId;
+  response.cmd = controlMarket.cmd;
   response.success = 1;
 
-  Market* market = user->findMarket(controlMarketArgs.entityId);
+  Market* market = user->findMarket(controlMarket.entityId);
   if(!market)
   {
     response.success = 0;
@@ -476,9 +476,9 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
     return;
   }
 
-  switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
+  switch((BotProtocol::ControlMarket::Command)controlMarket.cmd)
   {
-  case BotProtocol::ControlMarketArgs::select:
+  case BotProtocol::ControlMarket::select:
     if(this->market)
       this->market->unregisterClient(*this);
     market->registerClient(*this, false);
@@ -496,9 +496,9 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
         sendEntity(&*i, sizeof(BotProtocol::Order));
     }
     break;
-  case BotProtocol::ControlMarketArgs::refreshTransactions:
-  case BotProtocol::ControlMarketArgs::refreshOrders:
-  case BotProtocol::ControlMarketArgs::refreshBalance:
+  case BotProtocol::ControlMarket::refreshTransactions:
+  case BotProtocol::ControlMarket::refreshOrders:
+  case BotProtocol::ControlMarket::refreshBalance:
     {
       ClientHandler* adapterClient = market->getAdapaterClient();
       if(!adapterClient)
@@ -507,7 +507,7 @@ void_t ClientHandler::handleControlMarket(BotProtocol::ControlMarketArgs& contro
         sendControlEntityResponse(&response, sizeof(response));
         return;
       }
-      adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarketArgs, sizeof(controlMarketArgs));
+      adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarket, sizeof(controlMarket));
       sendControlEntityResponse(&response, sizeof(response));
     }
     break;
@@ -555,15 +555,15 @@ void_t ClientHandler::handleRemoveSession(uint32_t id)
   user->saveData();
 }
 
-void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& controlSessionArgs)
+void_t ClientHandler::handleControlSession(BotProtocol::ControlSession& controlSession)
 {
   BotProtocol::ControlSessionResponse response;
   response.entityType = BotProtocol::market;
-  response.entityId = controlSessionArgs.entityId;
-  response.cmd = controlSessionArgs.cmd;
+  response.entityId = controlSession.entityId;
+  response.cmd = controlSession.cmd;
   response.success = 1;
 
-  Session* session = user->findSession(controlSessionArgs.entityId);
+  Session* session = user->findSession(controlSession.entityId);
   if(!session)
   {
     response.success = 0;
@@ -572,9 +572,9 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
     return;
   }
 
-  switch((BotProtocol::ControlSessionArgs::Command)controlSessionArgs.cmd)
+  switch((BotProtocol::ControlSession::Command)controlSession.cmd)
   {
-  case BotProtocol::ControlSessionArgs::startSimulation:
+  case BotProtocol::ControlSession::startSimulation:
     if(!session->startSimulation())
     {
       response.success = 0;
@@ -584,7 +584,7 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
     sendControlEntityResponse(&response, sizeof(response));
     session->send();
     break;
-  case BotProtocol::ControlSessionArgs::stop:
+  case BotProtocol::ControlSession::stop:
     if(!session->stop())
     {
       response.success = 0;
@@ -594,7 +594,7 @@ void_t ClientHandler::handleControlSession(BotProtocol::ControlSessionArgs& cont
     sendControlEntityResponse(&response, sizeof(response));
     session->send();
     break;
-  case BotProtocol::ControlSessionArgs::select:
+  case BotProtocol::ControlSession::select:
     if(this->session)
       this->session->unregisterClient(*this);
     session->registerClient(*this, false);

@@ -101,8 +101,8 @@ private:
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::market:
-      if(size >= sizeof(BotProtocol::ControlMarketArgs))
-        return handleControlMarket(*(BotProtocol::ControlMarketArgs*)&entity);
+      if(size >= sizeof(BotProtocol::ControlMarket))
+        return handleControlMarket(*(BotProtocol::ControlMarket*)&entity);
       break;
     default:
       break;
@@ -123,11 +123,11 @@ private:
     return true;
   }
 
-  bool_t handleControlMarket(BotProtocol::ControlMarketArgs& controlMarketArgs)
+  bool_t handleControlMarket(BotProtocol::ControlMarket& controlMarket)
   {
-    switch((BotProtocol::ControlMarketArgs::Command)controlMarketArgs.cmd)
+    switch((BotProtocol::ControlMarket::Command)controlMarket.cmd)
     {
-    case BotProtocol::ControlMarketArgs::refreshOrders:
+    case BotProtocol::ControlMarket::refreshOrders:
       {
         List<BotProtocol::Order> orders;
         if(market->loadOrders(orders))
@@ -149,7 +149,7 @@ private:
           return connection.sendError(market->getLastError());
       }
       break;
-    case BotProtocol::ControlMarketArgs::refreshTransactions:
+    case BotProtocol::ControlMarket::refreshTransactions:
       {
         List<BotProtocol::Transaction> transactions;
         if(market->loadTransactions(transactions))
@@ -171,7 +171,7 @@ private:
           return connection.sendError(market->getLastError());
       }
       break;
-    case BotProtocol::ControlMarketArgs::refreshBalance:
+    case BotProtocol::ControlMarket::refreshBalance:
       {
         BotProtocol::MarketBalance balance;
         if(market->loadBalance(balance))

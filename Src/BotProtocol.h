@@ -183,7 +183,7 @@ public:
     double fee;
   };
 
-  struct ControlSessionArgs : public Entity
+  struct ControlSession : public Entity
   {
     enum Command
     {
@@ -201,7 +201,7 @@ public:
     uint8_t success;
   };
 
-  struct ControlMarketArgs : public Entity
+  struct ControlMarket : public Entity
   {
     enum Command
     {
