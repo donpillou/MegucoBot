@@ -84,6 +84,7 @@ private:
   void_t handleMarketUpdateMarketBalance(BotProtocol::MarketBalance& balance);
 
   void_t handleUserCreateMarketOrder(BotProtocol::Order& order);
+  void_t handleUserUpdateMarketOrder(BotProtocol::Order& order);
   void_t handleUserRemoveMarketOrder(uint32_t id);
 
   void_t sendError(const String& errorMessage);

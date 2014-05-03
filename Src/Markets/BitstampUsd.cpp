@@ -23,7 +23,7 @@ bool_t BitstampMarket::loadBalanceAndFee()
   return true;
 }
 
-bool_t BitstampMarket::createOrder(BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order)
+bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order)
 {
   if(!loadBalanceAndFee())
     return false;
@@ -48,9 +48,15 @@ bool_t BitstampMarket::createOrder(BotProtocol::Order::Type type, double price, 
 
   const HashMap<String, Variant>& orderData = result.toMap();
 
-  String id = String("order_") + orderData.find("id")->toString();
+  String bitstampId = String("order_") + orderData.find("id")->toString();
   order.entityType = BotProtocol::marketOrder;
-  order.entityId = getEntityId(id);
+  if(entityId != 0)
+  {
+    setEntityId(bitstampId, entityId);
+    order.entityId = entityId;
+  }
+  else
+    order.entityId = getNewEntityId(bitstampId);
   String btype = orderData.find("type")->toString();
   if(btype != "0" && btype != "1")
   {
@@ -153,12 +159,12 @@ bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
     const Variant& orderDataVar = *i;
     HashMap<String, Variant> orderData = orderDataVar.toMap();
     
-    String id = String("order_") + orderData.find("id")->toString();
+    String bitstampId = String("order_") + orderData.find("id")->toString();
     String type = orderData.find("type")->toString();
     if(type != "0" && type != "1")
       continue;
 
-    order.entityId = getEntityId(id);
+    order.entityId = getNewEntityId(bitstampId);
     bool buy = type == "0";
     order.type = buy ? BotProtocol::Order::buy : BotProtocol::Order::sell;
 
@@ -213,12 +219,12 @@ bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transact
     const Variant& transactionDataVar = *i;
     const HashMap<String, Variant>& transactionData = transactionDataVar.toMap();
     
-    String id = String("transaction_") + transactionData.find("id")->toString();
+    String bitstampId = String("transaction_") + transactionData.find("id")->toString();
     String type = transactionData.find("type")->toString();
     if(type != "2")
       continue;
 
-    transaction.entityId = getEntityId(id);
+    transaction.entityId = getNewEntityId(bitstampId);
 
     String dateStr = transactionData.find("datetime")->toString();
     if(dateStr.scanf("%d-%d-%d %d:%d:%d", &time.year, &time.month, &time.day, &time.hour, &time.min, &time.sec) != 6)
@@ -375,14 +381,20 @@ void_t BitstampMarket::avoidSpamming()
   // TODO: allow more than 1 request per second but limit requests to 600 per 10 minutes
 }
 
-uint32_t BitstampMarket::getEntityId(const String& id)
+void_t BitstampMarket::setEntityId(const String& bitstampId, uint32_t entityId)
 {
-  HashMap<String, uint32_t>::Iterator it = entityIdsById.find(id);
+  entityIds.append(entityId, bitstampId);
+  entityIdsById.append(bitstampId, entityId);
+}
+
+uint32_t BitstampMarket::getNewEntityId(const String& bitstampId)
+{
+  HashMap<String, uint32_t>::Iterator it = entityIdsById.find(bitstampId);
   if(it == entityIdsById.end())
   {
     uint32_t entityId = nextEntityId++;
-    entityIds.append(entityId, id);
-    entityIdsById.append(id, entityId);
+    entityIds.append(entityId, bitstampId);
+    entityIdsById.append(bitstampId, entityId);
     return entityId;
   }
   return *it;

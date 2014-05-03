@@ -117,6 +117,10 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       if(size >= sizeof(BotProtocol::Entity))
         handleControlEntity(*(BotProtocol::Entity*)data, size);
       break;
+    case BotProtocol::updateEntity:
+      if(size >= sizeof(BotProtocol::Entity))
+        handleUpdateEntity(*(BotProtocol::Entity*)data, size);
+      break;
     case BotProtocol::removeEntity:
       if(size >= sizeof(BotProtocol::Entity))
         handleRemoveEntity(*(const BotProtocol::Entity*)data);
@@ -298,9 +302,11 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t siz
     case BotProtocol::market:
       if(size >= sizeof(BotProtocol::Market))
         handleUserCreateMarket(*(BotProtocol::Market*)&entity);
+      break;
     case BotProtocol::marketOrder:
       if(size >= sizeof(BotProtocol::Order))
         handleUserCreateMarketOrder(*(BotProtocol::Order*)&entity);
+      break;
     default:
       break;
     }
@@ -405,6 +411,17 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
 {
   switch(state)
   {
+  case userState:
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::marketOrder:
+      if(size >= sizeof(BotProtocol::Order))
+        handleUserUpdateMarketOrder(*(BotProtocol::Order*)&entity);
+      break;
+    default:
+      break;
+    }
+    break;
   case marketState:
     switch((BotProtocol::EntityType)entity.entityType)
     {
@@ -427,6 +444,7 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
     default:
       break;
     }
+    break;
   default:
     break;
   }
@@ -444,7 +462,6 @@ void_t ClientHandler::handleCreateEntityResponse(BotProtocol::CreateEntityRespon
         return;
       response.entityId = userRequestId;
       client->sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-      break;
     }
     break;
   default:
@@ -799,6 +816,23 @@ void_t ClientHandler::handleUserCreateMarketOrder(BotProtocol::Order& createOrde
 
   createOrderArgs.entityId = market->createRequestId(BotProtocol::marketOrder, createOrderArgs.entityId, *this);
   marketAdapter->sendMessage(BotProtocol::createEntity, &createOrderArgs, sizeof(createOrderArgs));
+}
+
+void_t ClientHandler::handleUserUpdateMarketOrder(BotProtocol::Order& order)
+{
+  if(!market)
+  {
+    sendError("Unknown market.");
+    return;
+  }
+  ClientHandler* marketAdapter = market->getAdapaterClient();
+  if(!marketAdapter)
+  {
+    sendError("Invalid market state.");
+    return;
+  }
+
+  marketAdapter->sendMessage(BotProtocol::updateEntity, &order, sizeof(order));
 }
 
 void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t id)

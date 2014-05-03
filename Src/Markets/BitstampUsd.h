@@ -43,7 +43,8 @@ private:
 
   bool_t loadBalanceAndFee();
 
-  uint32_t getEntityId(const String& id);
+  void_t setEntityId(const String& bitstampId, uint32_t entityId);
+  uint32_t getNewEntityId(const String& bitstampId);
   void_t removeEntityId(uint32_t entityId);
 
 private: // Market
@@ -51,6 +52,6 @@ private: // Market
   virtual bool_t loadOrders(List<BotProtocol::Order>& orders);
   virtual bool_t loadBalance(BotProtocol::MarketBalance& balance);
   virtual bool_t loadTransactions(List<BotProtocol::Transaction>& transactions);
-  virtual bool_t createOrder(BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order);
+  virtual bool_t createOrder(uint32_t id, BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order);
   virtual bool_t cancelOrder(uint32_t id);
 };

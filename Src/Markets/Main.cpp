@@ -74,6 +74,10 @@ private:
       if(size >= sizeof(BotProtocol::Entity))
         return handleCreateEntity(*(BotProtocol::Entity*)data, size);
       break;
+    case BotProtocol::updateEntity:
+      if(size >= sizeof(BotProtocol::Entity))
+        return handleUpdateEntity(*(BotProtocol::Entity*)data, size);
+      break;
     case BotProtocol::removeEntity:
       if(size >= sizeof(BotProtocol::Entity))
         return handleRemoveEntity(*(BotProtocol::Entity*)data);
@@ -95,6 +99,20 @@ private:
     case BotProtocol::marketOrder:
       if(size >= sizeof(BotProtocol::Order))
         return handleCreateOrder(*(BotProtocol::Order*)&entity);
+      break;
+    default:
+      break;
+    }
+    return true;
+  }
+
+  bool_t handleUpdateEntity(BotProtocol::Entity& entity, size_t size)
+  {
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::marketOrder:
+      if(size >= sizeof(BotProtocol::Order))
+        return handleUpdateOrder(*(BotProtocol::Order*)&entity);
       break;
     default:
       break;
@@ -138,7 +156,7 @@ private:
     response.success = 0;
 
     BotProtocol::Order order;
-    if(!market->createOrder((BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
+    if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
     {
       if(!connection.sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response)))
         return false;
@@ -149,6 +167,25 @@ private:
     response.success = 1;
     if(!connection.sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response)))
       return false;
+    return connection.sendEntity(&order, sizeof(order));
+  }
+
+  bool_t handleUpdateOrder(BotProtocol::Order& updateOrderArgs)
+  {
+    // step #1 cancel current order
+    if(!market->cancelOrder(updateOrderArgs.entityId))
+      return connection.sendError(market->getLastError());
+
+    // step #2 create new order with same id
+    BotProtocol::Order order;
+    if(!market->createOrder(updateOrderArgs.entityId, (BotProtocol::Order::Type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, order))
+    {
+      if(!connection.sendError(market->getLastError()))
+        return false;
+      if(!connection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
+        return false;
+      return true;
+    }
     return connection.sendEntity(&order, sizeof(order));
   }
 
