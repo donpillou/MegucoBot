@@ -153,24 +153,6 @@ bool_t Market::removeRequestId(BotProtocol::EntityType entityType, uint32_t id, 
   return true;
 }
 
-bool_t Market::deleteTransaction(uint32_t id)
-{
-  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
-  if(it == transactions.end())
-    return false;
-  transactions.remove(it);
-  return true;
-}
-
-bool_t Market::deleteOrder(uint32_t id)
-{
-  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(id);
-  if(it == orders.end())
-    return false;
-  orders.remove(it);
-  return true;
-}
-
 void_t Market::send(ClientHandler* client)
 {
   BotProtocol::Market market;
