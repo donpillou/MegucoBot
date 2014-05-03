@@ -125,9 +125,9 @@ int_t main(int_t argc, char_t* argv[])
       while(dir.read(path, isDir))
         if(!isDir && path != 
 #ifdef _WIN32
-          "botd.exe"
+          "MegucoBot.exe"
 #else
-          "botd"
+          "MegucoBot"
 #endif
           )
         {

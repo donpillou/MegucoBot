@@ -7,10 +7,11 @@
 #include "BotEngine.h"
 #include "MarketAdapter.h"
 #include "User.h"
+#include "Market.h"
 
-Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, MarketAdapter& marketAdapter, double balanceBase, double balanceComm) :
+Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
-  id(id), name(name), engine(&engine), marketAdapter(&marketAdapter),
+  id(id), name(name), engine(&engine), market(&market),
   simulation(true), balanceBase(balanceBase), balanceComm(balanceComm),
   state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1) {}
 
@@ -22,7 +23,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   id = data.find("id")->toUInt();
   name = data.find("name")->toString();
   engine = serverHandler.findBotEngine(data.find("engine")->toString());
-  marketAdapter = serverHandler.findMarketAdapter(data.find("market")->toString());
+  market = user.findMarket(data.find("marketId")->toUInt());
   balanceBase = data.find("balanceBase")->toDouble();
   balanceComm = data.find("balanceComm")->toDouble();
   const List<Variant>& transactionsVar = data.find("transactions")->toList();
@@ -80,7 +81,7 @@ void_t Session::toVariant(Variant& variant)
   data.append("id", id);
   data.append("name", name);
   data.append("engine", engine->getName());
-  data.append("market", marketAdapter->getName());
+  data.append("marketId", market->getId());
   data.append("balanceBase", balanceBase);
   data.append("balanceComm", balanceComm);
   List<Variant>& transactionsVar = data.append("transactions", Variant()).toList();
@@ -222,7 +223,7 @@ void_t Session::send(ClientHandler* client)
   sessionData.entityId = id;
   BotProtocol::setString(sessionData.name, name);
   sessionData.botEngineId = engine->getId();
-  sessionData.marketId = marketAdapter->getId();
+  sessionData.marketId = market->getId();
   sessionData.state = state;
   sessionData.balanceBase = balanceBase;
   sessionData.balanceComm = balanceComm;

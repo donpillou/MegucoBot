@@ -24,10 +24,10 @@ User::~User()
     delete *i;
 }
 
-Session* User::createSession(const String& name, BotEngine& engine, MarketAdapter& marketAdapater, double balanceBase, double balanceComm)
+Session* User::createSession(const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm)
 {
   uint32_t id = nextEntityId++;
-  Session* session = new Session(serverHandler, *this, id, name, engine, marketAdapater, balanceBase, balanceComm);
+  Session* session = new Session(serverHandler, *this, id, name, engine, market, balanceBase, balanceComm);
   sessions.append(id, session);
   return session;
 }
@@ -106,7 +106,7 @@ bool_t User::loadData()
     {
       Session* session = new Session(serverHandler, *this, *i);
       uint32_t id = session->getId();
-      if(sessions.find(id) != sessions.end() || !session->getEngine() || !session->getMarketAdapter())
+      if(sessions.find(id) != sessions.end() || !session->getEngine() || !session->getMarket())
       {
         delete session;
         continue;

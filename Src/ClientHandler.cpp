@@ -594,16 +594,15 @@ void_t ClientHandler::handleUserCreateSession(BotProtocol::Session& createSessio
     return;
   }
 
-  // todo: use market here!
-  MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createSessionArgs.marketId);
-  if(!marketAdapter)
+  Market* market = user->findMarket(createSessionArgs.marketId);
+  if(!market)
   {
     sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
     sendError("Unknown market.");
     return;
   }
 
-  Session* session = user->createSession(name, *botEngine, *marketAdapter, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
+  Session* session = user->createSession(name, *botEngine, *market, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
   if(!session)
   {
     sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
