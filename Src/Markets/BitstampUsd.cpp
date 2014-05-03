@@ -103,7 +103,7 @@ bool_t BitstampMarket::cancelOrder(uint32_t entityId)
   }
   id = id.substr(6);
 
-  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(id);
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(entityId);
   if(it == orders.end())
   {
     error = "Unknown order.";

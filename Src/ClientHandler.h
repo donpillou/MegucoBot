@@ -59,30 +59,32 @@ private:
   void_t handleRemoveEntity(const BotProtocol::Entity& entity);
   void_t handleControlEntity(BotProtocol::Entity& entity, size_t size);
   void_t handleUpdateEntity(BotProtocol::Entity& entity, size_t size);
+  void_t handleCreateEntityResponse(BotProtocol::CreateEntityResponse& entity);
 
-  void_t handleCreateMarket(BotProtocol::Market& market);
-  void_t handleRemoveMarket(uint32_t id);
-  void_t handleControlMarket(BotProtocol::ControlMarket& controlMarket);
+  void_t handleUserCreateMarket(BotProtocol::Market& market);
+  void_t handleUserRemoveMarket(uint32_t id);
+  void_t handleUserControlMarket(BotProtocol::ControlMarket& controlMarket);
 
-  void_t handleCreateSession(BotProtocol::Session& session);
-  void_t handleRemoveSession(uint32_t id);
-  void_t handleControlSession(BotProtocol::ControlSession& controlSession);
+  void_t handleUserCreateSession(BotProtocol::Session& session);
+  void_t handleUserRemoveSession(uint32_t id);
+  void_t handleUserControlSession(BotProtocol::ControlSession& controlSession);
 
-  void_t handleCreateSessionTransaction(BotProtocol::Transaction& transaction);
-  void_t handleRemoveSessionTransaction(uint32_t id);
+  void_t handleBotCreateSessionTransaction(BotProtocol::Transaction& transaction);
+  void_t handleBotRemoveSessionTransaction(uint32_t id);
 
-  void_t handleCreateSessionOrder(BotProtocol::Order& order);
-  void_t handleRemoveSessionOrder(uint32_t id);
+  void_t handleBotCreateSessionOrder(BotProtocol::Order& order);
+  void_t handleBotRemoveSessionOrder(uint32_t id);
 
-  void_t handleUpdateMarketTransaction(BotProtocol::Transaction& transaction);
-  void_t handleRemoveMarketTransaction(uint32_t id);
+  void_t handleMarketUpdateMarketTransaction(BotProtocol::Transaction& transaction);
+  void_t handleMarketRemoveMarketTransaction(uint32_t id);
 
-  void_t handleUpdateMarketOrder(BotProtocol::Order& order);
-  void_t handleRemoveMarketOrder(uint32_t id);
+  void_t handleMarketUpdateMarketOrder(BotProtocol::Order& order);
+  void_t handleMarketRemoveMarketOrder(uint32_t id);
 
-  void_t handleUpdateMarketBalance(BotProtocol::MarketBalance& balance);
+  void_t handleMarketUpdateMarketBalance(BotProtocol::MarketBalance& balance);
 
-  void_t handleCreateMarketOrder(BotProtocol::Order& order);
+  void_t handleUserCreateMarketOrder(BotProtocol::Order& order);
+  void_t handleUserRemoveMarketOrder(uint32_t id);
 
   void_t sendError(const String& errorMessage);
 

@@ -54,7 +54,7 @@ public:
     uint32_t entityId;
   };
 
-  struct CreateResponse : public Entity
+  struct CreateEntityResponse : public Entity
   {
     uint32_t id; // id of the created entity
     uint8_t success;

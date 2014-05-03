@@ -58,6 +58,20 @@ bool_t BotConnection::connect(uint16_t port)
   return true;
 }
 
+bool_t BotConnection::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)
+{
+  BotProtocol::Header header;
+  header.size = sizeof(header) + size;
+  header.messageType = type;
+  if(!socket.send((const byte_t*)&header, sizeof(header)) ||
+     (size > 0 && !socket.send((const byte_t*)data, size)))
+  {
+    error = Socket::getLastErrorString();
+    return false;
+  }
+  return true;
+}
+
 bool_t BotConnection::sendEntity(const void_t* data, size_t size)
 {
   ASSERT(size >= sizeof(BotProtocol::Entity));

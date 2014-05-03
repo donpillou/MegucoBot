@@ -22,6 +22,7 @@ public:
   const String& getSecret() const {return secret;}
 
   bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
+  bool_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
   bool_t sendError(const String& errorMessage);
   bool_t sendEntity(const void_t* data, size_t size);
   bool_t removeEntity(uint32_t type, uint32_t id);
@@ -34,7 +35,4 @@ private:
   String userName;
   String key;
   String secret;
-
-private:
-  bool_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
 };
