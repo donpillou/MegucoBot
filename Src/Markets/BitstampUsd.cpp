@@ -99,15 +99,27 @@ bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type t
   return true;
 }
 
-bool_t BitstampMarket::cancelOrder(uint32_t entityId)
+bool_t BitstampMarket::getOrder(uint32_t entityId, BotProtocol::Order& order)
 {
-  String id = *entityIds.find(entityId);
-  if(!id.startsWith("order_"))
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(entityId);
+  if(it == orders.end())
   {
     error = "Unknown order.";
     return false;
   }
-  id = id.substr(6);
+  order = *it;
+  return true;
+}
+
+bool_t BitstampMarket::cancelOrder(uint32_t entityId)
+{
+  String bitstampId = *entityIds.find(entityId);
+  if(!bitstampId.startsWith("order_"))
+  {
+    error = "Unknown order.";
+    return false;
+  }
+  bitstampId = bitstampId.substr(6);
 
   HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(entityId);
   if(it == orders.end())
@@ -118,7 +130,7 @@ bool_t BitstampMarket::cancelOrder(uint32_t entityId)
   const BotProtocol::Order& order = *it;
 
   HashMap<String, Variant> args;
-  args.append("id", id);
+  args.append("id", bitstampId);
   Variant result;
   if(!request("https://www.bitstamp.net/api/cancel_order/", false, args, result))
     return false;

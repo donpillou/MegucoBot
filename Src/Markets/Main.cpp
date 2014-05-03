@@ -192,7 +192,15 @@ private:
   bool_t handleRemoveOrder(uint32_t id)
   {
     if(!market->cancelOrder(id))
-      return connection.sendError(market->getLastError());
+    {
+      if(!connection.sendError(market->getLastError()))
+        return false;
+      BotProtocol::Order order;
+      if(market->getOrder(id, order))
+        if(!connection.sendEntity(&order, sizeof(order)))
+          return false;
+      return true;
+    }
     return connection.removeEntity(BotProtocol::marketOrder, id);
   }
 
