@@ -24,7 +24,6 @@ public:
     controlEntityResponse,
     createEntity,
     createEntityResponse,
-    requestEntities,
   };
   
   enum EntityType
@@ -83,6 +82,7 @@ public:
   
   struct RegisterBotResponse
   {
+    uint32_t sessionId;
     uint8_t simulation;
     double balanceBase;
     double balanceComm;
@@ -197,6 +197,8 @@ public:
       startSimulation,
       stop,
       select,
+      requestTransactions,
+      requestOrders,
     };
 
     uint8_t cmd;

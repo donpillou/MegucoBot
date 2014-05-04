@@ -47,11 +47,12 @@ public:
   {
     BotProtocol::Header header;
     byte_t* data;
+    size_t size;
     for(;;)
     {
-      if(!connection.receiveMessage(header, data))
+      if(!connection.receiveMessage(header, data, size))
         return false;
-      if(!handleMessage(header, data, header.size - sizeof(header)))
+      if(!handleMessage(header, data, size))
         return false;
     }
   }
@@ -265,6 +266,13 @@ private:
 int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
+
+  //for(;;)
+  //{
+  //  bool stop = true;
+  //  if(!stop)
+  //    break;
+  //}
 
   // create connection to bot server
   BotConnectionHandler connection;

@@ -10,7 +10,7 @@
 class BotConnection
 {
 public:
-  BotConnection() {}
+  BotConnection() : sessionId(0) {}
 
   bool_t connect(uint16_t port);
   void_t close() {socket.close();}
@@ -28,11 +28,13 @@ private:
   Socket socket;
   String error;
   Buffer recvBuffer;
+  uint32_t sessionId;
 
 private:
   template <class E> bool_t createEntity(const void_t* data, size_t size, uint32_t& id);
   bool_t removeEntity(uint32_t type, uint32_t id);
   bool_t sendPing();
-  bool_t requestEntities(BotProtocol::EntityType entityType);
-  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data);
+  bool_t sendControlSession(BotProtocol::ControlSession::Command cmd);
+  bool_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
+  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
 };
