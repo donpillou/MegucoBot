@@ -76,6 +76,8 @@ private:
   void_t handleBotCreateSessionOrder(BotProtocol::Order& order);
   void_t handleBotRemoveSessionOrder(uint32_t id);
 
+  void_t handleBotCreateSessionLogMessage(BotProtocol::SessionLogMessage& logMessage);
+
   void_t handleMarketUpdateMarketTransaction(BotProtocol::Transaction& transaction);
   void_t handleMarketRemoveMarketTransaction(uint32_t id);
 

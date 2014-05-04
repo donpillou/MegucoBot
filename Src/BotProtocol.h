@@ -34,6 +34,7 @@ public:
     marketAdapter,
     sessionTransaction,
     sessionOrder,
+    sessionLogMessage,
     market,
     marketTransaction,
     marketOrder,
@@ -188,6 +189,12 @@ public:
     double availableUsd;
     double availableBtc;
     double fee;
+  };
+
+  struct SessionLogMessage : public Entity
+  {
+    int64_t date;
+    char_t message[129];
   };
 
   struct ControlSession : public Entity

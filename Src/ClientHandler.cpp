@@ -323,6 +323,10 @@ void_t ClientHandler::handleCreateEntity(BotProtocol::Entity& entity, size_t siz
       if(size >= sizeof(BotProtocol::Order))
         handleBotCreateSessionOrder(*(BotProtocol::Order*)&entity);
       break;
+    case BotProtocol::sessionLogMessage:
+      if(size >= sizeof(BotProtocol::Order))
+        handleBotCreateSessionLogMessage(*(BotProtocol::SessionLogMessage*)&entity);
+      break;
     default:
       break;
     }
@@ -694,6 +698,9 @@ void_t ClientHandler::handleUserControlSession(BotProtocol::ControlSession& cont
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendEntity(&*i, sizeof(BotProtocol::Order));
+      const List<BotProtocol::SessionLogMessage>& logMessages = session->getLogMessages();
+      for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::SessionLogMessage));
     }
     break;
   }
@@ -806,6 +813,31 @@ void_t ClientHandler::handleBotRemoveSessionOrder(uint32_t id)
   }
 
   session->removeEntity(BotProtocol::sessionOrder, id);
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotCreateSessionLogMessage(BotProtocol::SessionLogMessage& logMessageArgs)
+{
+  BotProtocol::CreateEntityResponse response;
+  response.entityType = BotProtocol::sessionLogMessage;
+  response.entityId = logMessageArgs.entityId;
+  response.id = 0;
+  response.success = 0;
+
+  String message = BotProtocol::getString(logMessageArgs.message);
+  BotProtocol::SessionLogMessage* logMessage = session->addLogMessage(logMessageArgs.date, message);
+  if(!logMessage)
+  {
+    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
+    sendError("Could not add log message.");
+    return;
+  }
+
+  response.id = logMessage->entityId;
+  response.success = 1;
+  sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
+
+  session->sendEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
   session->saveData();
 }
 

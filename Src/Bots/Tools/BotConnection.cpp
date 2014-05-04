@@ -1,6 +1,7 @@
 
 #include <nstd/Process.h>
 #include <nstd/Debug.h>
+#include <nstd/Time.h>
 
 #include "BotConnection.h"
 
@@ -42,6 +43,17 @@ bool_t BotConnection::connect(uint16_t port)
   }
 
   return true;
+}
+
+bool_t BotConnection::addLogMessage(const String& message)
+{
+  BotProtocol::SessionLogMessage logMessage;
+  logMessage.entityType = BotProtocol::sessionLogMessage;
+  logMessage.entityId = 0;
+  logMessage.date = Time::time();
+  BotProtocol::setString(logMessage.message, message);
+  uint32_t id;
+  return createEntity<BotProtocol::SessionLogMessage>(&logMessage, id);
 }
 
 bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactions)
@@ -110,7 +122,7 @@ bool_t BotConnection::getOrders(List<BotProtocol::Order>& orders)
 
 bool_t BotConnection::createTransaction(const BotProtocol::Transaction& transaction, uint32_t& id)
 {
-  return createEntity<BotProtocol::Transaction>(&transaction, sizeof(transaction), id);
+  return createEntity<BotProtocol::Transaction>(&transaction, id);
 }
 
 bool_t BotConnection::removeTransaction(uint32_t id)
@@ -120,7 +132,7 @@ bool_t BotConnection::removeTransaction(uint32_t id)
 
 bool_t BotConnection::createOrder(const BotProtocol::Order& order, uint32_t& id)
 {
-  return createEntity<BotProtocol::Order>(&order, sizeof(order), id);
+  return createEntity<BotProtocol::Order>(&order, id);
 }
 
 bool_t BotConnection::removeOrder(uint32_t id)
@@ -128,14 +140,13 @@ bool_t BotConnection::removeOrder(uint32_t id)
   return removeEntity(BotProtocol::sessionOrder, id);
 }
 
-template <class E> bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id)
+template <class E> bool_t BotConnection::createEntity(const void_t* data, uint32_t& id)
 {
-  ASSERT(size >= sizeof(BotProtocol::Entity));
   BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType;
 
   // send create request
   {
-    if(!sendMessage(BotProtocol::createEntity, data, size))
+    if(!sendMessage(BotProtocol::createEntity, data, sizeof(E)))
       return false;
   }
 
@@ -169,7 +180,7 @@ template <class E> bool_t BotConnection::createEntity(const void_t* data, size_t
     if(!receiveMessage(header, data, size))
       return false;
     BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(header.messageType != BotProtocol::updateEntity || size < sizeof(BotProtocol::Entity) ||
+    if(header.messageType != BotProtocol::updateEntity || size < sizeof(E) ||
        entity->entityType != entityType ||
        entity->entityId != id)
     {

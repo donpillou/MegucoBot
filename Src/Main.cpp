@@ -138,16 +138,16 @@ int_t main(int_t argc, char_t* argv[])
     }
   }
 
-  // load users
-  //serverHandler.addUser("donpillou", "1234");
-  serverHandler.loadData();
-
-  // run listen server
+  // start listen server
   if(!server.listen(port))
   {
     Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getLastErrorString());
     return -1;
   }
+
+  // load users
+  //serverHandler.addUser("donpillou", "1234");
+  serverHandler.loadData();
 
   Console::printf("Listening on port %hu.\n", port);
 

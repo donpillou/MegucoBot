@@ -26,41 +26,58 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   market = user.findMarket(data.find("marketId")->toUInt());
   balanceBase = data.find("balanceBase")->toDouble();
   balanceComm = data.find("balanceComm")->toDouble();
-  const List<Variant>& transactionsVar = data.find("transactions")->toList();
-  BotProtocol::Transaction transaction;
-  transaction.entityType = BotProtocol::sessionTransaction;
-  for(List<Variant>::Iterator i = transactionsVar.begin(), end = transactionsVar.end(); i != end; ++i)
   {
-    const HashMap<String, Variant>& transactionVar = i->toMap();
-    transaction.entityId = transactionVar.find("id")->toUInt();
-    transaction.type = transactionVar.find("type")->toUInt();
-    transaction.date = transactionVar.find("date")->toInt64();
-    transaction.price = transactionVar.find("price")->toDouble();
-    transaction.amount = transactionVar.find("amount")->toDouble();
-    transaction.fee = transactionVar.find("fee")->toDouble();
-    if(transactions.find(transaction.entityId) != transactions.end())
-      continue;
-    transactions.append(id, transaction);
-    if(transaction.entityId >= nextEntityId)
-      nextEntityId = transaction.entityId + 1;
+    const List<Variant>& transactionsVar = data.find("transactions")->toList();
+    BotProtocol::Transaction transaction;
+    transaction.entityType = BotProtocol::sessionTransaction;
+    for(List<Variant>::Iterator i = transactionsVar.begin(), end = transactionsVar.end(); i != end; ++i)
+    {
+      const HashMap<String, Variant>& transactionVar = i->toMap();
+      transaction.entityId = transactionVar.find("id")->toUInt();
+      transaction.type = transactionVar.find("type")->toUInt();
+      transaction.date = transactionVar.find("date")->toInt64();
+      transaction.price = transactionVar.find("price")->toDouble();
+      transaction.amount = transactionVar.find("amount")->toDouble();
+      transaction.fee = transactionVar.find("fee")->toDouble();
+      if(transactions.find(transaction.entityId) != transactions.end())
+        continue;
+      transactions.append(transaction.entityId, transaction);
+      if(transaction.entityId >= nextEntityId)
+        nextEntityId = transaction.entityId + 1;
+    }
   }
-  const List<Variant>& ordersVar = data.find("orders")->toList();
-  BotProtocol::Order order;
-  order.entityType = BotProtocol::sessionOrder;
-  for(List<Variant>::Iterator i = ordersVar.begin(), end = ordersVar.end(); i != end; ++i)
   {
-    const HashMap<String, Variant>& orderVar = i->toMap();
-    order.entityId = orderVar.find("id")->toUInt();
-    order.type = orderVar.find("type")->toUInt();
-    order.date = orderVar.find("date")->toInt64();
-    order.price = orderVar.find("price")->toDouble();
-    order.amount = orderVar.find("amount")->toDouble();
-    order.fee = orderVar.find("fee")->toDouble();
-    if(orders.find(order.entityId) != orders.end())
-      continue;
-    orders.append(id, order);
-    if(order.entityId >= nextEntityId)
-      nextEntityId = order.entityId + 1;
+    const List<Variant>& ordersVar = data.find("orders")->toList();
+    BotProtocol::Order order;
+    order.entityType = BotProtocol::sessionOrder;
+    for(List<Variant>::Iterator i = ordersVar.begin(), end = ordersVar.end(); i != end; ++i)
+    {
+      const HashMap<String, Variant>& orderVar = i->toMap();
+      order.entityId = orderVar.find("id")->toUInt();
+      order.type = orderVar.find("type")->toUInt();
+      order.date = orderVar.find("date")->toInt64();
+      order.price = orderVar.find("price")->toDouble();
+      order.amount = orderVar.find("amount")->toDouble();
+      order.fee = orderVar.find("fee")->toDouble();
+      if(orders.find(order.entityId) != orders.end())
+        continue;
+      orders.append(order.entityId, order);
+      if(order.entityId >= nextEntityId)
+        nextEntityId = order.entityId + 1;
+    }
+  }
+  {
+    const List<Variant>& logMessagesVar = data.find("logMessages")->toList();
+    BotProtocol::SessionLogMessage logMessage;
+    logMessage.entityType = BotProtocol::sessionLogMessage;
+    logMessage.entityId = 0;
+    for(List<Variant>::Iterator i = logMessagesVar.begin(), end = logMessagesVar.end(); i != end; ++i)
+    {
+      const HashMap<String, Variant>& logMessageVar = i->toMap();
+      logMessage.date = logMessageVar.find("date")->toInt64();
+      BotProtocol::setString(logMessage.message, logMessageVar.find("message")->toString());
+      logMessages.append(logMessage);
+    }
   }
 }
 
@@ -107,6 +124,14 @@ void_t Session::toVariant(Variant& variant)
     orderVar.append("price", order.price);
     orderVar.append("amount", order.amount);
     orderVar.append("fee", order.fee);
+  }
+  List<Variant>& logMessagesVar = data.append("logMessages", Variant()).toList();
+  for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
+  {
+    BotProtocol::SessionLogMessage& logMessage = *i;
+    HashMap<String, Variant>& logMessageVar = logMessagesVar.append(Variant()).toMap();
+    logMessageVar.append("date", logMessage.date);
+    logMessageVar.append("message", BotProtocol::getString(logMessage.message));
   }
 }
 
@@ -214,6 +239,19 @@ bool_t Session::deleteOrder(uint32_t id)
     return false;
   orders.remove(it);
   return true;
+}
+
+BotProtocol::SessionLogMessage* Session::addLogMessage(timestamp_t date, const String& message)
+{
+  BotProtocol::SessionLogMessage logMessage;
+  logMessage.entityType = BotProtocol::sessionLogMessage;
+  logMessage.entityId = 0;
+  logMessage.date = date;
+  BotProtocol::setString(logMessage.message, message);
+  BotProtocol::SessionLogMessage* result = &logMessages.append(logMessage);
+  while(logMessages.size() > 100)
+    logMessages.removeFront();
+  return result;
 }
 
 void_t Session::send(ClientHandler* client)

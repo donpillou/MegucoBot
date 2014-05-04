@@ -100,8 +100,16 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
-  for(;;)
+  for(int i = 0;; ++i)
   {
+    String message;
+    message.printf("bot test log message iteration %d", i);
+    if(!connection.addLogMessage(message))
+    {
+      Console::errorf("error: Could not add test log message: %s\n", (const char_t*)connection.getErrorString());
+      return -1;
+    }
+
     BotProtocol::Transaction transaction;
     transaction.entityType = BotProtocol::sessionTransaction;
     transaction.amount = 1.;

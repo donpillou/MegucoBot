@@ -49,6 +49,9 @@ public:
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
+  BotProtocol::SessionLogMessage* addLogMessage(timestamp_t date, const String& message);
+  const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
+
   void_t send(ClientHandler* client = 0);
   void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
@@ -71,4 +74,5 @@ private:
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::Order> orders;
   uint32_t nextEntityId;
+  List<BotProtocol::SessionLogMessage> logMessages;
 };

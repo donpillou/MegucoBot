@@ -17,6 +17,7 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
+  bool_t addLogMessage(const String& message);
   bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getOrders(List<BotProtocol::Order>& orders);
 
@@ -32,7 +33,7 @@ private:
   uint32_t sessionId;
 
 private:
-  template <class E> bool_t createEntity(const void_t* data, size_t size, uint32_t& id);
+  template <class E> bool_t createEntity(const void_t* data, uint32_t& id);
   bool_t removeEntity(uint32_t type, uint32_t id);
   bool_t sendPing();
   bool_t sendControlSession(BotProtocol::ControlSession::Command cmd);
