@@ -110,6 +110,7 @@ int_t main(int_t argc, char_t* argv[])
     Thread::sleep(1000);
 
     BotProtocol::Order order;
+    order.entityType = BotProtocol::sessionOrder;
     order.amount = 1.;
     order.fee = 0.01;
     order.price = 1000.;

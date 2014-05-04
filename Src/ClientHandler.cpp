@@ -633,7 +633,7 @@ void_t ClientHandler::handleUserRemoveSession(uint32_t id)
 void_t ClientHandler::handleUserControlSession(BotProtocol::ControlSession& controlSession)
 {
   BotProtocol::ControlSessionResponse response;
-  response.entityType = BotProtocol::market;
+  response.entityType = BotProtocol::session;
   response.entityId = controlSession.entityId;
   response.cmd = controlSession.cmd;
   response.success = 0;

@@ -159,8 +159,8 @@ void_t Session::unregisterClient(ClientHandler& client)
   if(&client == botClient)
   {
     botClient = 0;
-    state = BotProtocol::Session::stopped;
     clients.remove(&client);
+    stop();
   }
   else
     clients.remove(&client);
@@ -182,7 +182,7 @@ BotProtocol::Transaction* Session::createTransaction(double price, double amount
   transaction.price = price;
   transaction.amount = amount;
   transaction.fee = fee;
-  return &transactions.append(id, transaction);
+  return &transactions.append(transaction.entityId, transaction);
 }
 
 bool_t Session::deleteTransaction(uint32_t id)
@@ -204,7 +204,7 @@ BotProtocol::Order* Session::createOrder(double price, double amount, double fee
   order.price = price;
   order.amount = amount;
   order.fee = fee;
-  return &orders.append(id, order);
+  return &orders.append(order.entityId, order);
 }
 
 bool_t Session::deleteOrder(uint32_t id)

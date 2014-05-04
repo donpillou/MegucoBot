@@ -119,8 +119,44 @@ template <class E> bool_t BotConnection::createEntity(const void_t* data, size_t
       return false;
     }
   }
+
+  // receive create response
+  {
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::CreateEntityResponse)];
+    if(socket.recv(message, sizeof(message), sizeof(message)) != sizeof(message))
+    {
+      error = Socket::getLastErrorString();
+      return false;
+    }
+    BotProtocol::Header* header = (BotProtocol::Header*)message;
+    BotProtocol::CreateEntityResponse* response = (BotProtocol::CreateEntityResponse*)(header + 1);
+
+    if(header->messageType == BotProtocol::updateEntity && 
+      response->entityType == BotProtocol::error)
+    {
+
+      BotProtocol::Error error;
+      Memory::copy(&error, response, sizeof(BotProtocol::CreateEntityResponse));
+      socket.recv((byte_t*)&error + sizeof(BotProtocol::CreateEntityResponse), sizeof(error) - sizeof(BotProtocol::CreateEntityResponse), sizeof(error) - sizeof(BotProtocol::CreateEntityResponse));
+
+      int k = 42;
+    }
+
+    if(header->messageType != BotProtocol::createEntityResponse ||
+       response->entityType != ((BotProtocol::Entity*)data)->entityType)
+    {
+      error = "Received invalid response.";
+      return false;
+    }
+    if(!response->success)
+    {
+      error = "Could not create entity.";
+      return false;
+    }
+    id = response->id;
+  }
   
-  // receive response
+  // receive entity
   {
     byte_t message[sizeof(BotProtocol::Header) + sizeof(E)];
     if(socket.recv(message, sizeof(message), sizeof(message)) != sizeof(message))
@@ -129,36 +165,54 @@ template <class E> bool_t BotConnection::createEntity(const void_t* data, size_t
       return false;
     }
     BotProtocol::Header* header = (BotProtocol::Header*)message;
-    if(header->messageType != BotProtocol::updateEntity)
-    {
-      error = "Received invalid response.";
-      return false;
-    }
     BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
-    if(entity->entityType != ((BotProtocol::Entity*)data)->entityType)
+    if(header->messageType != BotProtocol::updateEntity ||
+       entity->entityType != ((BotProtocol::Entity*)data)->entityType ||
+       entity->entityId != id)
     {
       error = "Received invalid response.";
       return false;
     }
-    id = entity->entityId;
   }
   return true;
 }
 
 bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
 {
-  byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
-  BotProtocol::Header* header = (BotProtocol::Header*)message;
-  BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
-  header->size = sizeof(message);
-  header->messageType = BotProtocol::removeEntity;
-  entity->entityType = type;
-  entity->entityId = id;
-  if(socket.send(message, sizeof(message)) != sizeof(message))
+  // send remove entity message
   {
-    error = Socket::getLastErrorString();
-    return false;
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
+    BotProtocol::Header* header = (BotProtocol::Header*)message;
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
+    header->size = sizeof(message);
+    header->messageType = BotProtocol::removeEntity;
+    entity->entityType = type;
+    entity->entityId = id;
+    if(socket.send(message, sizeof(message)) != sizeof(message))
+    {
+      error = Socket::getLastErrorString();
+      return false;
+    }
   }
+
+  // receive entity remove message
+  {
+    byte_t message[sizeof(BotProtocol::Header) + sizeof(BotProtocol::Entity)];
+    if(socket.recv(message, sizeof(message), sizeof(message)) != sizeof(message))
+    {
+      error = Socket::getLastErrorString();
+      return false;
+    }
+    BotProtocol::Header* header = (BotProtocol::Header*)message;
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)(header + 1);
+    if(header->messageType != BotProtocol::removeEntity ||
+       entity->entityType != type)
+    {
+      error = "Received invalid response.";
+      return false;
+    }
+  }
+
   return true;
 }
 
