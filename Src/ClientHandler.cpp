@@ -235,6 +235,7 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
 
   BotProtocol::RegisterBotResponse response;
   response.sessionId = session->getId();
+  BotProtocol::setString(response.marketAdapterName, session->getMarket()->getMarketAdapter()->getName());
   response.simulation = session->isSimulation();
   session->getInitialBalance(response.balanceBase, response.balanceComm);
   sendMessage(BotProtocol::registerBotResponse, &response, sizeof(response));

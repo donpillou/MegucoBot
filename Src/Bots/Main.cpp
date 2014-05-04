@@ -100,6 +100,9 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
+  String marketAdapterName = connection.getMarketAdapterName();
+
+
   for(int i = 0;; ++i)
   {
     String message;

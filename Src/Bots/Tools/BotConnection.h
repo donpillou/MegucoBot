@@ -17,6 +17,8 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
+  const String& getMarketAdapterName() const {return marketAdapterName;}
+
   bool_t addLogMessage(const String& message);
   bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getOrders(List<BotProtocol::Order>& orders);
@@ -31,6 +33,7 @@ private:
   String error;
   Buffer recvBuffer;
   uint32_t sessionId;
+  String marketAdapterName;
 
 private:
   template <class E> bool_t createEntity(const void_t* data, uint32_t& id);

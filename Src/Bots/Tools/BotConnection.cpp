@@ -40,6 +40,7 @@ bool_t BotConnection::connect(uint16_t port)
     }
     BotProtocol::RegisterBotResponse* response = (BotProtocol::RegisterBotResponse*)data;
     sessionId = response->sessionId;
+    marketAdapterName = BotProtocol::getString(response->marketAdapterName);
   }
 
   return true;
