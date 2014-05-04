@@ -86,6 +86,20 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
+  List<BotProtocol::Transaction> transactions;
+  if(!connection.getTransactions(transactions))
+  {
+    Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)connection.getErrorString());
+    return -1;
+  }
+
+  List<BotProtocol::Order> orders;
+  if(!connection.getOrders(orders))
+  {
+    Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)connection.getErrorString());
+    return -1;
+  }
+
   for(;;)
   {
     BotProtocol::Transaction transaction;

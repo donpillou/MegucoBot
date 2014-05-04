@@ -61,8 +61,44 @@ bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactio
     switch((BotProtocol::MessageType)header.messageType)
     {
     case BotProtocol::updateEntity:
-      if(size >= sizeof(BotProtocol::Transaction))
-        transactions.append(*(BotProtocol::Transaction*)data);
+      if(size >= sizeof(BotProtocol::Entity))
+      {
+        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+        if(entity->entityType == BotProtocol::sessionTransaction && size >= sizeof(BotProtocol::Transaction))
+          transactions.append(*(BotProtocol::Transaction*)data);
+      }
+      break;
+    case BotProtocol::pingResponse:
+      return true;
+    default:
+      break;
+    }
+  }
+}
+
+bool_t BotConnection::getOrders(List<BotProtocol::Order>& orders)
+{
+  if(!sendControlSession(BotProtocol::ControlSession::requestOrders))
+    return false;
+  if(!sendPing())
+    return false;
+
+  BotProtocol::Header header;
+  byte_t* data;
+  size_t size;
+  for(;;)
+  {
+    if(!receiveMessage(header, data, size))
+      return false;
+    switch((BotProtocol::MessageType)header.messageType)
+    {
+    case BotProtocol::updateEntity:
+      if(size >= sizeof(BotProtocol::Entity))
+      {
+        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+        if(entity->entityType == BotProtocol::sessionOrder && size >= sizeof(BotProtocol::Order))
+          orders.append(*(BotProtocol::Order*)data);
+      }
       break;
     case BotProtocol::pingResponse:
       return true;
@@ -241,12 +277,15 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data,
     return false;
   }
   size = header.size - sizeof(header);
-  recvBuffer.resize(size);
-  data = recvBuffer;
-  if(socket.recv(data, size, size) != (ssize_t)size)
+  if(size > 0)
   {
-    error = Socket::getLastErrorString();
-    return false;
+    recvBuffer.resize(size);
+    data = recvBuffer;
+    if(socket.recv(data, size, size) != (ssize_t)size)
+    {
+      error = Socket::getLastErrorString();
+      return false;
+    }
   }
   return true;
 }

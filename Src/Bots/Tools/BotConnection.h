@@ -18,6 +18,7 @@ public:
   const String& getErrorString() const {return error;}
 
   bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
+  bool_t getOrders(List<BotProtocol::Order>& orders);
 
   bool_t createTransaction(const BotProtocol::Transaction& transaction, uint32_t& id);
   bool_t removeTransaction(uint32_t id);

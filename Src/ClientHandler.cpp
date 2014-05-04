@@ -402,6 +402,15 @@ void_t ClientHandler::handleControlEntity(BotProtocol::Entity& entity, size_t si
       break;
     }
   case botState:
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::session:
+      if(size >= sizeof(BotProtocol::ControlSession))
+        handleBotControlSession(*(BotProtocol::ControlSession*)&entity);
+      break;
+    default:
+      break;
+    }
     break;
   default:
     break;
@@ -682,6 +691,44 @@ void_t ClientHandler::handleUserControlSession(BotProtocol::ControlSession& cont
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendEntity(&*i, sizeof(BotProtocol::Transaction));
+      const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
+      for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Order));
+    }
+    break;
+  }
+}
+
+void_t ClientHandler::handleBotControlSession(BotProtocol::ControlSession& controlSession)
+{
+  BotProtocol::ControlSessionResponse response;
+  response.entityType = BotProtocol::session;
+  response.entityId = controlSession.entityId;
+  response.cmd = controlSession.cmd;
+  response.success = 0;
+
+  if(controlSession.entityId != session->getId())
+  {
+    sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
+    sendError("Unknown session.");
+    return;
+  }
+
+  switch((BotProtocol::ControlSession::Command)controlSession.cmd)
+  {
+  case BotProtocol::ControlSession::requestTransactions:
+    {
+      response.success = 1;
+      sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
+      const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
+      for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        sendEntity(&*i, sizeof(BotProtocol::Transaction));
+    }
+    break;
+  case BotProtocol::ControlSession::requestOrders:
+    {
+      response.success = 1;
+      sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendEntity(&*i, sizeof(BotProtocol::Order));

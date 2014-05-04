@@ -68,6 +68,7 @@ private:
   void_t handleUserCreateSession(BotProtocol::Session& session);
   void_t handleUserRemoveSession(uint32_t id);
   void_t handleUserControlSession(BotProtocol::ControlSession& controlSession);
+  void_t handleBotControlSession(BotProtocol::ControlSession& controlSession);
 
   void_t handleBotCreateSessionTransaction(BotProtocol::Transaction& transaction);
   void_t handleBotRemoveSessionTransaction(uint32_t id);
