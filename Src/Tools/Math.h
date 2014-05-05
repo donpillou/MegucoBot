@@ -14,4 +14,6 @@ public:
   static float floor(float v); // TODO: inline this
   static double ceil(double v); // TODO: inline this
   static float ceil(float v); // TODO: inline this
+  static double exp(double v); // TODO: inline this
+  static float exp(float v); // TODO: inline this
 };

@@ -1,8 +1,11 @@
 
 #pragma once
 
+#include "Tools/Bot.h"
+
 class BuyBot
-{};
+{
+};
 
 /*
 #include "Tools/Market.h"
