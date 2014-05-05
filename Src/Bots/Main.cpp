@@ -14,12 +14,42 @@
 //#include <nstd/Error.h>
 
 #include "Tools/BotConnection.h"
+#include "Tools/DataConnection.h"
 
 #ifdef BOT_BUYBOT
 #include "Bots/BuyBot.h"
 typedef BuyBot MarketConnection;
 const char* botName = "BuyBot";
 #endif
+
+class DataConnectionHandler : private DataConnection::Callback
+{
+public:
+  DataConnectionHandler(BotConnection& botConnection) : botConnection(botConnection) {}
+
+  bool_t connect() {return dataConnection.connect();}
+  bool_t subscribe(const String& channel) {return dataConnection.subscribe(channel, 0);}
+
+  bool_t process()
+  {
+    for(;;)
+      if(!dataConnection.process(*this))
+        return false;
+  }
+
+private:
+  BotConnection& botConnection;
+  DataConnection dataConnection;
+
+private: // DataConnection::Callback
+  virtual void receivedChannelInfo(const String& channelName) {};
+  virtual void receivedSubscribeResponse(const String& channelName, uint64_t channelId) {};
+  virtual void receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) {};
+  virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade) {};
+  virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {};
+  virtual void receivedErrorResponse(const String& message) {};
+};
+
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -79,37 +109,49 @@ int_t main(int_t argc, char_t* argv[])
   //    break;
   //}
 
-  BotConnection connection;
-  if(!connection.connect(port))
+  BotConnection botConnection;
+  if(!botConnection.connect(port))
   {
-    Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)connection.getErrorString());
+    Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
 
   List<BotProtocol::Transaction> transactions;
-  if(!connection.getTransactions(transactions))
+  if(!botConnection.getTransactions(transactions))
   {
-    Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)connection.getErrorString());
+    Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
 
   List<BotProtocol::Order> orders;
-  if(!connection.getOrders(orders))
+  if(!botConnection.getOrders(orders))
   {
-    Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)connection.getErrorString());
+    Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
 
-  String marketAdapterName = connection.getMarketAdapterName();
-
+  String marketAdapterName = botConnection.getMarketAdapterName();
+  for(;;)
+  {
+    DataConnectionHandler dataConnection(botConnection);
+    if(!dataConnection.connect())
+      continue;
+    if(!dataConnection.subscribe(marketAdapterName))
+      continue;
+    for(;;)
+    {
+      if(!dataConnection.process())
+        break;
+    }
+  }
 
   for(int i = 0;; ++i)
   {
     String message;
     message.printf("bot test log message iteration %d", i);
-    if(!connection.addLogMessage(message))
+    if(!botConnection.addLogMessage(message))
     {
-      Console::errorf("error: Could not add test log message: %s\n", (const char_t*)connection.getErrorString());
+      Console::errorf("error: Could not add test log message: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
 
@@ -120,16 +162,16 @@ int_t main(int_t argc, char_t* argv[])
     transaction.price = 1000.;
     transaction.type = BotProtocol::Transaction::buy;
     uint32_t entityId;
-    if(!connection.createTransaction(transaction, entityId))
+    if(!botConnection.createTransaction(transaction, entityId))
     {
-      Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)connection.getErrorString());
+      Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
 
     Thread::sleep(2500);
-    if(!connection.removeTransaction(entityId))
+    if(!botConnection.removeTransaction(entityId))
     {
-      Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)connection.getErrorString());
+      Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
     Thread::sleep(1000);
@@ -140,15 +182,15 @@ int_t main(int_t argc, char_t* argv[])
     order.fee = 0.01;
     order.price = 1000.;
     order.type = BotProtocol::Order::buy;
-    if(!connection.createOrder(order, entityId))
+    if(!botConnection.createOrder(order, entityId))
     {
-      Console::errorf("error: Could not create test order: %s\n", (const char_t*)connection.getErrorString());
+      Console::errorf("error: Could not create test order: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
     Thread::sleep(2500);
-    if(!connection.removeOrder(entityId))
+    if(!botConnection.removeOrder(entityId))
     {
-      Console::errorf("error: Could not remove test order: %s\n", (const char_t*)connection.getErrorString());
+      Console::errorf("error: Could not remove test order: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
   }
