@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <nstd/List.h>
+
 #include "Tools/Math.h"
 
 class Bot
@@ -63,7 +65,7 @@ public:
       };
 
       uint64_t id;
-      uint64_t date;
+      timestamp_t date;
       double price;
       double amount;
       double fee;
@@ -78,8 +80,8 @@ public:
     virtual double getFee() const = 0;
     virtual unsigned int getOpenBuyOrderCount() const = 0;
     virtual unsigned int getOpenSellOrderCount() const = 0;
-    virtual uint64_t getTimeSinceLastBuy() const = 0;
-    virtual uint64_t getTimeSinceLastSell() const = 0;
+    virtual timestamp_t getTimeSinceLastBuy() const = 0;
+    virtual timestamp_t getTimeSinceLastSell() const = 0;
 
     virtual void getTransactions(List<Transaction>& transactions) const = 0;
     virtual void getBuyTransactions(List<Transaction>& transactions) const = 0;
@@ -90,19 +92,19 @@ public:
     virtual void warning(const String& message) = 0;
   };
 
-  class Session
-  {
-  public:
-    virtual ~Session() {};
-    virtual void setParameters(double* parameters) = 0;
-    virtual void handle(const DataProtocol::Trade& trade, const Values& values) = 0;
-    virtual void handleBuy(const Broker::Transaction& transaction) = 0;
-    virtual void handleSell(const Broker::Transaction& transaction) = 0;
-  };
-
-  virtual ~Bot() {}
-  virtual Session* createSession(Broker& broker) = 0;
-  virtual unsigned int getParameterCount() const = 0;
+  //class Session
+  //{
+  //public:
+  //  virtual ~Session() {};
+  //  virtual void setParameters(double* parameters) = 0;
+  //  virtual void handle(const DataProtocol::Trade& trade, const Values& values) = 0;
+  //  virtual void handleBuy(const Broker::Transaction& transaction) = 0;
+  //  virtual void handleSell(const Broker::Transaction& transaction) = 0;
+  //};
+  //
+  //virtual ~Bot() {}
+  //virtual Session* createSession(Broker& broker) = 0;
+  //virtual unsigned int getParameterCount() const = 0;
 };
 
 class TradeHandler

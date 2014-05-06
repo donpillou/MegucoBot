@@ -10,7 +10,7 @@
 class BotConnection
 {
 public:
-  BotConnection() : sessionId(0) {}
+  BotConnection() : sessionId(0), balanceBase(0.), balanceComm(0.) {}
 
   bool_t connect(uint16_t port);
   void_t close() {socket.close();}
@@ -18,8 +18,11 @@ public:
   const String& getErrorString() const {return error;}
 
   const String& getMarketAdapterName() const {return marketAdapterName;}
+  double getBalanceBase() const {return balanceBase;}
+  double getBalanceComm() const {return balanceComm;}
 
   bool_t addLogMessage(const String& message);
+  bool_t getBalance(BotProtocol::MarketBalance& balance);
   bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getOrders(List<BotProtocol::Order>& orders);
 
@@ -34,6 +37,8 @@ private:
   Buffer recvBuffer;
   uint32_t sessionId;
   String marketAdapterName;
+  double balanceBase;
+  double balanceComm;
 
 private:
   template <class E> bool_t createEntity(const void_t* data, uint32_t& id);

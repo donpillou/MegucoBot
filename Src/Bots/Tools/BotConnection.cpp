@@ -41,6 +41,8 @@ bool_t BotConnection::connect(uint16_t port)
     BotProtocol::RegisterBotResponse* response = (BotProtocol::RegisterBotResponse*)data;
     sessionId = response->sessionId;
     marketAdapterName = BotProtocol::getString(response->marketAdapterName);
+    balanceBase = response->balanceBase;
+    balanceComm = response->balanceComm;
   }
 
   return true;
@@ -55,6 +57,37 @@ bool_t BotConnection::addLogMessage(const String& message)
   BotProtocol::setString(logMessage.message, message);
   uint32_t id;
   return createEntity<BotProtocol::SessionLogMessage>(&logMessage, id);
+}
+
+bool_t BotConnection::getBalance(BotProtocol::MarketBalance& balance)
+{
+  //if(!sendControlSession(BotProtocol::ControlSession::requestBalance))
+  //  return false;
+  //BotProtocol::Header header;
+  //byte_t* data;
+  //size_t size;
+  //for(;;)
+  //{
+  //  if(!receiveMessage(header, data, size))
+  //    return false;
+  //  switch((BotProtocol::MessageType)header.messageType)
+  //  {
+  //  case BotProtocol::updateEntity:
+  //    if(size >= sizeof(BotProtocol::Entity))
+  //    {
+  //      BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+  //      if(entity->entityType == BotProtocol::marketBalance && size >= sizeof(BotProtocol::MarketBalance))
+  //      {
+  //        balance = *(BotProtocol::MarketBalance*)data;
+  //        return true;
+  //      }
+  //    }
+  //    break;
+  //  default:
+  //    break;
+  //  }
+  //}
+  return false;
 }
 
 bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactions)
