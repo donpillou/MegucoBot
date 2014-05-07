@@ -207,13 +207,26 @@ private:
 
   bool_t handleControlMarket(BotProtocol::ControlMarket& controlMarket)
   {
+    BotProtocol::ControlMarketResponse response;
+    response.entityType = BotProtocol::market;
+    response.entityId = controlMarket.entityId;
+    response.cmd = controlMarket.cmd;
+    response.success = 0;
+
     switch((BotProtocol::ControlMarket::Command)controlMarket.cmd)
     {
     case BotProtocol::ControlMarket::refreshOrders:
       {
         List<BotProtocol::Order> orders;
         if(!market->loadOrders(orders))
+        {
+          if(!connection.sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response)))
+            return false;
           return connection.sendError(market->getLastError());
+        }
+        response.success = 1;
+        if(!connection.sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response)))
+            return false;
         HashSet<uint32_t> ordersToRemove;
         ordersToRemove.swap(this->orders);
         for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
@@ -232,7 +245,14 @@ private:
       {
         List<BotProtocol::Transaction> transactions;
         if(!market->loadTransactions(transactions))
+        {
+          if(!connection.sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response)))
+            return false;
           return connection.sendError(market->getLastError());
+        }
+        response.success = 1;
+        if(!connection.sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response)))
+            return false;
         HashSet<uint32_t> transactionsToRemove;
         transactionsToRemove.swap(this->transactions);
         for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
@@ -251,7 +271,14 @@ private:
       {
         BotProtocol::MarketBalance balance;
         if(!market->loadBalance(balance))
+        {
+          if(!connection.sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response)))
+            return false;
           return connection.sendError(market->getLastError());
+        }
+        response.success = 1;
+        if(!connection.sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response)))
+            return false;
         if(!connection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
