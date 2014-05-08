@@ -33,7 +33,7 @@ public:
   bool_t registerClient(ClientHandler& client, bool_t bot);
   void_t unregisterClient(ClientHandler& client);
 
-  uint32_t getId() const {return id;}
+  uint32_t getId() const {return __id;}
   const String& getName() const {return name;}
   BotEngine* getEngine() const {return engine;}
   Market* getMarket() const {return market;}
@@ -59,7 +59,7 @@ public:
 private:
   ServerHandler& serverHandler;
   User& user;
-  uint32_t id;
+  uint32_t __id;
   String name;
   BotEngine* engine;
   Market* market;

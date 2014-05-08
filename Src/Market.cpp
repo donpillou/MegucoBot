@@ -14,7 +14,7 @@
 
 Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& userName, const String& key, const String& secret) :
   serverHandler(serverHandler), user(user),
-  id(id), marketAdapter(&marketAdapter), userName(userName), key(key), secret(secret),
+  __id(id), marketAdapter(&marketAdapter), userName(userName), key(key), secret(secret),
   state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextRequestId(1)
 {
   Memory::zero(&balance, sizeof(balance));
@@ -25,7 +25,7 @@ Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant)
   state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextRequestId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
-  id = data.find("id")->toUInt();
+  __id = data.find("id")->toUInt();
   marketAdapter = serverHandler.findMarketAdapter(data.find("market")->toString());
   userName = data.find("userName")->toString();
   key = data.find("key")->toString();
@@ -50,7 +50,7 @@ Market::~Market()
 void_t Market::toVariant(Variant& variant)
 {
   HashMap<String, Variant>& data = variant.toMap();
-  data.append("id", id);
+  data.append("id", __id);
   data.append("market", marketAdapter->getName());
   data.append("userName", userName);
   data.append("key", key);
@@ -157,7 +157,7 @@ void_t Market::send(ClientHandler* client)
 {
   BotProtocol::Market market;
   market.entityType = BotProtocol::market;
-  market.entityId = id;
+  market.entityId = __id;
   market.marketAdapterId = marketAdapter->getId();
   market.state = state;
   BotProtocol::setString(market.userName, String());

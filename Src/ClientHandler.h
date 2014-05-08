@@ -15,7 +15,7 @@ public:
   ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client);
   ~ClientHandler();
 
-  uint64_t getId() const {return id;}
+  uint64_t getId() const {return __id;}
   
   void_t deselectSession();
   void_t deselectMarket();
@@ -35,7 +35,7 @@ private:
   };
 
 private:
-  uint64_t id;
+  uint64_t __id;
   uint32_t clientAddr;
   ServerHandler& serverHandler;
   Server::Client& client;
@@ -60,21 +60,22 @@ private:
   void_t handleControlEntity(BotProtocol::Entity& entity, size_t size);
   void_t handleUpdateEntity(BotProtocol::Entity& entity, size_t size);
   void_t handleCreateEntityResponse(BotProtocol::CreateEntityResponse& entity);
+  void_t handleErrorResponse(BotProtocol::ErrorResponse& errorResponse);
 
   void_t handleUserCreateMarket(BotProtocol::Market& market);
-  void_t handleUserRemoveMarket(uint32_t id);
+  void_t handleUserRemoveMarket(const BotProtocol::Entity& entity);
   void_t handleUserControlMarket(BotProtocol::ControlMarket& controlMarket);
 
   void_t handleUserCreateSession(BotProtocol::Session& session);
-  void_t handleUserRemoveSession(uint32_t id);
+  void_t handleUserRemoveSession(const BotProtocol::Entity& entity);
   void_t handleUserControlSession(BotProtocol::ControlSession& controlSession);
   void_t handleBotControlSession(BotProtocol::ControlSession& controlSession);
 
   void_t handleBotCreateSessionTransaction(BotProtocol::Transaction& transaction);
-  void_t handleBotRemoveSessionTransaction(uint32_t id);
+  void_t handleBotRemoveSessionTransaction(const BotProtocol::Entity& entity);
 
   void_t handleBotCreateSessionOrder(BotProtocol::Order& order);
-  void_t handleBotRemoveSessionOrder(uint32_t id);
+  void_t handleBotRemoveSessionOrder(const BotProtocol::Entity& entity);
 
   void_t handleBotCreateSessionLogMessage(BotProtocol::SessionLogMessage& logMessage);
 
@@ -88,9 +89,9 @@ private:
 
   void_t handleUserCreateMarketOrder(BotProtocol::Order& order);
   void_t handleUserUpdateMarketOrder(BotProtocol::Order& order);
-  void_t handleUserRemoveMarketOrder(uint32_t id);
+  void_t handleUserRemoveMarketOrder(const BotProtocol::Entity& entity);
 
-  void_t sendError(const String& errorMessage);
+  void_t sendErrorResponse(const BotProtocol::Entity& entity, const String& errorMessage);
 
 private: // Server::Client::Listener
   virtual size_t handle(byte_t* data, size_t size);

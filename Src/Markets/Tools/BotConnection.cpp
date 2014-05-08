@@ -100,11 +100,11 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data,
   return true;
 }
 
-bool_t BotConnection::sendError(const String& errorMessage)
+bool_t BotConnection::sendErrorResponse(const BotProtocol::Entity& entity, const String& errorMessage)
 {
-  BotProtocol::Error error;
-  error.entityType = BotProtocol::error;
-  error.entityId = 0;
-  BotProtocol::setString(error.errorMessage, errorMessage);
-  return sendMessage(BotProtocol::updateEntity, &error, sizeof(error));
+  BotProtocol::ErrorResponse errorResponse;
+  errorResponse.entityType = entity.entityType;
+  errorResponse.entityId = entity.entityId;
+  BotProtocol::setString(errorResponse.errorMessage, errorMessage);
+  return sendMessage(BotProtocol::errorResponse, &errorResponse, sizeof(errorResponse));
 }

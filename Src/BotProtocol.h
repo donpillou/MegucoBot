@@ -24,11 +24,11 @@ public:
     controlEntityResponse,
     createEntity,
     createEntityResponse,
+    errorResponse,
   };
   
   enum EntityType
   {
-    error,
     session,
     botEngine,
     marketAdapter,
@@ -57,10 +57,9 @@ public:
   struct CreateEntityResponse : public Entity
   {
     uint32_t id; // id of the created entity
-    uint8_t success;
   };
 
-  struct LoginRequest
+  struct LoginRequest : public Entity
   {
     char_t userName[33];
   };
@@ -71,12 +70,12 @@ public:
     byte_t loginKey[32];
   };
 
-  struct AuthRequest
+  struct AuthRequest : public Entity
   {
     byte_t signature[32];
   };
 
-  struct RegisterBotRequest
+  struct RegisterBotRequest : public Entity
   {
     uint32_t pid;
   };
@@ -90,7 +89,7 @@ public:
     double balanceComm;
   };
 
-  struct RegisterMarketRequest
+  struct RegisterMarketRequest : public Entity
   {
     uint32_t pid;
   };
@@ -102,7 +101,7 @@ public:
     char_t secret[65];
   };
 
-  struct Error : public Entity
+  struct ErrorResponse : public Entity
   {
     char_t errorMessage[129];
   };
@@ -215,7 +214,6 @@ public:
   struct ControlSessionResponse : public Entity
   {
     uint8_t cmd;
-    uint8_t success;
   };
 
   struct ControlMarket : public Entity
@@ -234,7 +232,6 @@ public:
   struct ControlMarketResponse : public Entity
   {
     uint8_t cmd;
-    uint8_t success;
   };
 
 #pragma pack(pop)

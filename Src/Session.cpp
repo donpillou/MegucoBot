@@ -11,7 +11,7 @@
 
 Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm) :
   serverHandler(serverHandler), user(user),
-  id(id), name(name), engine(&engine), market(&market),
+  __id(id), name(name), engine(&engine), market(&market),
   simulation(true), balanceBase(balanceBase), balanceComm(balanceComm),
   state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1) {}
 
@@ -20,7 +20,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
-  id = data.find("id")->toUInt();
+  __id = data.find("id")->toUInt();
   name = data.find("name")->toString();
   engine = serverHandler.findBotEngine(data.find("engine")->toString());
   market = user.findMarket(data.find("marketId")->toUInt());
@@ -95,7 +95,7 @@ Session::~Session()
 void_t Session::toVariant(Variant& variant)
 {
   HashMap<String, Variant>& data = variant.toMap();
-  data.append("id", id);
+  data.append("id", __id);
   data.append("name", name);
   data.append("engine", engine->getName());
   data.append("marketId", market->getId());
@@ -258,7 +258,7 @@ void_t Session::send(ClientHandler* client)
 {
   BotProtocol::Session sessionData;
   sessionData.entityType = BotProtocol::session;
-  sessionData.entityId = id;
+  sessionData.entityId = __id;
   BotProtocol::setString(sessionData.name, name);
   sessionData.botEngineId = engine->getId();
   sessionData.marketId = market->getId();

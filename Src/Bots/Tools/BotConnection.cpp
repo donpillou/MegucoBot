@@ -191,16 +191,17 @@ template <class E> bool_t BotConnection::createEntity(const void_t* data, uint32
     size_t size;
     if(!receiveMessage(header, data, size))
       return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
     BotProtocol::CreateEntityResponse* response = (BotProtocol::CreateEntityResponse*)data;
     if(header.messageType != BotProtocol::createEntityResponse || size < sizeof(BotProtocol::CreateEntityResponse) ||
       response->entityType != entityType)
     {
       error = "Received invalid create entity response.";
-      return false;
-    }
-    if(!response->success)
-    {
-      error = "Could not create entity.";
       return false;
     }
     id = response->id;
@@ -280,15 +281,15 @@ bool_t BotConnection::sendControlSession(BotProtocol::ControlSession::Command cm
     size_t size;
     if(!receiveMessage(header, data, size))
       return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
     if(header.messageType != BotProtocol::controlEntityResponse || size < sizeof(BotProtocol::ControlSessionResponse))
     {
       error = "Received invalid control session response.";
-      return false;
-    }
-    BotProtocol::ControlSessionResponse* response = (BotProtocol::ControlSessionResponse*)data;
-    if(!response->success)
-    {
-      error = "Could not control session.";
       return false;
     }
   }

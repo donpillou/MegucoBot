@@ -12,7 +12,8 @@
 #include "MarketAdapter.h"
 #include "Market.h"
 
-ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) : id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
+ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) :
+  __id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
   state(newState), user(0), session(0), market(0) {}
 
 ClientHandler::~ClientHandler()
@@ -147,6 +148,10 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& messageHeader, by
       if(size >= sizeof(BotProtocol::CreateEntityResponse))
         handleCreateEntityResponse(*(BotProtocol::CreateEntityResponse*)data);
       break;
+    case BotProtocol::errorResponse:
+      if(size >= sizeof(BotProtocol::ErrorResponse))
+        handleErrorResponse(*(BotProtocol::ErrorResponse*)data);
+      break;
     default:
       break;
     }
@@ -162,7 +167,7 @@ void_t ClientHandler::handleLogin(BotProtocol::LoginRequest& loginRequest)
   user = serverHandler.findUser(userName);
   if(!user)
   {
-    sendError("Unknown user.");
+    sendErrorResponse(loginRequest, "Unknown user.");
     return;
   }
 
@@ -182,7 +187,7 @@ void ClientHandler::handleAuth(BotProtocol::AuthRequest& authRequest)
   Sha256::hmac(loginkey, 32, user->getPwHmac(), 32, signature);
   if(Memory::compare(signature, authRequest.signature, 32) != 0)
   {
-    sendError("Incorrect signature.");
+    sendErrorResponse(authRequest, "Incorrect signature.");
     return;
   }
 
@@ -224,12 +229,12 @@ void_t ClientHandler::handleRegisterBot(BotProtocol::RegisterBotRequest& registe
   Session* session = serverHandler.findSessionByPid(registerBotRequest.pid);
   if(!session)
   {
-    sendError("Unknown session.");
+    sendErrorResponse(registerBotRequest, "Unknown session.");
     return;
   }
   if(!session->registerClient(*this, true))
   {
-    sendError("Invalid session.");
+    sendErrorResponse(registerBotRequest, "Invalid session.");
     return;
   } 
 
@@ -251,12 +256,12 @@ void_t ClientHandler::handleRegisterMarket(BotProtocol::RegisterMarketRequest& r
   Market* market = serverHandler.findMarketByPid(registerMarketRequest.pid);
   if(!market)
   {
-    sendError("Unknown market.");
+    sendErrorResponse(registerMarketRequest, "Unknown market.");
     return;
   }
   if(!market->registerClient(*this, true))
   {
-    sendError("Invalid market.");
+    sendErrorResponse(registerMarketRequest, "Invalid market.");
     return;
   } 
 
@@ -345,13 +350,13 @@ void_t ClientHandler::handleRemoveEntity(const BotProtocol::Entity& entity)
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::session:
-      handleUserRemoveSession(entity.entityId);
+      handleUserRemoveSession(entity);
       break;
     case BotProtocol::market:
-      handleUserRemoveMarket(entity.entityId);
+      handleUserRemoveMarket(entity);
       break;
     case BotProtocol::marketOrder:
-      handleUserRemoveMarketOrder(entity.entityId);
+      handleUserRemoveMarketOrder(entity);
       break;
     default:
       break;
@@ -361,10 +366,10 @@ void_t ClientHandler::handleRemoveEntity(const BotProtocol::Entity& entity)
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::sessionTransaction:
-      handleBotRemoveSessionTransaction(entity.entityId);
+      handleBotRemoveSessionTransaction(entity);
       break;
     case BotProtocol::sessionOrder:
-      handleBotRemoveSessionOrder(entity.entityId);
+      handleBotRemoveSessionOrder(entity);
       break;
     default:
       break;
@@ -440,10 +445,6 @@ void_t ClientHandler::handleUpdateEntity(BotProtocol::Entity& entity, size_t siz
   case marketState:
     switch((BotProtocol::EntityType)entity.entityType)
     {
-    case BotProtocol::error:
-      if(size >= sizeof(BotProtocol::Error))
-        market->sendEntity(&entity, sizeof(BotProtocol::Error));
-      break;
     case BotProtocol::marketTransaction:
       if(size >= sizeof(BotProtocol::Transaction))
         handleMarketUpdateMarketTransaction(*(BotProtocol::Transaction*)&entity);
@@ -484,19 +485,31 @@ void_t ClientHandler::handleCreateEntityResponse(BotProtocol::CreateEntityRespon
   }
 }
 
+void_t ClientHandler::handleErrorResponse(BotProtocol::ErrorResponse& errorResponse)
+{
+  switch(state)
+  {
+  case marketState:
+    {
+      uint32_t userRequestId;
+      ClientHandler* client;
+      if(!market->removeRequestId((BotProtocol::EntityType)errorResponse.entityType, errorResponse.entityId, userRequestId, client))
+        return;
+      errorResponse.entityId = userRequestId;
+      client->sendMessage(BotProtocol::errorResponse, &errorResponse, sizeof(errorResponse));
+    }
+    break;
+  default:
+    break;
+  }
+}
+
 void_t ClientHandler::handleUserCreateMarket(BotProtocol::Market& createMarketArgs)
 {
-  BotProtocol::CreateEntityResponse response;
-  response.entityType = BotProtocol::market;
-  response.entityId = createMarketArgs.entityId;
-  response.id = 0;
-  response.success = 0;
-
   MarketAdapter* marketAdapter = serverHandler.findMarketAdapter(createMarketArgs.marketAdapterId);
   if(!marketAdapter)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Unknown market adapter.");
+    sendErrorResponse(createMarketArgs, "Unknown market adapter.");
     return;
   }
   
@@ -506,13 +519,14 @@ void_t ClientHandler::handleUserCreateMarket(BotProtocol::Market& createMarketAr
   Market* market = user->createMarket(*marketAdapter, username, key, secret);
   if(!market)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Could not create market.");
+    sendErrorResponse(createMarketArgs, "Could not create market.");
     return;
   }
 
+  BotProtocol::CreateEntityResponse response;
+  response.entityType = BotProtocol::market;
+  response.entityId = createMarketArgs.entityId;
   response.id = market->getId();
-  response.success = 1;
   sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   market->send();
@@ -522,17 +536,17 @@ void_t ClientHandler::handleUserCreateMarket(BotProtocol::Market& createMarketAr
   market->send();
 }
 
-void_t ClientHandler::handleUserRemoveMarket(uint32_t id)
+void_t ClientHandler::handleUserRemoveMarket(const BotProtocol::Entity& entity)
 {
   // todo: do not remove markts that are in use by a bot session
 
-  if(!user->deleteMarket(id))
+  if(!user->deleteMarket(entity.entityId))
   {
-    sendError("Unknown market.");
+    sendErrorResponse(entity, "Unknown market.");
     return;
   }
 
-  user->removeEntity(BotProtocol::market, id);
+  user->removeEntity(BotProtocol::market, entity.entityId);
   user->saveData();
 }
 
@@ -542,13 +556,11 @@ void_t ClientHandler::handleUserControlMarket(BotProtocol::ControlMarket& contro
   response.entityType = BotProtocol::market;
   response.entityId = controlMarket.entityId;
   response.cmd = controlMarket.cmd;
-  response.success = 0;
 
   Market* market = user->findMarket(controlMarket.entityId);
   if(!market)
   {
-    sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
-    sendError("Unknown market.");
+    sendErrorResponse(controlMarket, "Unknown market.");
     return;
   }
 
@@ -559,7 +571,6 @@ void_t ClientHandler::handleUserControlMarket(BotProtocol::ControlMarket& contro
       this->market->unregisterClient(*this);
     market->registerClient(*this, false);
     this->market = market;
-    response.success = 1;
     sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
     {
       const BotProtocol::MarketBalance& balance = market->getBalance();
@@ -580,13 +591,12 @@ void_t ClientHandler::handleUserControlMarket(BotProtocol::ControlMarket& contro
       ClientHandler* adapterClient = market->getAdapaterClient();
       if(!adapterClient)
       {
-        sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
-        sendError("Invalid market state.");
+        sendErrorResponse(controlMarket, "Invalid market state.");
         return;
       }
-      response.success = 1;
       adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarket, sizeof(controlMarket));
       sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
+      // todo: do not send response here.. create request id here and wait for a response from adapter client
     }
     break;
   }
@@ -594,54 +604,47 @@ void_t ClientHandler::handleUserControlMarket(BotProtocol::ControlMarket& contro
 
 void_t ClientHandler::handleUserCreateSession(BotProtocol::Session& createSessionArgs)
 {
-  BotProtocol::CreateEntityResponse response;
-  response.entityType = BotProtocol::session;
-  response.entityId = createSessionArgs.entityId;
-  response.id = 0;
-  response.success = 0;
-
   String name = BotProtocol::getString(createSessionArgs.name);
   BotEngine* botEngine = serverHandler.findBotEngine(createSessionArgs.botEngineId);
   if(!botEngine)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Unknown bot engine.");
+    sendErrorResponse(createSessionArgs, "Unknown bot engine.");
     return;
   }
 
   Market* market = user->findMarket(createSessionArgs.marketId);
   if(!market)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Unknown market.");
+    sendErrorResponse(createSessionArgs, "Unknown market.");
     return;
   }
 
   Session* session = user->createSession(name, *botEngine, *market, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
   if(!session)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Could not create session.");
+    sendErrorResponse(createSessionArgs, "Could not create session.");
     return;
   }
 
+  BotProtocol::CreateEntityResponse response;
+  response.entityType = BotProtocol::session;
+  response.entityId = createSessionArgs.entityId;
   response.id = session->getId();
-  response.success = 1;
   sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->send();
   user->saveData();
 }
 
-void_t ClientHandler::handleUserRemoveSession(uint32_t id)
+void_t ClientHandler::handleUserRemoveSession(const BotProtocol::Entity& entity)
 {
-  if(!user->deleteSession(id))
+  if(!user->deleteSession(entity.entityId))
   {
-    sendError("Unknown session.");
+    sendErrorResponse(entity, "Unknown session.");
     return;
   }
 
-  user->removeEntity(BotProtocol::session, id);
+  user->removeEntity(BotProtocol::session, entity.entityId);
   user->saveData();
 }
 
@@ -651,13 +654,11 @@ void_t ClientHandler::handleUserControlSession(BotProtocol::ControlSession& cont
   response.entityType = BotProtocol::session;
   response.entityId = controlSession.entityId;
   response.cmd = controlSession.cmd;
-  response.success = 0;
 
   Session* session = user->findSession(controlSession.entityId);
   if(!session)
   {
-    sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
-    sendError("Unknown session.");
+    sendErrorResponse(controlSession, "Unknown session.");
     return;
   }
 
@@ -666,22 +667,18 @@ void_t ClientHandler::handleUserControlSession(BotProtocol::ControlSession& cont
   case BotProtocol::ControlSession::startSimulation:
     if(!session->startSimulation())
     {
-      sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
-      sendError("Could not start simulation session.");
+      sendErrorResponse(controlSession, "Could not start simulation session.");
       return;
     }
-    response.success = 1;
     sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
     session->send();
     break;
   case BotProtocol::ControlSession::stop:
     if(!session->stop())
     {
-      sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
-      sendError("Could not stop session.");
+      sendErrorResponse(controlSession, "Could not stop session.");
       return;
     }
-    response.success = 1;
     sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
     session->send();
     break;
@@ -690,7 +687,6 @@ void_t ClientHandler::handleUserControlSession(BotProtocol::ControlSession& cont
       this->session->unregisterClient(*this);
     session->registerClient(*this, false);
     this->session = session;
-    response.success = 1;
     sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
     {
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
@@ -713,12 +709,10 @@ void_t ClientHandler::handleBotControlSession(BotProtocol::ControlSession& contr
   response.entityType = BotProtocol::session;
   response.entityId = controlSession.entityId;
   response.cmd = controlSession.cmd;
-  response.success = 0;
 
   if(controlSession.entityId != session->getId())
   {
-    sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
-    sendError("Unknown session.");
+    sendErrorResponse(controlSession, "Unknown session.");
     return;
   }
 
@@ -726,7 +720,6 @@ void_t ClientHandler::handleBotControlSession(BotProtocol::ControlSession& contr
   {
   case BotProtocol::ControlSession::requestTransactions:
     {
-      response.success = 1;
       sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
@@ -735,7 +728,6 @@ void_t ClientHandler::handleBotControlSession(BotProtocol::ControlSession& contr
     break;
   case BotProtocol::ControlSession::requestOrders:
     {
-      response.success = 1;
       sendMessage(BotProtocol::controlEntityResponse, &response, sizeof(response));
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
@@ -747,95 +739,80 @@ void_t ClientHandler::handleBotControlSession(BotProtocol::ControlSession& contr
 
 void_t ClientHandler::handleBotCreateSessionTransaction(BotProtocol::Transaction& createTransactionArgs)
 {
-  BotProtocol::CreateEntityResponse response;
-  response.entityType = BotProtocol::sessionTransaction;
-  response.entityId = createTransactionArgs.entityId;
-  response.id = 0;
-  response.success = 0;
-
   BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
   if(!transaction)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Could not create transaction.");
+    sendErrorResponse(createTransactionArgs, "Could not create transaction.");
     return;
   }
 
+  BotProtocol::CreateEntityResponse response;
+  response.entityType = BotProtocol::sessionTransaction;
+  response.entityId = createTransactionArgs.entityId;
   response.id = transaction->entityId;
-  response.success = 1;
   sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->sendEntity(transaction, sizeof(BotProtocol::Transaction));
   session->saveData();
 }
 
-void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t id)
+void_t ClientHandler::handleBotRemoveSessionTransaction(const BotProtocol::Entity& entity)
 {
-  if(!session->deleteTransaction(id))
+  if(!session->deleteTransaction(entity.entityId))
   {
-    sendError("Unknown transaction.");
+    sendErrorResponse(entity, "Unknown transaction.");
     return;
   }
 
-  session->removeEntity(BotProtocol::sessionTransaction, id);
+  session->removeEntity(BotProtocol::sessionTransaction, entity.entityId);
   session->saveData();
 }
 
 void_t ClientHandler::handleBotCreateSessionOrder(BotProtocol::Order& createOrderArgs)
 {
-  BotProtocol::CreateEntityResponse response;
-  response.entityType = BotProtocol::sessionOrder;
-  response.entityId = createOrderArgs.entityId;
-  response.id = 0;
-  response.success = 0;
-
   BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
   if(!order)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Could not create order.");
+    sendErrorResponse(createOrderArgs, "Could not create order.");
     return;
   }
 
+  BotProtocol::CreateEntityResponse response;
+  response.entityType = BotProtocol::sessionOrder;
+  response.entityId = createOrderArgs.entityId;
   response.id = order->entityId;
-  response.success = 1;
   sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->sendEntity(order, sizeof(BotProtocol::Order));
   session->saveData();
 }
 
-void_t ClientHandler::handleBotRemoveSessionOrder(uint32_t id)
+void_t ClientHandler::handleBotRemoveSessionOrder(const BotProtocol::Entity& entity)
 {
-  if(!session->deleteOrder(id))
+  if(!session->deleteOrder(entity.entityId))
   {
-    sendError("Unknown order.");
+    sendErrorResponse(entity, "Unknown order.");
     return;
   }
 
-  session->removeEntity(BotProtocol::sessionOrder, id);
+  session->removeEntity(BotProtocol::sessionOrder, entity.entityId);
   session->saveData();
 }
 
 void_t ClientHandler::handleBotCreateSessionLogMessage(BotProtocol::SessionLogMessage& logMessageArgs)
 {
-  BotProtocol::CreateEntityResponse response;
-  response.entityType = BotProtocol::sessionLogMessage;
-  response.entityId = logMessageArgs.entityId;
-  response.id = 0;
-  response.success = 0;
-
   String message = BotProtocol::getString(logMessageArgs.message);
   BotProtocol::SessionLogMessage* logMessage = session->addLogMessage(logMessageArgs.date, message);
   if(!logMessage)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Could not add log message.");
+    sendErrorResponse(logMessageArgs, "Could not add log message.");
     return;
   }
 
+  BotProtocol::CreateEntityResponse response;
+  response.entityType = BotProtocol::sessionLogMessage;
+  response.entityId = logMessageArgs.entityId;
   response.id = logMessage->entityId;
-  response.success = 1;
   sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
 
   session->sendEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
@@ -874,23 +851,15 @@ void_t ClientHandler::handleMarketUpdateMarketBalance(BotProtocol::MarketBalance
 
 void_t ClientHandler::handleUserCreateMarketOrder(BotProtocol::Order& createOrderArgs)
 {
-  BotProtocol::CreateEntityResponse response;
-  response.entityType = BotProtocol::marketOrder;
-  response.entityId = createOrderArgs.entityId;
-  response.id = 0;
-  response.success = 0;
-
   if(!market)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Unknown market.");
+    sendErrorResponse(createOrderArgs, "Unknown market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
-    sendMessage(BotProtocol::createEntityResponse, &response, sizeof(response));
-    sendError("Invalid market state.");
+    sendErrorResponse(createOrderArgs, "Invalid market state.");
     return;
   }
 
@@ -902,33 +871,33 @@ void_t ClientHandler::handleUserUpdateMarketOrder(BotProtocol::Order& order)
 {
   if(!market)
   {
-    sendError("Unknown market.");
+    sendErrorResponse(order, "Unknown market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
-    sendError("Invalid market state.");
+    sendErrorResponse(order, "Invalid market state.");
     return;
   }
 
   marketAdapter->sendMessage(BotProtocol::updateEntity, &order, sizeof(order));
 }
 
-void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t id)
+void_t ClientHandler::handleUserRemoveMarketOrder(const BotProtocol::Entity& entity)
 {
   if(!market)
   {
-    sendError("Unknown market.");
+    sendErrorResponse(entity, "Unknown market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
-    sendError("Invalid market state.");
+    sendErrorResponse(entity, "Invalid market state.");
     return;
   }
-  marketAdapter->removeEntity(BotProtocol::marketOrder, id);
+  marketAdapter->removeEntity(BotProtocol::marketOrder, entity.entityId);
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)
@@ -965,11 +934,11 @@ void_t ClientHandler::removeEntity(BotProtocol::EntityType type, uint32_t id)
   client.send(message, sizeof(message));
 }
 
-void_t ClientHandler::sendError(const String& errorMessage)
+void_t ClientHandler::sendErrorResponse(const BotProtocol::Entity& entity, const String& errorMessage)
 {
-  BotProtocol::Error error;
-  error.entityType = BotProtocol::error;
-  error.entityId = 0;
-  BotProtocol::setString(error.errorMessage, errorMessage);
-  sendEntity(&error, sizeof(error));
+  BotProtocol::ErrorResponse errorResponse;
+  errorResponse.entityType = entity.entityType;
+  errorResponse.entityId = entity.entityId;
+  BotProtocol::setString(errorResponse.errorMessage, errorMessage);
+  sendMessage(BotProtocol::errorResponse, &errorResponse, sizeof(errorResponse));
 }

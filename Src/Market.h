@@ -28,7 +28,7 @@ public:
   bool_t registerClient(ClientHandler& client, bool_t adapter);
   void_t unregisterClient(ClientHandler& client);
 
-  uint32_t getId() const {return id;}
+  uint32_t getId() const {return __id;}
   MarketAdapter* getMarketAdapter() const {return marketAdapter;}
   const String& getUserName() const {return userName;}
   const String& getKey() const {return key;}
@@ -72,7 +72,7 @@ private:
 private:
   ServerHandler& serverHandler;
   User& user;
-  uint32_t id;
+  uint32_t __id;
   MarketAdapter* marketAdapter;
   String userName;
   String key;
