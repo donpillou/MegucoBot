@@ -206,23 +206,7 @@ template <class E> bool_t BotConnection::createEntity(const void_t* data, uint32
     }
     id = response->id;
   }
-  
-  // receive entity
-  {
-    BotProtocol::Header header;
-    byte_t* data;
-    size_t size;
-    if(!receiveMessage(header, data, size))
-      return false;
-    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(header.messageType != BotProtocol::updateEntity || size < sizeof(E) ||
-       entity->entityType != entityType ||
-       entity->entityId != id)
-    {
-      error = "Could not receive created entity.";
-      return false;
-    }
-  }
+
   return true;
 }
 
@@ -237,21 +221,21 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
       return false;
   }
 
-  // receive entity remove message
-  {
-    BotProtocol::Header header;
-    byte_t* data;
-    size_t size;
-    if(!receiveMessage(header, data, size))
-      return false;
-    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(header.messageType != BotProtocol::removeEntity || size < sizeof(BotProtocol::Entity) ||
-       entity->entityType != type)
-    {
-      error = "Received invalid remove entity response.";
-      return false;
-    }
-  }
+  // todo: receive remove entity response
+  //{
+  //  BotProtocol::Header header;
+  //  byte_t* data;
+  //  size_t size;
+  //  if(!receiveMessage(header, data, size))
+  //    return false;
+  //  BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+  //  if(header.messageType != BotProtocol::removeEntity || size < sizeof(BotProtocol::Entity) ||
+  //     entity->entityType != type)
+  //  {
+  //    error = "Received invalid remove entity response.";
+  //    return false;
+  //  }
+  //}
 
   return true;
 }

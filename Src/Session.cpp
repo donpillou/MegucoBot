@@ -172,7 +172,6 @@ bool_t Session::registerClient(ClientHandler& client, bool_t bot)
       return false;
     botClient = &client;
     state = simulation ? BotProtocol::Session::simulating : BotProtocol::Session::running;
-    clients.append(&client);
   }
   else
     clients.append(&client);
@@ -184,7 +183,6 @@ void_t Session::unregisterClient(ClientHandler& client)
   if(&client == botClient)
   {
     botClient = 0;
-    clients.remove(&client);
     stop();
   }
   else
