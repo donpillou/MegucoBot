@@ -91,7 +91,7 @@ private:
   void_t handleUserUpdateMarketOrder(BotProtocol::Order& order);
   void_t handleUserRemoveMarketOrder(const BotProtocol::Entity& entity);
 
-  void_t sendErrorResponse(const BotProtocol::Entity& entity, const String& errorMessage);
+  void_t sendErrorResponse(BotProtocol::MessageType messageType, const BotProtocol::Entity& entity, const String& errorMessage);
 
 private: // Server::Client::Listener
   virtual size_t handle(byte_t* data, size_t size);

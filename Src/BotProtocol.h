@@ -103,6 +103,7 @@ public:
 
   struct ErrorResponse : public Entity
   {
+    uint16_t messageType;
     char_t errorMessage[129];
   };
 

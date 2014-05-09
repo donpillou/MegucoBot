@@ -23,7 +23,7 @@ public:
 
   bool_t sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size);
   bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
-  bool_t sendErrorResponse(const BotProtocol::Entity& entity, const String& errorMessage);
+  bool_t sendErrorResponse(BotProtocol::MessageType messageType, const BotProtocol::Entity& entity, const String& errorMessage);
   bool_t sendEntity(const void_t* data, size_t size);
   bool_t removeEntity(uint32_t type, uint32_t id);
 
