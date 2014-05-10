@@ -22,7 +22,7 @@ bool_t BotConnection::connect(uint16_t port)
   {
     BotProtocol::RegisterBotRequest registerBotRequest;
     registerBotRequest.pid = Process::getCurrentProcessId();
-    if(!sendMessage(BotProtocol::registerBotRequest, &registerBotRequest, sizeof(registerBotRequest)))
+    if(!sendMessage(BotProtocol::registerBotRequest, 0, &registerBotRequest, sizeof(registerBotRequest)))
       return false;
   }
 
@@ -33,7 +33,13 @@ bool_t BotConnection::connect(uint16_t port)
     size_t size;
     if(!receiveMessage(header, data, size))
       return false;
-    if(header.messageType != BotProtocol::registerBotResponse || size < sizeof(BotProtocol::RegisterBotResponse))
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    if(!(header.messageType == BotProtocol::registerBotResponse && header.requestId == 0 && size >= sizeof(BotProtocol::RegisterBotResponse)))
     {
       error = "Could not receive register bot response.";
       return false;
@@ -56,7 +62,7 @@ bool_t BotConnection::addLogMessage(const String& message)
   logMessage.date = Time::time();
   BotProtocol::setString(logMessage.message, message);
   uint32_t id;
-  return createEntity<BotProtocol::SessionLogMessage>(&logMessage, id);
+  return createEntity(&logMessage, sizeof(logMessage), id);
 }
 
 bool_t BotConnection::getBalance(BotProtocol::MarketBalance& balance)
@@ -92,71 +98,73 @@ bool_t BotConnection::getBalance(BotProtocol::MarketBalance& balance)
 
 bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactions)
 {
-  if(!sendControlSession(BotProtocol::ControlSession::requestTransactions))
-    return false;
-  if(!sendPing())
-    return false;
-
-  BotProtocol::Header header;
-  byte_t* data;
-  size_t size;
-  for(;;)
-  {
-    if(!receiveMessage(header, data, size))
-      return false;
-    switch((BotProtocol::MessageType)header.messageType)
-    {
-    case BotProtocol::updateEntity:
-      if(size >= sizeof(BotProtocol::Entity))
-      {
-        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-        if(entity->entityType == BotProtocol::sessionTransaction && size >= sizeof(BotProtocol::Transaction))
-          transactions.append(*(BotProtocol::Transaction*)data);
-      }
-      break;
-    case BotProtocol::pingResponse:
-      return true;
-    default:
-      break;
-    }
-  }
+//  if(!sendControlSession(BotProtocol::ControlSession::requestTransactions))
+//    return false;
+//  if(!sendPing())
+//    return false;
+//
+//  BotProtocol::Header header;
+//  byte_t* data;
+//  size_t size;
+//  for(;;)
+//  {
+//    if(!receiveMessage(header, data, size))
+//      return false;
+//    switch((BotProtocol::MessageType)header.messageType)
+//    {
+//    case BotProtocol::updateEntity:
+//      if(size >= sizeof(BotProtocol::Entity))
+//      {
+//        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+//        if(entity->entityType == BotProtocol::sessionTransaction && size >= sizeof(BotProtocol::Transaction))
+//          transactions.append(*(BotProtocol::Transaction*)data);
+//      }
+//      break;
+//    case BotProtocol::pingResponse:
+//      return true;
+//    default:
+//      break;
+//    }
+//  }
+  return false;
 }
 
 bool_t BotConnection::getOrders(List<BotProtocol::Order>& orders)
 {
-  if(!sendControlSession(BotProtocol::ControlSession::requestOrders))
-    return false;
-  if(!sendPing())
-    return false;
-
-  BotProtocol::Header header;
-  byte_t* data;
-  size_t size;
-  for(;;)
-  {
-    if(!receiveMessage(header, data, size))
-      return false;
-    switch((BotProtocol::MessageType)header.messageType)
-    {
-    case BotProtocol::updateEntity:
-      if(size >= sizeof(BotProtocol::Entity))
-      {
-        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-        if(entity->entityType == BotProtocol::sessionOrder && size >= sizeof(BotProtocol::Order))
-          orders.append(*(BotProtocol::Order*)data);
-      }
-      break;
-    case BotProtocol::pingResponse:
-      return true;
-    default:
-      break;
-    }
-  }
+//  if(!sendControlSession(BotProtocol::ControlSession::requestOrders))
+//    return false;
+//  if(!sendPing())
+//    return false;
+//
+//  BotProtocol::Header header;
+//  byte_t* data;
+//  size_t size;
+//  for(;;)
+//  {
+//    if(!receiveMessage(header, data, size))
+//      return false;
+//    switch((BotProtocol::MessageType)header.messageType)
+//    {
+//    case BotProtocol::updateEntity:
+//      if(size >= sizeof(BotProtocol::Entity))
+//      {
+//        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+//        if(entity->entityType == BotProtocol::sessionOrder && size >= sizeof(BotProtocol::Order))
+//          orders.append(*(BotProtocol::Order*)data);
+//      }
+//      break;
+//    case BotProtocol::pingResponse:
+//      return true;
+//    default:
+//      break;
+//    }
+//  }
+  return false;
 }
 
 bool_t BotConnection::createTransaction(const BotProtocol::Transaction& transaction, uint32_t& id)
 {
-  return createEntity<BotProtocol::Transaction>(&transaction, id);
+  return createEntity(&transaction, sizeof(transaction), id);
 }
 
 bool_t BotConnection::removeTransaction(uint32_t id)
@@ -166,7 +174,7 @@ bool_t BotConnection::removeTransaction(uint32_t id)
 
 bool_t BotConnection::createOrder(const BotProtocol::Order& order, uint32_t& id)
 {
-  return createEntity<BotProtocol::Order>(&order, id);
+  return createEntity(&order, sizeof(order), id);
 }
 
 bool_t BotConnection::removeOrder(uint32_t id)
@@ -174,15 +182,12 @@ bool_t BotConnection::removeOrder(uint32_t id)
   return removeEntity(BotProtocol::sessionOrder, id);
 }
 
-template <class E> bool_t BotConnection::createEntity(const void_t* data, uint32_t& id)
+bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id)
 {
+  ASSERT(size >= sizeof(BotProtocol::Entity));
   BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType;
-
-  // send create request
-  {
-    if(!sendMessage(BotProtocol::createEntity, data, sizeof(E)))
-      return false;
-  }
+  if(!sendMessage(BotProtocol::createEntity, 0, data, size))
+    return false;
 
   // receive create response
   {
@@ -197,14 +202,14 @@ template <class E> bool_t BotConnection::createEntity(const void_t* data, uint32
       error = BotProtocol::getString(errorResponse->errorMessage);
       return false;
     }
-    BotProtocol::CreateEntityResponse* response = (BotProtocol::CreateEntityResponse*)data;
-    if(header.messageType != BotProtocol::createEntityResponse || size < sizeof(BotProtocol::CreateEntityResponse) ||
-      response->entityType != entityType)
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+    if(!(header.messageType == BotProtocol::updateEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
+         entity->entityType == entityType))
     {
-      error = "Received invalid create entity response.";
+      error = "Could not receive update entity response.";
       return false;
     }
-    id = response->id;
+    id = entity->entityId;
   }
 
   return true;
@@ -217,32 +222,33 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
     BotProtocol::Entity entity;
     entity.entityType = type;
     entity.entityId = id;
-    if(!sendMessage(BotProtocol::removeEntity, &entity, sizeof(entity)))
+    if(!sendMessage(BotProtocol::removeEntity, 0, &entity, sizeof(entity)))
       return false;
   }
 
-  // todo: receive remove entity response
-  //{
-  //  BotProtocol::Header header;
-  //  byte_t* data;
-  //  size_t size;
-  //  if(!receiveMessage(header, data, size))
-  //    return false;
-  //  BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-  //  if(header.messageType != BotProtocol::removeEntity || size < sizeof(BotProtocol::Entity) ||
-  //     entity->entityType != type)
-  //  {
-  //    error = "Received invalid remove entity response.";
-  //    return false;
-  //  }
-  //}
+  // receive remove entity response
+  {
+    BotProtocol::Header header;
+    byte_t* data;
+    size_t size;
+    if(!receiveMessage(header, data, size))
+      return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+    if(!(header.messageType == BotProtocol::removeEntity && header.requestId == 0 && size >= sizeof(BotProtocol::removeEntity) &&
+         entity->entityType == type && entity->entityId == id))
+    {
+      error = "Could not receive remove entity response.";
+      return false;
+    }
+  }
 
   return true;
-}
-
-bool_t BotConnection::sendPing()
-{
-  return sendMessage(BotProtocol::pingRequest, 0, 0);
 }
 
 bool_t BotConnection::sendControlSession(BotProtocol::ControlSession::Command cmd)
@@ -253,7 +259,7 @@ bool_t BotConnection::sendControlSession(BotProtocol::ControlSession::Command cm
     controlSession.entityType = BotProtocol::session;
     controlSession.entityId = sessionId;
     controlSession.cmd = cmd;
-    if(!sendMessage(BotProtocol::controlEntity, &controlSession, sizeof(controlSession)))
+    if(!sendMessage(BotProtocol::controlEntity, 0, &controlSession, sizeof(controlSession)))
       return false;
     return true;
   }
@@ -271,20 +277,24 @@ bool_t BotConnection::sendControlSession(BotProtocol::ControlSession::Command cm
       error = BotProtocol::getString(errorResponse->errorMessage);
       return false;
     }
-    if(header.messageType != BotProtocol::controlEntityResponse || size < sizeof(BotProtocol::ControlSessionResponse))
+    BotProtocol::ControlSessionResponse* controlSessionResponse = (BotProtocol::ControlSessionResponse*)data;
+    if(!(header.messageType != BotProtocol::controlEntityResponse && header.requestId != 0 && size >= sizeof(BotProtocol::ControlSessionResponse) &&
+         controlSessionResponse->entityType == BotProtocol::session && controlSessionResponse->entityId == sessionId && 
+         controlSessionResponse->cmd == cmd))
     {
-      error = "Received invalid control session response.";
+      error = "Could not receive control session response.";
       return false;
     }
   }
   return true;
 }
 
-bool_t BotConnection::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)
+bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)
 {
   BotProtocol::Header header;
   header.size = sizeof(header) + size;
   header.messageType = type;
+  header.requestId = requestId;
   if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header) ||
      (size > 0 && socket.send((const byte_t*)data, size) != size))
   {

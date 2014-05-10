@@ -21,7 +21,7 @@ bool_t BotConnection::connect(uint16_t port)
   {
     BotProtocol::RegisterMarketRequest registerMarketRequest;
     registerMarketRequest.pid = Process::getCurrentProcessId();
-    if(!sendMessage(BotProtocol::registerMarketRequest, &registerMarketRequest, sizeof(registerMarketRequest)))
+    if(!sendMessage(BotProtocol::registerMarketRequest, 0, &registerMarketRequest, sizeof(registerMarketRequest)))
       return false;
   }
 
@@ -32,7 +32,13 @@ bool_t BotConnection::connect(uint16_t port)
     size_t size;
     if(!receiveMessage(header, data, size))
       return false;
-    if(header.messageType != BotProtocol::registerMarketResponse || size < sizeof(BotProtocol::RegisterMarketResponse))
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    if(!(header.messageType == BotProtocol::registerBotResponse && header.requestId == 0 && size >= sizeof(BotProtocol::RegisterBotResponse)))
     {
       error = "Could not receive register market response.";
       return false;
@@ -49,22 +55,78 @@ bool_t BotConnection::connect(uint16_t port)
 bool_t BotConnection::sendEntity(const void_t* data, size_t size)
 {
   ASSERT(size >= sizeof(BotProtocol::Entity));
-  return sendMessage(BotProtocol::updateEntity, data, size);
+  BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType;
+  uint32_t entityId = ((BotProtocol::Entity*)data)->entityId;
+  if(!sendMessage(BotProtocol::updateEntity, 0, data, size))
+    return false;
+
+  // receive update entity response
+  {
+    BotProtocol::Header header;
+    byte_t* data;
+    size_t size;
+    if(!receiveMessage(header, data, size))
+      return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+    if(!(header.messageType == BotProtocol::updateEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
+         entity->entityType == entityType && entityId == entityId))
+    {
+      error = "Could not receive update entity response.";
+      return false;
+    }
+  }
+
+  return true;
 }
 
 bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
 {
-  BotProtocol::Entity entity;
-  entity.entityType = type;
-  entity.entityId = id;
-  return sendMessage(BotProtocol::removeEntity, &entity, sizeof(entity));
+  // send remove entity message
+  {
+    BotProtocol::Entity entity;
+    entity.entityType = type;
+    entity.entityId = id;
+    if(!sendMessage(BotProtocol::removeEntity, 0, &entity, sizeof(entity)))
+      return false;
+  }
+
+  // receive remove entity response
+  {
+    BotProtocol::Header header;
+    byte_t* data;
+    size_t size;
+    if(!receiveMessage(header, data, size))
+      return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+    if(!(header.messageType == BotProtocol::removeEntity && header.requestId == 0 && size >= sizeof(BotProtocol::removeEntity) &&
+         entity->entityType == type && entity->entityId == id))
+    {
+      error = "Could not receive remove entity response.";
+      return false;
+    }
+  }
+
+  return true;
 }
 
-bool_t BotConnection::sendMessage(BotProtocol::MessageType type, const void_t* data, size_t size)
+bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)
 {
   BotProtocol::Header header;
   header.size = sizeof(header) + size;
   header.messageType = type;
+  header.requestId = requestId;
   if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header) ||
      (size > 0 && socket.send((const byte_t*)data, size) != size))
   {
@@ -100,12 +162,12 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data,
   return true;
 }
 
-bool_t BotConnection::sendErrorResponse(BotProtocol::MessageType messageType, const BotProtocol::Entity& entity, const String& errorMessage)
+bool_t BotConnection::sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity& entity, const String& errorMessage)
 {
   BotProtocol::ErrorResponse errorResponse;
   errorResponse.entityType = entity.entityType;
   errorResponse.entityId = entity.entityId;
   errorResponse.messageType = messageType;
   BotProtocol::setString(errorResponse.errorMessage, errorMessage);
-  return sendMessage(BotProtocol::errorResponse, &errorResponse, sizeof(errorResponse));
+  return sendMessage(BotProtocol::errorResponse, requestId, &errorResponse, sizeof(errorResponse));
 }

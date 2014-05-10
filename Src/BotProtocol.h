@@ -48,17 +48,13 @@ public:
   {
     uint32_t size; // including header
     uint16_t messageType; // MessageType
+    uint32_t requestId;
   };
 
   struct Entity
   {
     uint16_t entityType; // EntityType
     uint32_t entityId;
-  };
-
-  struct CreateEntityResponse : public Entity
-  {
-    uint32_t id; // id of the created entity
   };
 
   struct LoginRequest : public Entity
