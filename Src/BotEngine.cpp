@@ -16,5 +16,5 @@ void_t BotEngine::send(ClientHandler& client)
   botEngine.entityType = BotProtocol::botEngine;
   botEngine.entityId = __id;
   BotProtocol::setString(botEngine.name, name);
-  client.sendEntity(&botEngine, sizeof(botEngine));
+  client.sendEntity(0, &botEngine, sizeof(botEngine));
 }

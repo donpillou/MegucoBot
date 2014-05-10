@@ -264,7 +264,7 @@ void_t Session::send(ClientHandler* client)
   sessionData.balanceBase = balanceBase;
   sessionData.balanceComm = balanceComm;
   if(client)
-    client->sendEntity(&sessionData, sizeof(sessionData));
+    client->sendEntity(0, &sessionData, sizeof(sessionData));
   else
     user.sendEntity(&sessionData, sizeof(sessionData));
 }
@@ -272,11 +272,11 @@ void_t Session::send(ClientHandler* client)
 void_t Session::sendEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(data, size);
+    (*i)->sendEntity(0, data, size);
 }
 
 void_t Session::removeEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->removeEntity(type, id);
+    (*i)->removeEntity(0, type, id);
 }

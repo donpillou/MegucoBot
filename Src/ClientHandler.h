@@ -21,8 +21,8 @@ public:
   void_t deselectMarket();
 
   void_t sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size);
-  void_t sendEntity(const void_t* data, size_t size);
-  void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
+  void_t sendEntity(uint32_t requestId, const void_t* data, size_t size);
+  void_t removeEntity(uint32_t requestId, BotProtocol::EntityType type, uint32_t id);
 
 private:
   enum State
@@ -59,8 +59,7 @@ private:
   void_t handleRemoveEntity(uint32_t requestId, const BotProtocol::Entity& entity);
   void_t handleControlEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
   void_t handleUpdateEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
-  void_t handleCreateEntityResponse(uint32_t requestId, const BotProtocol::Entity& entity);
-  void_t handleErrorResponse(uint32_t requestId, BotProtocol::ErrorResponse& errorResponse);
+  void_t handleResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity& response, size_t size);
 
   void_t handleUserCreateMarket(uint32_t requestId, BotProtocol::Market& market);
   void_t handleUserRemoveMarket(uint32_t requestId, const BotProtocol::Entity& entity);

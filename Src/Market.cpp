@@ -211,7 +211,7 @@ void_t Market::send(ClientHandler* client)
   BotProtocol::setString(market.secret, String());
 
   if(client)
-    client->sendEntity(&market, sizeof(market));
+    client->sendEntity(0, &market, sizeof(market));
   else
     user.sendEntity(&market, sizeof(market));
 }
@@ -219,12 +219,12 @@ void_t Market::send(ClientHandler* client)
 void_t Market::sendEntity(const void_t* data, size_t size)
 {
   for(HashMap<ClientHandler*, ClientInfo>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    i.key()->sendEntity(data, size);
+    i.key()->sendEntity(0, data, size);
 }
 
 void_t Market::removeEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashMap<ClientHandler*, ClientInfo>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    i.key()->removeEntity(type, id);
+    i.key()->removeEntity(0, type, id);
 }
 

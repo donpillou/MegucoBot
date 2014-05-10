@@ -63,13 +63,13 @@ bool_t User::deleteMarket(uint32_t id)
 void_t User::sendEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(data, size);
+    (*i)->sendEntity(0, data, size);
 }
 
 void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->removeEntity(type, id);
+    (*i)->removeEntity(0, type, id);
 }
 
 bool_t User::loadData()
