@@ -114,7 +114,7 @@ void_t Market::unregisterClient(ClientHandler& client)
   }
 }
 
-uint32_t Market::createRequestId(BotProtocol::EntityType entityType, uint32_t userRequestId, ClientHandler& client)
+uint32_t Market::createRequestId(uint32_t userRequestId, ClientHandler& client)
 {
   HashMap<ClientHandler*, ClientInfo>::Iterator it = clients.find(&client);
   if(it == clients.end())
@@ -126,20 +126,17 @@ uint32_t Market::createRequestId(BotProtocol::EntityType entityType, uint32_t us
   uint32_t id = nextRequestId++;
   RequestId& requestId = requestIds.append(id, RequestId());
   requestId.client = &client;
-  requestId.entityType = entityType;
   requestId.userRequestId = userRequestId;
   clientInfo.responseIds.append(id);
   return id;
 }
 
-bool_t Market::removeRequestId(BotProtocol::EntityType entityType, uint32_t id, uint32_t& userRequestId, ClientHandler*& client)
+bool_t Market::removeRequestId(uint32_t id, uint32_t& userRequestId, ClientHandler*& client)
 {
   HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(id);
   if(it == requestIds.end())
     return false;
   RequestId& requestId = *it;
-  if(requestId.entityType != entityType)
-    return false;
   HashMap<ClientHandler*, ClientInfo>::Iterator itClient = clients.find(requestId.client);
   if(itClient == clients.end())
   {

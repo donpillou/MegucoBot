@@ -152,7 +152,7 @@ private:
   {
     BotProtocol::Order order;
     if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
-      return connection.sendErrorResponse(BotProtocol::createEntity, requestId, createOrderArgs, market->getLastError());
+      return connection.sendErrorResponse(BotProtocol::createEntity, requestId, market->getLastError());
 
     BotProtocol::Entity response;
     response.entityType = BotProtocol::marketOrder;
@@ -166,13 +166,13 @@ private:
   {
     // step #1 cancel current order
     if(!market->cancelOrder(updateOrderArgs.entityId))
-      return connection.sendErrorResponse(BotProtocol::updateEntity, requestId, updateOrderArgs, market->getLastError());
+      return connection.sendErrorResponse(BotProtocol::updateEntity, requestId, market->getLastError());
 
     // step #2 create new order with same id
     BotProtocol::Order order;
     if(!market->createOrder(updateOrderArgs.entityId, (BotProtocol::Order::Type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, order))
     {
-      if(!connection.sendErrorResponse(BotProtocol::updateEntity, requestId, updateOrderArgs, market->getLastError()))
+      if(!connection.sendErrorResponse(BotProtocol::updateEntity, requestId, market->getLastError()))
         return false;
       if(!connection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
         return false;
@@ -187,7 +187,7 @@ private:
   {
     if(!market->cancelOrder(entity.entityId))
     {
-      if(!connection.sendErrorResponse(BotProtocol::removeEntity, requestId, entity, market->getLastError()))
+      if(!connection.sendErrorResponse(BotProtocol::removeEntity, requestId, market->getLastError()))
         return false;
       BotProtocol::Order order;
       if(market->getOrder(entity.entityId, order))
@@ -213,7 +213,7 @@ private:
       {
         List<BotProtocol::Order> orders;
         if(!market->loadOrders(orders))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, controlMarket, market->getLastError());
+          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, market->getLastError());
         if(!connection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
         HashSet<uint32_t> ordersToRemove;
@@ -234,7 +234,7 @@ private:
       {
         List<BotProtocol::Transaction> transactions;
         if(!market->loadTransactions(transactions))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, controlMarket, market->getLastError());
+          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, market->getLastError());
         if(!connection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
         HashSet<uint32_t> transactionsToRemove;
@@ -255,7 +255,7 @@ private:
       {
         BotProtocol::MarketBalance balance;
         if(!market->loadBalance(balance))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, controlMarket, market->getLastError());
+          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, market->getLastError());
         if(!connection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
         if(!connection.sendEntity(&balance, sizeof(balance)))

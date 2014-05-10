@@ -57,7 +57,7 @@ public:
     uint32_t entityId;
   };
 
-  struct LoginRequest : public Entity
+  struct LoginRequest
   {
     char_t userName[33];
   };
@@ -68,12 +68,12 @@ public:
     byte_t loginKey[32];
   };
 
-  struct AuthRequest : public Entity
+  struct AuthRequest
   {
     byte_t signature[32];
   };
 
-  struct RegisterBotRequest : public Entity
+  struct RegisterBotRequest
   {
     uint32_t pid;
   };
@@ -87,7 +87,7 @@ public:
     double balanceComm;
   };
 
-  struct RegisterMarketRequest : public Entity
+  struct RegisterMarketRequest
   {
     uint32_t pid;
   };
@@ -99,7 +99,7 @@ public:
     char_t secret[65];
   };
 
-  struct ErrorResponse : public Entity
+  struct ErrorResponse
   {
     uint16_t messageType;
     char_t errorMessage[129];
