@@ -8,6 +8,7 @@ class BotProtocol
 public:
   enum MessageType
   {
+    errorResponse,
     pingRequest,
     pingResponse, // a.k.a. pong
     loginRequest,
@@ -26,11 +27,11 @@ public:
     controlEntityResponse,
     createEntity,
     createEntityResponse,
-    errorResponse,
   };
   
   enum EntityType
   {
+    none,
     session,
     botEngine,
     marketAdapter,
@@ -99,7 +100,7 @@ public:
     char_t secret[65];
   };
 
-  struct ErrorResponse
+  struct ErrorResponse : public Entity
   {
     uint16_t messageType;
     char_t errorMessage[129];

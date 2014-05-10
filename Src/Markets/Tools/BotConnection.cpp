@@ -162,10 +162,20 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data,
   return true;
 }
 
-bool_t BotConnection::sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const String& errorMessage)
+bool_t BotConnection::sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity* entity, const String& errorMessage)
 {
   BotProtocol::ErrorResponse errorResponse;
   errorResponse.messageType = messageType;
+  if(entity)
+  {
+    errorResponse.entityType = entity->entityType;
+    errorResponse.entityId = entity->entityId;
+  }
+  else
+  {
+    errorResponse.entityType = BotProtocol::none;
+    errorResponse.entityId = 0;
+  }
   BotProtocol::setString(errorResponse.errorMessage, errorMessage);
   return sendMessage(BotProtocol::errorResponse, requestId, &errorResponse, sizeof(errorResponse));
 }
