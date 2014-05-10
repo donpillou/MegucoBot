@@ -379,10 +379,10 @@ void_t ClientHandler::handleRemoveEntity(const BotProtocol::Entity& entity)
     switch((BotProtocol::EntityType)entity.entityType)
     {
     case BotProtocol::marketTransaction:
-      handleMarketRemoveMarketTransaction(entity.entityId);
+      handleMarketRemoveMarketTransaction(entity);
       break;
     case BotProtocol::marketOrder:
-      handleMarketRemoveMarketOrder(entity.entityId);
+      handleMarketRemoveMarketOrder(entity);
       break;
     default:
       break;
@@ -546,6 +546,8 @@ void_t ClientHandler::handleUserRemoveMarket(const BotProtocol::Entity& entity)
     return;
   }
 
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
+
   user->removeEntity(BotProtocol::market, entity.entityId);
   user->saveData();
 }
@@ -591,7 +593,7 @@ void_t ClientHandler::handleUserControlMarket(BotProtocol::ControlMarket& contro
       ClientHandler* adapterClient = market->getAdapaterClient();
       if(!adapterClient)
       {
-        sendErrorResponse(BotProtocol::controlEntity, controlMarket, "Invalid market state.");
+        sendErrorResponse(BotProtocol::controlEntity, controlMarket, "Invalid market adapter.");
         return;
       }
       adapterClient->sendMessage(BotProtocol::controlEntity, &controlMarket, sizeof(controlMarket));
@@ -643,6 +645,8 @@ void_t ClientHandler::handleUserRemoveSession(const BotProtocol::Entity& entity)
     sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown session.");
     return;
   }
+
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
 
   user->removeEntity(BotProtocol::session, entity.entityId);
   user->saveData();
@@ -742,7 +746,7 @@ void_t ClientHandler::handleBotCreateSessionTransaction(BotProtocol::Transaction
   BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
   if(!transaction)
   {
-    sendErrorResponse(BotProtocol::createEntity, createTransactionArgs, "Could not create transaction.");
+    sendErrorResponse(BotProtocol::createEntity, createTransactionArgs, "Could not create session transaction.");
     return;
   }
 
@@ -760,9 +764,11 @@ void_t ClientHandler::handleBotRemoveSessionTransaction(const BotProtocol::Entit
 {
   if(!session->deleteTransaction(entity.entityId))
   {
-    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown transaction.");
+    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown session transaction.");
     return;
   }
+
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
 
   session->removeEntity(BotProtocol::sessionTransaction, entity.entityId);
   session->saveData();
@@ -773,7 +779,7 @@ void_t ClientHandler::handleBotCreateSessionOrder(BotProtocol::Order& createOrde
   BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
   if(!order)
   {
-    sendErrorResponse(BotProtocol::createEntity, createOrderArgs, "Could not create order.");
+    sendErrorResponse(BotProtocol::createEntity, createOrderArgs, "Could not create session order.");
     return;
   }
 
@@ -791,9 +797,11 @@ void_t ClientHandler::handleBotRemoveSessionOrder(const BotProtocol::Entity& ent
 {
   if(!session->deleteOrder(entity.entityId))
   {
-    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown order.");
+    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown session order.");
     return;
   }
+
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
 
   session->removeEntity(BotProtocol::sessionOrder, entity.entityId);
   session->saveData();
@@ -805,7 +813,7 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(BotProtocol::SessionLogMe
   BotProtocol::SessionLogMessage* logMessage = session->addLogMessage(logMessageArgs.date, message);
   if(!logMessage)
   {
-    sendErrorResponse(BotProtocol::createEntity, logMessageArgs, "Could not add log message.");
+    sendErrorResponse(BotProtocol::createEntity, logMessageArgs, "Could not add session log message.");
     return;
   }
 
@@ -821,31 +829,66 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(BotProtocol::SessionLogMe
 
 void_t ClientHandler::handleMarketUpdateMarketTransaction(BotProtocol::Transaction& transaction)
 {
-  market->updateTransaction(transaction);
+  if(!market->updateTransaction(transaction))
+  {
+    sendErrorResponse(BotProtocol::updateEntity, transaction, "Could not update market transaction.");
+    return;
+  }
+
+  sendMessage(BotProtocol::updateEntityResponse, &transaction, sizeof(BotProtocol::Entity));
+
   market->sendEntity(&transaction, sizeof(transaction));
 }
 
-void_t ClientHandler::handleMarketRemoveMarketTransaction(uint32_t id)
+void_t ClientHandler::handleMarketRemoveMarketTransaction(const BotProtocol::Entity& entity)
 {
-  market->deleteTransaction(id);
-  market->removeEntity(BotProtocol::marketTransaction, id);
+  if(!market->deleteTransaction(entity.entityId))
+  {
+    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown market transaction.");
+    return;
+  }
+
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
+
+  market->removeEntity(BotProtocol::marketTransaction, entity.entityId);
 }
 
 void_t ClientHandler::handleMarketUpdateMarketOrder(BotProtocol::Order& order)
 {
-  market->updateOrder(order);
+  if(!market->updateOrder(order))
+  {
+    sendErrorResponse(BotProtocol::updateEntity, order, "Could not update market order.");
+    return;
+  }
+
+  sendMessage(BotProtocol::updateEntityResponse, &order, sizeof(BotProtocol::Entity));
+
   market->sendEntity(&order, sizeof(order));
 }
 
-void_t ClientHandler::handleMarketRemoveMarketOrder(uint32_t id)
+void_t ClientHandler::handleMarketRemoveMarketOrder(const BotProtocol::Entity& entity)
 {
-  market->deleteOrder(id);
-  market->removeEntity(BotProtocol::marketOrder, id);
+  if(!market->deleteOrder(entity.entityId))
+  {
+    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown market order.");
+    return;
+  }
+
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
+
+  market->removeEntity(BotProtocol::marketOrder, entity.entityId);
 }
 
 void_t ClientHandler::handleMarketUpdateMarketBalance(BotProtocol::MarketBalance& balance)
 {
-  market->updateBalance(balance);
+  if(!market->updateBalance(balance))
+  {
+    sendErrorResponse(BotProtocol::updateEntity, balance, "Could not update market balance.");
+    return;
+  }
+
+  sendMessage(BotProtocol::updateEntityResponse, &balance, sizeof(BotProtocol::Entity));
+
   market->sendEntity(&balance, sizeof(balance));
 }
 
@@ -853,13 +896,13 @@ void_t ClientHandler::handleUserCreateMarketOrder(BotProtocol::Order& createOrde
 {
   if(!market)
   {
-    sendErrorResponse(BotProtocol::createEntity, createOrderArgs, "Unknown market.");
+    sendErrorResponse(BotProtocol::createEntity, createOrderArgs, "Invalid market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
-    sendErrorResponse(BotProtocol::createEntity, createOrderArgs, "Invalid market state.");
+    sendErrorResponse(BotProtocol::createEntity, createOrderArgs, "Invalid market adapter.");
     return;
   }
 
@@ -871,15 +914,18 @@ void_t ClientHandler::handleUserUpdateMarketOrder(BotProtocol::Order& order)
 {
   if(!market)
   {
-    sendErrorResponse(BotProtocol::updateEntity, order, "Unknown market.");
+    sendErrorResponse(BotProtocol::updateEntity, order, "Invalid market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
-    sendErrorResponse(BotProtocol::updateEntity, order, "Invalid market state.");
+    sendErrorResponse(BotProtocol::updateEntity, order, "Invalid market adapter.");
     return;
   }
+
+  // todo: do not response here.. wait for market answer
+  sendMessage(BotProtocol::updateEntityResponse, &order, sizeof(BotProtocol::Entity));
 
   marketAdapter->sendMessage(BotProtocol::updateEntity, &order, sizeof(order));
 }
@@ -888,15 +934,19 @@ void_t ClientHandler::handleUserRemoveMarketOrder(const BotProtocol::Entity& ent
 {
   if(!market)
   {
-    sendErrorResponse(BotProtocol::removeEntity, entity, "Unknown market.");
+    sendErrorResponse(BotProtocol::removeEntity, entity, "Invalid market.");
     return;
   }
   ClientHandler* marketAdapter = market->getAdapaterClient();
   if(!marketAdapter)
   {
-    sendErrorResponse(BotProtocol::removeEntity, entity, "Invalid market state.");
+    sendErrorResponse(BotProtocol::removeEntity, entity, "Invalid market adapter.");
     return;
   }
+
+  // todo: do not response here.. wait for market answer
+  sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity));
+
   marketAdapter->removeEntity(BotProtocol::marketOrder, entity.entityId);
 }
 

@@ -153,6 +153,55 @@ bool_t Market::removeRequestId(BotProtocol::EntityType entityType, uint32_t id, 
   return true;
 }
 
+bool_t Market::updateTransaction(const BotProtocol::Transaction& transaction)
+{
+  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(transaction.entityId);
+  if(it == transactions.end())
+  { // add transaction if it does not already exist
+    transactions.append(transaction.entityId, transaction);
+    return true;
+  }
+  *it = transaction;
+  return true;
+}
+
+bool_t Market::deleteTransaction(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
+  if(it == transactions.end())
+    return false;
+  transactions.remove(it);
+  return true;
+}
+
+bool_t Market::updateOrder(const BotProtocol::Order& order)
+{
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(order.entityId);
+  if(it == orders.end())
+  {
+    // add transaction if it does not already exist
+    orders.append(order.entityId, order);
+    return false;
+  }
+  *it = order;
+  return true;
+}
+
+bool_t Market::deleteOrder(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(id);
+  if(it == orders.end())
+    return false;
+  orders.remove(it);
+  return true;
+}
+
+bool_t Market::updateBalance(const BotProtocol::MarketBalance& balance)
+{
+  this->balance = balance;
+  return true;
+}
+
 void_t Market::send(ClientHandler* client)
 {
   BotProtocol::Market market;

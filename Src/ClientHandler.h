@@ -80,10 +80,10 @@ private:
   void_t handleBotCreateSessionLogMessage(BotProtocol::SessionLogMessage& logMessage);
 
   void_t handleMarketUpdateMarketTransaction(BotProtocol::Transaction& transaction);
-  void_t handleMarketRemoveMarketTransaction(uint32_t id);
+  void_t handleMarketRemoveMarketTransaction(const BotProtocol::Entity& entity);
 
   void_t handleMarketUpdateMarketOrder(BotProtocol::Order& order);
-  void_t handleMarketRemoveMarketOrder(uint32_t id);
+  void_t handleMarketRemoveMarketOrder(const BotProtocol::Entity& entity);
 
   void_t handleMarketUpdateMarketBalance(BotProtocol::MarketBalance& balance);
 

@@ -179,6 +179,8 @@ private:
         return false;
       return true;
     }
+    if(!connection.sendMessage(BotProtocol::updateEntityResponse, &updateOrderArgs, sizeof(BotProtocol::Entity)))
+      return false;
     return connection.sendEntity(&order, sizeof(order));
   }
 
@@ -194,6 +196,8 @@ private:
           return false;
       return true;
     }
+    if(!connection.sendMessage(BotProtocol::removeEntityResponse, &entity, sizeof(entity)))
+      return false;
     return connection.removeEntity(BotProtocol::marketOrder, entity.entityId);
   }
 

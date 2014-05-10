@@ -39,15 +39,15 @@ public:
   uint32_t createRequestId(BotProtocol::EntityType entityType, uint32_t userRequestId, ClientHandler& client);
   bool_t removeRequestId(BotProtocol::EntityType entityType, uint32_t requestId, uint32_t& userRequestId, ClientHandler*& client);
 
-  void_t updateTransaction(const BotProtocol::Transaction& transaction) {transactions.append(transaction.entityId, transaction);}
+  bool_t updateTransaction(const BotProtocol::Transaction& transaction);
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
-  void_t deleteTransaction(uint32_t id) {transactions.remove(id);}
+  bool_t deleteTransaction(uint32_t id);
 
-  void_t updateOrder(const BotProtocol::Order& order) {orders.append(order.entityId, order);}
+  bool_t updateOrder(const BotProtocol::Order& order);
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
-  void_t deleteOrder(uint32_t id) {orders.remove(id);}
+  bool_t deleteOrder(uint32_t id);
 
-  void_t updateBalance(const BotProtocol::MarketBalance& balance) {this->balance = balance;}
+  bool_t updateBalance(const BotProtocol::MarketBalance& balance);
   const BotProtocol::MarketBalance& getBalance() const {return balance;}
 
   void_t send(ClientHandler* client = 0);
