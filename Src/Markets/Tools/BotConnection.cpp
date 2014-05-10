@@ -38,7 +38,7 @@ bool_t BotConnection::connect(uint16_t port)
       error = BotProtocol::getString(errorResponse->errorMessage);
       return false;
     }
-    if(!(header.messageType == BotProtocol::registerBotResponse && header.requestId == 0 && size >= sizeof(BotProtocol::RegisterBotResponse)))
+    if(!(header.messageType == BotProtocol::registerMarketResponse && header.requestId == 0 && size >= sizeof(BotProtocol::RegisterBotResponse)))
     {
       error = "Could not receive register market response.";
       return false;
@@ -110,7 +110,7 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
       return false;
     }
     BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(!(header.messageType == BotProtocol::removeEntity && header.requestId == 0 && size >= sizeof(BotProtocol::removeEntity) &&
+    if(!(header.messageType == BotProtocol::removeEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::removeEntity) &&
          entity->entityType == type && entity->entityId == id))
     {
       error = "Could not receive remove entity response.";

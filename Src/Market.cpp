@@ -176,9 +176,9 @@ bool_t Market::updateOrder(const BotProtocol::Order& order)
   HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(order.entityId);
   if(it == orders.end())
   {
-    // add transaction if it does not already exist
+    // add order if it does not already exist
     orders.append(order.entityId, order);
-    return false;
+    return true;
   }
   *it = order;
   return true;
