@@ -73,12 +73,12 @@ int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
 
-  for(;;)
-  {
-    bool stop = true;
-    if(!stop)
-      break;
-  }
+  //for(;;)
+  //{
+  //  bool stop = true;
+  //  if(!stop)
+  //    break;
+  //}
 
   BotConnection botConnection;
   if(!botConnection.connect(port))
@@ -94,20 +94,20 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
-  //List<BotProtocol::Transaction> transactions;
-  //if(!botConnection.getTransactions(transactions))
-  //{
-  //  Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)botConnection.getErrorString());
-  //  return -1;
-  //}
-  //
-  //List<BotProtocol::Order> orders;
-  //if(!botConnection.getOrders(orders))
-  //{
-  //  Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
-  //  return -1;
-  //}
-  //
+  List<BotProtocol::Transaction> transactions;
+  if(!botConnection.getSessionTransactions(transactions))
+  {
+    Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)botConnection.getErrorString());
+    return -1;
+  }
+  
+  List<BotProtocol::Order> orders;
+  if(!botConnection.getSessionOrders(orders))
+  {
+    Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
+    return -1;
+  }
+  
   //String marketAdapterName = botConnection.getMarketAdapterName();
   //for(;;)
   //{
@@ -140,14 +140,14 @@ int_t main(int_t argc, char_t* argv[])
     transaction.price = 1000.;
     transaction.type = BotProtocol::Transaction::buy;
     uint32_t entityId;
-    if(!botConnection.createTransaction(transaction, entityId))
+    if(!botConnection.createSessionTransaction(transaction, entityId))
     {
       Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
 
     Thread::sleep(2500);
-    if(!botConnection.removeTransaction(entityId))
+    if(!botConnection.removeSessionTransaction(entityId))
     {
       Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
@@ -160,13 +160,13 @@ int_t main(int_t argc, char_t* argv[])
     order.fee = 0.01;
     order.price = 1000.;
     order.type = BotProtocol::Order::buy;
-    if(!botConnection.createOrder(order, entityId))
+    if(!botConnection.createSessionOrder(order, entityId))
     {
       Console::errorf("error: Could not create test order: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;
     }
     Thread::sleep(2500);
-    if(!botConnection.removeOrder(entityId))
+    if(!botConnection.removeSessionOrder(entityId))
     {
       Console::errorf("error: Could not remove test order: %s\n", (const char_t*)botConnection.getErrorString());
       return -1;

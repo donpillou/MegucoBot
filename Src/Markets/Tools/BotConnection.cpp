@@ -136,6 +136,30 @@ bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t reques
   return true;
 }
 
+bool_t BotConnection::sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize)
+{
+  BotProtocol::Header header;
+  header.size = sizeof(header) + dataSize;
+  header.messageType = type;
+  header.requestId = requestId;
+  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
+  {
+    error = Socket::getLastErrorString();
+    return false;
+  }
+  return true;
+}
+
+bool_t BotConnection::sendMessageData(const void_t* data, size_t size)
+{
+  if(socket.send((const byte_t*)data, size) != size)
+  {
+    error = Socket::getLastErrorString();
+    return false;
+  }
+  return true;
+}
+
 bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size)
 {
   if(socket.recv((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))

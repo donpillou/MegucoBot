@@ -710,18 +710,23 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
   {
   case BotProtocol::ControlSession::requestTransactions:
     {
-      sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
+      size_t dataSize = sizeof(response) + transactions.size() * sizeof(BotProtocol::Transaction);
+      sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
+      sendMessageData(&response, sizeof(response));
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-        sendEntity(0, &*i, sizeof(BotProtocol::Transaction));
+        sendMessageData(&*i, sizeof(BotProtocol::Transaction));
+
     }
     break;
   case BotProtocol::ControlSession::requestOrders:
     {
-      sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
+      size_t dataSize = sizeof(response) + orders.size() * sizeof(BotProtocol::Order);
+      sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
+      sendMessageData(&response, sizeof(response));
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-        sendEntity(0, &*i, sizeof(BotProtocol::Order));
+        sendMessageData(&*i, sizeof(BotProtocol::Order));
     }
     break;
   default:
@@ -971,6 +976,21 @@ void_t ClientHandler::sendMessage(BotProtocol::MessageType type, uint32_t reques
   client.send((const byte_t*)&header, sizeof(header));
   if(size > 0)
     client.send((const byte_t*)data, size);
+}
+
+void_t ClientHandler::sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize)
+{
+  BotProtocol::Header header;
+  header.size = sizeof(header) + dataSize;
+  header.messageType = type;
+  header.requestId = requestId;
+  client.reserve(header.size);
+  client.send((const byte_t*)&header, sizeof(header));
+}
+
+void_t ClientHandler::sendMessageData(const void_t* data, size_t size)
+{
+  client.send((const byte_t*)data, size);
 }
 
 void_t ClientHandler::sendEntity(uint32_t requestId, const void_t* data, size_t size)

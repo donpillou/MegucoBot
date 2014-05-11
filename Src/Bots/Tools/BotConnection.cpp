@@ -73,95 +73,43 @@ bool_t BotConnection::getMarketBalance(BotProtocol::MarketBalance& balance)
     return false;
   if(result.isEmpty())
   {
-    error = "Could not retrieve market balance.";
+    error = "Received response without market balance.";
     return false;
   }
   balance = result.front();
   return true;
 }
 
-bool_t BotConnection::getTransactions(List<BotProtocol::Transaction>& transactions)
+bool_t BotConnection::getSessionTransactions(List<BotProtocol::Transaction>& transactions)
 {
-//  if(!sendControlSession(BotProtocol::ControlSession::requestTransactions))
-//    return false;
-//  if(!sendPing())
-//    return false;
-//
-//  BotProtocol::Header header;
-//  byte_t* data;
-//  size_t size;
-//  for(;;)
-//  {
-//    if(!receiveMessage(header, data, size))
-//      return false;
-//    switch((BotProtocol::MessageType)header.messageType)
-//    {
-//    case BotProtocol::updateEntity:
-//      if(size >= sizeof(BotProtocol::Entity))
-//      {
-//        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-//        if(entity->entityType == BotProtocol::sessionTransaction && size >= sizeof(BotProtocol::Transaction))
-//          transactions.append(*(BotProtocol::Transaction*)data);
-//      }
-//      break;
-//    case BotProtocol::pingResponse:
-//      return true;
-//    default:
-//      break;
-//    }
-//  }
-  return false;
+  if(!sendControlSession(BotProtocol::ControlSession::requestTransactions, transactions))
+    return false;
+  return true;
 }
 
-bool_t BotConnection::getOrders(List<BotProtocol::Order>& orders)
+bool_t BotConnection::getSessionOrders(List<BotProtocol::Order>& orders)
 {
-//  if(!sendControlSession(BotProtocol::ControlSession::requestOrders))
-//    return false;
-//  if(!sendPing())
-//    return false;
-//
-//  BotProtocol::Header header;
-//  byte_t* data;
-//  size_t size;
-//  for(;;)
-//  {
-//    if(!receiveMessage(header, data, size))
-//      return false;
-//    switch((BotProtocol::MessageType)header.messageType)
-//    {
-//    case BotProtocol::updateEntity:
-//      if(size >= sizeof(BotProtocol::Entity))
-//      {
-//        BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-//        if(entity->entityType == BotProtocol::sessionOrder && size >= sizeof(BotProtocol::Order))
-//          orders.append(*(BotProtocol::Order*)data);
-//      }
-//      break;
-//    case BotProtocol::pingResponse:
-//      return true;
-//    default:
-//      break;
-//    }
-//  }
-  return false;
+  if(!sendControlSession(BotProtocol::ControlSession::requestOrders, orders))
+    return false;
+  return true;
 }
 
-bool_t BotConnection::createTransaction(const BotProtocol::Transaction& transaction, uint32_t& id)
+bool_t BotConnection::createSessionTransaction(const BotProtocol::Transaction& transaction, uint32_t& id)
 {
   return createEntity(&transaction, sizeof(transaction), id);
 }
 
-bool_t BotConnection::removeTransaction(uint32_t id)
+bool_t BotConnection::removeSessionTransaction(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionTransaction, id);
 }
 
-bool_t BotConnection::createOrder(const BotProtocol::Order& order, uint32_t& id)
+bool_t BotConnection::createSessionOrder(const BotProtocol::Order& order, uint32_t& id)
 {
   return createEntity(&order, sizeof(order), id);
 }
 
-bool_t BotConnection::removeOrder(uint32_t id)
+bool_t BotConnection::removeSessionOrder(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionOrder, id);
 }
@@ -272,7 +220,7 @@ bool_t BotConnection::sendControlSession(BotProtocol::ControlSession::Command cm
   return true;
 }
 
-template <class E> bool_t BotConnection::sendControlMarket(BotProtocol::ControlMarket::Command cmd, List<E>& result)
+template<class E> bool_t BotConnection::sendControlMarket(BotProtocol::ControlMarket::Command cmd, List<E>& result)
 {
   // send control market request
   {
@@ -298,7 +246,7 @@ template <class E> bool_t BotConnection::sendControlMarket(BotProtocol::ControlM
       return false;
     }
     BotProtocol::ControlMarketResponse* controlMarketResponse = (BotProtocol::ControlMarketResponse*)data;
-    if(!(header.messageType == BotProtocol::controlEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::ControlSessionResponse) &&
+    if(!(header.messageType == BotProtocol::controlEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::ControlMarketResponse) &&
          controlMarketResponse->entityType == BotProtocol::market && controlMarketResponse->entityId == marketId && 
          controlMarketResponse->cmd == cmd))
     {
@@ -307,6 +255,46 @@ template <class E> bool_t BotConnection::sendControlMarket(BotProtocol::ControlM
     }
     size_t itemCount = (size - sizeof(controlMarketResponse)) / sizeof(E);
     for(E* entity = (E*)(controlMarketResponse + 1), * end = entity + itemCount; entity < end; ++entity)
+      result.append(*entity);
+  }
+  return true;
+}
+
+template<class E> bool_t BotConnection::sendControlSession(BotProtocol::ControlSession::Command cmd, List<E>& result)
+{
+  // send control session request
+  {
+    BotProtocol::ControlSession controlSession;
+    controlSession.entityType = BotProtocol::session;
+    controlSession.entityId = sessionId;
+    controlSession.cmd = cmd;
+    if(!sendMessage(BotProtocol::controlEntity, 0, &controlSession, sizeof(controlSession)))
+      return false;
+  }
+
+  // receive control session response
+  {
+    BotProtocol::Header header;
+    byte_t* data;
+    size_t size;
+    if(!receiveMessage(header, data, size))
+      return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    BotProtocol::ControlSessionResponse* controlSessionResponse = (BotProtocol::ControlSessionResponse*)data;
+    if(!(header.messageType == BotProtocol::controlEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::ControlSessionResponse) &&
+         controlSessionResponse->entityType == BotProtocol::session && controlSessionResponse->entityId == sessionId && 
+         controlSessionResponse->cmd == cmd))
+    {
+      error = "Could not receive control session response.";
+      return false;
+    }
+    size_t itemCount = (size - sizeof(controlSessionResponse)) / sizeof(E);
+    for(E* entity = (E*)(controlSessionResponse + 1), * end = entity + itemCount; entity < end; ++entity)
       result.append(*entity);
   }
   return true;

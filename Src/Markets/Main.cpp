@@ -264,12 +264,14 @@ private:
       break;
     case BotProtocol::ControlMarket::requestBalance:
       {
-        List<BotProtocol::MarketBalance> result;
-        BotProtocol::MarketBalance& balance = result.append(BotProtocol::MarketBalance());
+        BotProtocol::MarketBalance balance;
         if(!market->loadBalance(balance))
           return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!connection.sendControlMarketResponse(requestId, response, result))
-            return false;
+        size_t dataSize = sizeof(response) + sizeof(balance);
+        if(!connection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
+           !connection.sendMessageData(&response, sizeof(response)) ||
+           !connection.sendMessageData(&balance, sizeof(balance)))
+          return false;
         if(!connection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
