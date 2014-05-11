@@ -73,17 +73,24 @@ int_t main(int_t argc, char_t* argv[])
 {
   static const uint16_t port = 40124;
 
-  //for(;;)
-  //{
-  //  bool stop = true;
-  //  if(!stop)
-  //    break;
-  //}
+  for(;;)
+  {
+    bool stop = true;
+    if(!stop)
+      break;
+  }
 
   BotConnection botConnection;
   if(!botConnection.connect(port))
   {
     Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)botConnection.getErrorString());
+    return -1;
+  }
+
+  BotProtocol::MarketBalance marketBalance;
+  if(!botConnection.getMarketBalance(marketBalance))
+  {
+    Console::errorf("error: Could not retrieve market balance: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
 

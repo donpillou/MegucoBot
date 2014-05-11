@@ -262,6 +262,18 @@ private:
           return false;
       }
       break;
+    case BotProtocol::ControlMarket::requestBalance:
+      {
+        List<BotProtocol::MarketBalance> result;
+        BotProtocol::MarketBalance& balance = result.append(BotProtocol::MarketBalance());
+        if(!market->loadBalance(balance))
+          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
+        if(!connection.sendControlMarketResponse(requestId, response, result))
+            return false;
+        if(!connection.sendEntity(&balance, sizeof(balance)))
+          return false;
+      }
+      break;
     default:
       break;
     }

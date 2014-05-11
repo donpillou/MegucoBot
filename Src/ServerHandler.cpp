@@ -154,6 +154,17 @@ uint32_t ServerHandler::createRequestId(uint32_t requesterRequestId, ClientHandl
   return id;
 }
 
+//bool_t ServerHandler::findRequestId(uint32_t requesteeRequestId, uint32_t& requesterRequestId, ClientHandler*& requester)
+//{
+//  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);
+//  if(it == requestIds.end())
+//    return false;
+//  RequestId& requestId = *it;
+//  requester = requestId.requester;
+//  requesterRequestId = requestId.requesterRequestId;
+//  return true;
+//}
+
 bool_t ServerHandler::findAndRemoveRequestId(uint32_t requesteeRequestId, uint32_t& requesterRequestId, ClientHandler*& requester)
 {
   HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);

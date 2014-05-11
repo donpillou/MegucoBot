@@ -36,6 +36,7 @@ private:
   String error;
   Buffer recvBuffer;
   uint32_t sessionId;
+  uint32_t marketId;
   String marketAdapterName;
   double balanceBase;
   double balanceComm;
@@ -45,6 +46,7 @@ private:
   bool_t removeEntity(uint32_t type, uint32_t id);
   //bool_t sendPing();
   bool_t sendControlSession(BotProtocol::ControlSession::Command cmd);
+  template<class E> bool_t sendControlMarket(BotProtocol::ControlMarket::Command cmd, List<E>& result);
   bool_t sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size);
   bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
 };

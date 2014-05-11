@@ -66,6 +66,7 @@ private:
   void_t handleUserRemoveSession(uint32_t requestId, const BotProtocol::Entity& entity);
   void_t handleUserControlSession(uint32_t requestId, BotProtocol::ControlSession& controlSession);
   void_t handleBotControlSession(uint32_t requestId, BotProtocol::ControlSession& controlSession);
+  void_t handleBotControlMarket(uint32_t requestId, BotProtocol::ControlMarket& controlMarket);
 
   void_t handleBotCreateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& transaction);
   void_t handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity);

@@ -82,6 +82,7 @@ public:
   struct RegisterBotResponse
   {
     uint32_t sessionId;
+    uint32_t marketId;
     char_t marketAdapterName[33];
     uint8_t simulation;
     double balanceBase;
@@ -224,6 +225,9 @@ public:
       refreshTransactions,
       refreshOrders,
       refreshBalance,
+      requestTransactions,
+      requestOrders,
+      requestBalance,
     };
 
     uint8_t cmd;

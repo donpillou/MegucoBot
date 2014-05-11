@@ -147,8 +147,9 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& header, byte_t* d
     case BotProtocol::createEntityResponse:
     case BotProtocol::updateEntityResponse:
     case BotProtocol::removeEntityResponse:
+    case BotProtocol::controlEntityResponse:
       if(size >= sizeof(BotProtocol::Entity))
-        handleResponse((BotProtocol::MessageType)header.messageType, header.requestId, *(const BotProtocol::Entity*)data, sizeof(BotProtocol::Entity));
+        handleResponse((BotProtocol::MessageType)header.messageType, header.requestId, *(const BotProtocol::Entity*)data, size);
       break;
     case BotProtocol::errorResponse:
       if(size >= sizeof(BotProtocol::ErrorResponse))
@@ -242,6 +243,7 @@ void_t ClientHandler::handleRegisterBot(uint32_t requestId, BotProtocol::Registe
 
   BotProtocol::RegisterBotResponse response;
   response.sessionId = session->getId();
+  response.marketId = session->getMarket()->getId();
   BotProtocol::setString(response.marketAdapterName, session->getMarket()->getMarketAdapter()->getName());
   response.simulation = session->isSimulation();
   session->getInitialBalance(response.balanceBase, response.balanceComm);
@@ -420,6 +422,10 @@ void_t ClientHandler::handleControlEntity(uint32_t requestId, BotProtocol::Entit
       if(size >= sizeof(BotProtocol::ControlSession))
         handleBotControlSession(requestId, *(BotProtocol::ControlSession*)&entity);
       break;
+    case BotProtocol::market:
+      if(size >= sizeof(BotProtocol::ControlMarket))
+        handleBotControlMarket(requestId, *(BotProtocol::ControlMarket*)&entity);
+      break;
     default:
       break;
     }
@@ -473,6 +479,7 @@ void_t ClientHandler::handleResponse(BotProtocol::MessageType messageType, uint3
   switch(state)
   {
   case marketState:
+    if(requestId != 0)
     {
       uint32_t requesterRequestId;
       ClientHandler* requester;
@@ -717,13 +724,38 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
         sendEntity(0, &*i, sizeof(BotProtocol::Order));
     }
     break;
-  //case BotProtocol::ControlSession::requestMarketBalance:
-  //  {
-  //    Market* market = session->getMarket();
-  //    ClientHandler* adapterClient = market->getAdapaterClient();
-  //
-  //  }
-  //  break;
+  default:
+    break;
+  }
+}
+
+void_t ClientHandler::handleBotControlMarket(uint32_t requestId, BotProtocol::ControlMarket& controlMarket)
+{
+  Market* market = session->getMarket();
+  if(controlMarket.entityId != market->getId())
+  {
+    sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "Unknown market.");
+    return;
+  }
+
+  switch((BotProtocol::ControlMarket::Command)controlMarket.cmd)
+  {
+  case BotProtocol::ControlMarket::requestTransactions:
+  case BotProtocol::ControlMarket::requestOrders:
+  case BotProtocol::ControlMarket::requestBalance:
+    {
+      ClientHandler* adapterClient = market->getAdapaterClient();
+      if(!adapterClient)
+      {
+        sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "Invalid market adapter.");
+        return;
+      }
+      uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *adapterClient);
+      adapterClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
+    }
+    break;
+  default:
+    break;
   }
 }
 
