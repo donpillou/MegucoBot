@@ -15,7 +15,8 @@
 
 #include "Tools/BotConnection.h"
 #include "Tools/DataConnection.h"
-#include "Tools/SimBot.h"
+#include "Tools/SimBroker.h"
+#include "Tools/TradeHandler.h"
 
 #ifdef BOT_BUYBOT
 #include "Bots/BuyBot.h"
@@ -26,10 +27,10 @@ const char* botName = "BuyBot";
 class DataConnectionHandler : private DataConnection::Callback
 {
 public:
-  DataConnectionHandler(BotConnection& botConnection) : botConnection(botConnection) {}
+  DataConnectionHandler(BotConnection& botConnection) : botConnection(botConnection), lastReceivedTradeId(0) {}
 
   bool_t connect() {return dataConnection.connect();}
-  bool_t subscribe(const String& channel) {return dataConnection.subscribe(channel, 0);}
+  bool_t subscribe(const String& channel) {return dataConnection.subscribe(channel, lastReceivedTradeId);}
 
   bool_t process()
   {
@@ -42,6 +43,7 @@ private:
   BotConnection& botConnection;
   DataConnection dataConnection;
   TradeHandler tradeHandler;
+  uint64_t lastReceivedTradeId;
 
 private: // DataConnection::Callback
   virtual void receivedChannelInfo(const String& channelName) {};
@@ -50,6 +52,8 @@ private: // DataConnection::Callback
 
   virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade)
   {
+    lastReceivedTradeId = trade.id;
+
     //tradeHandler.add(trade, 0LL);
     //if(simulation)
     //{
@@ -67,7 +71,6 @@ private: // DataConnection::Callback
   virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {};
   virtual void receivedErrorResponse(const String& message) {};
 };
-
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -107,70 +110,85 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
-  
-  //String marketAdapterName = botConnection.getMarketAdapterName();
-  //for(;;)
-  //{
-  //  DataConnectionHandler dataConnection(botConnection);
-  //  if(!dataConnection.connect())
-  //    continue;
-  //  if(!dataConnection.subscribe(marketAdapterName))
-  //    continue;
-  //  for(;;)
-  //  {
-  //    if(!dataConnection.process())
-  //      break;
-  //  }
-  //}
 
-  for(int i = 0;; ++i)
+  SimBroker simBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee);
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
-    String message;
-    message.printf("bot test log message iteration %d", i);
-    if(!botConnection.addLogMessage(message))
+    BotProtocol::Transaction& sessionTransaction = *i;
+    Bot::Broker::Transaction transaction;
+    transaction.id = sessionTransaction.entityId;
+    transaction.date = sessionTransaction.date;
+    transaction.price = sessionTransaction.price;
+    transaction.amount = sessionTransaction.amount;
+    transaction.fee = sessionTransaction.fee;
+    transaction.type = sessionTransaction.type == BotProtocol::Transaction::buy ? Bot::Broker::Transaction::Type::buy : Bot::Broker::Transaction::Type::sell;
+    //simBroker.addTransaction(transaction);
+  }
+  
+  DataConnectionHandler dataConnection(botConnection);
+  String marketAdapterName = botConnection.getMarketAdapterName();
+  for(;;)
+  {
+    
+    if(!dataConnection.connect())
+      continue;
+    if(!dataConnection.subscribe(marketAdapterName))
+      continue;
+    for(;;)
     {
-      Console::errorf("error: Could not add test log message: %s\n", (const char_t*)botConnection.getErrorString());
-      return -1;
-    }
-
-    BotProtocol::Transaction transaction;
-    transaction.entityType = BotProtocol::sessionTransaction;
-    transaction.amount = 1.;
-    transaction.fee = 0.01;
-    transaction.price = 1000.;
-    transaction.type = BotProtocol::Transaction::buy;
-    uint32_t entityId;
-    if(!botConnection.createSessionTransaction(transaction, entityId))
-    {
-      Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)botConnection.getErrorString());
-      return -1;
-    }
-
-    Thread::sleep(2500);
-    if(!botConnection.removeSessionTransaction(entityId))
-    {
-      Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)botConnection.getErrorString());
-      return -1;
-    }
-    Thread::sleep(1000);
-
-    BotProtocol::Order order;
-    order.entityType = BotProtocol::sessionOrder;
-    order.amount = 1.;
-    order.fee = 0.01;
-    order.price = 1000.;
-    order.type = BotProtocol::Order::buy;
-    if(!botConnection.createSessionOrder(order, entityId))
-    {
-      Console::errorf("error: Could not create test order: %s\n", (const char_t*)botConnection.getErrorString());
-      return -1;
-    }
-    Thread::sleep(2500);
-    if(!botConnection.removeSessionOrder(entityId))
-    {
-      Console::errorf("error: Could not remove test order: %s\n", (const char_t*)botConnection.getErrorString());
-      return -1;
+      if(!dataConnection.process())
+        break;
     }
   }
+
+  //for(int i = 0;; ++i)
+  //{
+  //  String message;
+  //  message.printf("bot test log message iteration %d", i);
+  //  if(!botConnection.addLogMessage(message))
+  //  {
+  //    Console::errorf("error: Could not add test log message: %s\n", (const char_t*)botConnection.getErrorString());
+  //    return -1;
+  //  }
+  //
+  //  BotProtocol::Transaction transaction;
+  //  transaction.entityType = BotProtocol::sessionTransaction;
+  //  transaction.amount = 1.;
+  //  transaction.fee = 0.01;
+  //  transaction.price = 1000.;
+  //  transaction.type = BotProtocol::Transaction::buy;
+  //  uint32_t entityId;
+  //  if(!botConnection.createSessionTransaction(transaction, entityId))
+  //  {
+  //    Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)botConnection.getErrorString());
+  //    return -1;
+  //  }
+  //
+  //  Thread::sleep(2500);
+  //  if(!botConnection.removeSessionTransaction(entityId))
+  //  {
+  //    Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)botConnection.getErrorString());
+  //    return -1;
+  //  }
+  //  Thread::sleep(1000);
+  //
+  //  BotProtocol::Order order;
+  //  order.entityType = BotProtocol::sessionOrder;
+  //  order.amount = 1.;
+  //  order.fee = 0.01;
+  //  order.price = 1000.;
+  //  order.type = BotProtocol::Order::buy;
+  //  if(!botConnection.createSessionOrder(order, entityId))
+  //  {
+  //    Console::errorf("error: Could not create test order: %s\n", (const char_t*)botConnection.getErrorString());
+  //    return -1;
+  //  }
+  //  Thread::sleep(2500);
+  //  if(!botConnection.removeSessionOrder(entityId))
+  //  {
+  //    Console::errorf("error: Could not remove test order: %s\n", (const char_t*)botConnection.getErrorString());
+  //    return -1;
+  //  }
+  //}
   return 0;
 }
