@@ -65,7 +65,7 @@ bool_t BotConnection::addLogMessage(const String& message)
   return createEntity(&logMessage, sizeof(logMessage), id);
 }
 
-bool_t BotConnection::getBalance(BotProtocol::MarketBalance& balance)
+bool_t BotConnection::getMarketBalance(BotProtocol::MarketBalance& balance)
 {
   //if(!sendControlSession(BotProtocol::ControlSession::requestBalance))
   //  return false;
@@ -203,7 +203,7 @@ bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id
       return false;
     }
     BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(!(header.messageType == BotProtocol::updateEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
+    if(!(header.messageType == BotProtocol::createEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
          entity->entityType == entityType))
     {
       error = "Could not receive update entity response.";

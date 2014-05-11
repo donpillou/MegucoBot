@@ -87,34 +87,34 @@ int_t main(int_t argc, char_t* argv[])
     return -1;
   }
 
-  List<BotProtocol::Transaction> transactions;
-  if(!botConnection.getTransactions(transactions))
-  {
-    Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)botConnection.getErrorString());
-    return -1;
-  }
-
-  List<BotProtocol::Order> orders;
-  if(!botConnection.getOrders(orders))
-  {
-    Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
-    return -1;
-  }
-
-  String marketAdapterName = botConnection.getMarketAdapterName();
-  for(;;)
-  {
-    DataConnectionHandler dataConnection(botConnection);
-    if(!dataConnection.connect())
-      continue;
-    if(!dataConnection.subscribe(marketAdapterName))
-      continue;
-    for(;;)
-    {
-      if(!dataConnection.process())
-        break;
-    }
-  }
+  //List<BotProtocol::Transaction> transactions;
+  //if(!botConnection.getTransactions(transactions))
+  //{
+  //  Console::errorf("error: Could not retrieve session transactions: %s\n", (const char_t*)botConnection.getErrorString());
+  //  return -1;
+  //}
+  //
+  //List<BotProtocol::Order> orders;
+  //if(!botConnection.getOrders(orders))
+  //{
+  //  Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
+  //  return -1;
+  //}
+  //
+  //String marketAdapterName = botConnection.getMarketAdapterName();
+  //for(;;)
+  //{
+  //  DataConnectionHandler dataConnection(botConnection);
+  //  if(!dataConnection.connect())
+  //    continue;
+  //  if(!dataConnection.subscribe(marketAdapterName))
+  //    continue;
+  //  for(;;)
+  //  {
+  //    if(!dataConnection.process())
+  //      break;
+  //  }
+  //}
 
   for(int i = 0;; ++i)
   {

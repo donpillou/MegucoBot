@@ -15,7 +15,7 @@ class Market;
 class ServerHandler : public Server::Listener
 {
 public:
-  ServerHandler(uint16_t port) : port(port), nextEntityId(1) {}
+  ServerHandler(uint16_t port);
   ~ServerHandler();
 
   void_t addBotEngine(const String& name, const String& path);
@@ -42,10 +42,29 @@ public:
   bool_t loadData();
   bool_t saveData();
 
+  uint32_t createRequestId(uint32_t requesterRequestId, ClientHandler& requester, ClientHandler& requestee);
+  bool_t findAndRemoveRequestId(uint32_t requestId, uint32_t& requesterRequestId, ClientHandler*& requester);
+  void_t removeRequestId(uint32_t requesteeRequestId);
+
+private:
+  class ClientData
+  {
+  public:
+    HashSet<uint32_t> requestIds;
+  };
+
+  class RequestId
+  {
+  public:
+    ClientHandler* requester;
+    ClientHandler* requestee;
+    uint32_t requesterRequestId;
+  };
+
 private:
   uint16_t port;
   uint32_t nextEntityId;
-  HashMap<uint64_t, ClientHandler*> clients;
+  HashMap<ClientHandler*, ClientData> clients;
   HashMap<String, User*> users;
   HashMap<uint32_t, Session*> sessionsByPid;
   HashMap<uint32_t, Market*> marketsByPid;
@@ -53,7 +72,10 @@ private:
   HashMap<String, BotEngine*> botEnginesByName;
   HashMap<uint32_t, MarketAdapter*> marketAdapters;
   HashMap<String, MarketAdapter*> marketAdaptersByName;
+  HashMap<uint32_t, RequestId> requestIds;
+  uint32_t nextRequestId;
 
+private: // Server::Listener
   virtual void_t acceptedClient(Server::Client& client, uint32_t addr, uint16_t port);
   virtual void_t closedClient(Server::Client& client);
 };

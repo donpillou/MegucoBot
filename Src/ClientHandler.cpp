@@ -12,8 +12,8 @@
 #include "MarketAdapter.h"
 #include "Market.h"
 
-ClientHandler::ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) :
-  __id(id), clientAddr(clientAddr), serverHandler(serverHandler), client(client),
+ClientHandler::ClientHandler(uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client) :
+  clientAddr(clientAddr), serverHandler(serverHandler), client(client),
   state(newState), user(0), session(0), market(0) {}
 
 ClientHandler::~ClientHandler()
@@ -474,11 +474,11 @@ void_t ClientHandler::handleResponse(BotProtocol::MessageType messageType, uint3
   {
   case marketState:
     {
-      uint32_t userRequestId;
-      ClientHandler* client;
-      if(!market->removeRequestId(requestId, userRequestId, client))
+      uint32_t requesterRequestId;
+      ClientHandler* requester;
+      if(!serverHandler.findAndRemoveRequestId(requestId, requesterRequestId, requester))
         return;
-      client->sendMessage(messageType, userRequestId, &response, size);
+      requester->sendMessage(messageType, requesterRequestId, &response, size);
     }
     break;
   default:
@@ -577,8 +577,8 @@ void_t ClientHandler::handleUserControlMarket(uint32_t requestId, BotProtocol::C
         sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "Invalid market adapter.");
         return;
       }
-      uint32_t marketRequestId = market->createRequestId(requestId, *this);
-      adapterClient->sendMessage(BotProtocol::controlEntity, marketRequestId, &controlMarket, sizeof(controlMarket));
+      uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *adapterClient);
+      adapterClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
     }
     break;
   }
@@ -717,6 +717,13 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
         sendEntity(0, &*i, sizeof(BotProtocol::Order));
     }
     break;
+  //case BotProtocol::ControlSession::requestMarketBalance:
+  //  {
+  //    Market* market = session->getMarket();
+  //    ClientHandler* adapterClient = market->getAdapaterClient();
+  //
+  //  }
+  //  break;
   }
 }
 
@@ -882,8 +889,8 @@ void_t ClientHandler::handleUserCreateMarketOrder(uint32_t requestId, BotProtoco
     return;
   }
 
-  uint32_t marketRequestId = market->createRequestId(requestId, *this);
-  marketAdapter->sendMessage(BotProtocol::createEntity, marketRequestId, &createOrderArgs, sizeof(createOrderArgs));
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
+  marketAdapter->sendMessage(BotProtocol::createEntity, requesteeRequestId, &createOrderArgs, sizeof(createOrderArgs));
 }
 
 void_t ClientHandler::handleUserUpdateMarketOrder(uint32_t requestId, BotProtocol::Order& order)
@@ -900,8 +907,8 @@ void_t ClientHandler::handleUserUpdateMarketOrder(uint32_t requestId, BotProtoco
     return;
   }
 
-  uint32_t marketRequestId = market->createRequestId(requestId, *this);
-  marketAdapter->sendMessage(BotProtocol::updateEntity, marketRequestId, &order, sizeof(order));
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
+  marketAdapter->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &order, sizeof(order));
 }
 
 void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity)
@@ -918,8 +925,8 @@ void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t requestId, const BotP
     return;
   }
 
-  uint32_t marketRequestId = market->createRequestId(requestId, *this);
-  marketAdapter->removeEntity(marketRequestId, BotProtocol::marketOrder, entity.entityId);
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
+  marketAdapter->removeEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)

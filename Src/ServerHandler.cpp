@@ -1,5 +1,6 @@
 
 #include <nstd/File.h>
+#include <nstd/Debug.h>
 
 #include "Tools/Json.h"
 #include "Tools/Hex.h"
@@ -11,10 +12,12 @@
 #include "BotEngine.h"
 #include "MarketAdapter.h"
 
+ServerHandler::ServerHandler(uint16_t port) : port(port), nextEntityId(1), nextRequestId(1) {}
+
 ServerHandler::~ServerHandler()
 {
-  for(HashMap<uint64_t, ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    delete *i;
+  for(HashMap<ClientHandler*, ClientData>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    delete i.key();
   for(HashMap<String, User*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
     delete *i;
   for(HashMap<uint32_t, BotEngine*>::Iterator i = botEngines.begin(), end = botEngines.end(); i != end; ++i)
@@ -25,16 +28,25 @@ ServerHandler::~ServerHandler()
 
 void_t ServerHandler::acceptedClient(Server::Client& client, uint32_t addr, uint16_t port)
 {
-  uint64_t clientId = nextEntityId++;
-  ClientHandler* clientHandler = new ClientHandler(clientId, addr, *this, client);
+  ClientHandler* clientHandler = new ClientHandler(addr, *this, client);
   client.setListener(clientHandler);
-  clients.append(clientId, clientHandler);
+  clients.append(clientHandler, ClientData());
 }
 
 void_t ServerHandler::closedClient(Server::Client& client)
 {
+  // find clientHandler and clientData
   ClientHandler* clientHandler = (ClientHandler*)client.getListener();
-  clients.remove(clientHandler->getId());
+  HashMap<ClientHandler*, ClientData>::Iterator it = clients.find(clientHandler);
+  ASSERT(it != clients.end());
+  ClientData& clientData = *it;
+
+  // remove ids of open requests
+  while(!clientData.requestIds.isEmpty())
+    removeRequestId(clientData.requestIds.front());
+
+  // unregister and delete client handler
+  clients.remove(it);
   delete clientHandler;
 }
 
@@ -122,4 +134,57 @@ bool_t ServerHandler::saveData()
   if(!file.write(json))
     return false;
   return true;
+}
+
+uint32_t ServerHandler::createRequestId(uint32_t requesterRequestId, ClientHandler& requester, ClientHandler& requestee)
+{
+  HashMap<ClientHandler*, ClientData>::Iterator itRequester = clients.find(&requester);
+  HashMap<ClientHandler*, ClientData>::Iterator itRequestee = clients.find(&requestee);
+  ASSERT(itRequester != clients.end());
+  ASSERT(itRequestee != clients.end());
+  ClientData& requsterData = *itRequester;
+  ClientData& requsteeData = *itRequestee;
+  uint32_t id = nextRequestId++;
+  RequestId& requestId = requestIds.append(id, RequestId());
+  requestId.requester = &requester;
+  requestId.requestee = &requestee;
+  requestId.requesterRequestId = requesterRequestId;
+  requsterData.requestIds.append(id);
+  requsteeData.requestIds.append(id);
+  return id;
+}
+
+bool_t ServerHandler::findAndRemoveRequestId(uint32_t requesteeRequestId, uint32_t& requesterRequestId, ClientHandler*& requester)
+{
+  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);
+  if(it == requestIds.end())
+    return false;
+  RequestId& requestId = *it;
+  HashMap<ClientHandler*, ClientData>::Iterator itRequester = clients.find(requestId.requester);
+  HashMap<ClientHandler*, ClientData>::Iterator itRequestee = clients.find(requestId.requestee);
+  ASSERT(itRequester != clients.end());
+  ASSERT(itRequestee != clients.end());
+  requester = requestId.requester;
+  requesterRequestId = requestId.requesterRequestId;
+  ClientData& requsterData = *itRequester;
+  ClientData& requsteeData = *itRequestee;
+  requsterData.requestIds.remove(requesteeRequestId);
+  requsteeData.requestIds.remove(requesteeRequestId);
+  return true;
+}
+
+void_t ServerHandler::removeRequestId(uint32_t requesteeRequestId)
+{
+  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);
+  if(it == requestIds.end())
+    return;
+  RequestId& requestId = *it;
+  HashMap<ClientHandler*, ClientData>::Iterator itRequester = clients.find(requestId.requester);
+  HashMap<ClientHandler*, ClientData>::Iterator itRequestee = clients.find(requestId.requestee);
+  ASSERT(itRequester != clients.end());
+  ASSERT(itRequestee != clients.end());
+  ClientData& requsterData = *itRequester;
+  ClientData& requsteeData = *itRequestee;
+  requsterData.requestIds.remove(requesteeRequestId);
+  requsteeData.requestIds.remove(requesteeRequestId);
 }

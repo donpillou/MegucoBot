@@ -22,7 +22,7 @@ public:
   double getBalanceComm() const {return balanceComm;}
 
   bool_t addLogMessage(const String& message);
-  bool_t getBalance(BotProtocol::MarketBalance& balance);
+  bool_t getMarketBalance(BotProtocol::MarketBalance& balance);
   bool_t getTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getOrders(List<BotProtocol::Order>& orders);
 

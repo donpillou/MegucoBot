@@ -12,10 +12,8 @@ class Market;
 class ClientHandler : public Server::Client::Listener
 {
 public:
-  ClientHandler(uint64_t id, uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client);
+  ClientHandler(uint32_t clientAddr, ServerHandler& serverHandler, Server::Client& client);
   ~ClientHandler();
-
-  uint64_t getId() const {return __id;}
   
   void_t deselectSession();
   void_t deselectMarket();
@@ -35,7 +33,6 @@ private:
   };
 
 private:
-  uint64_t __id;
   uint32_t clientAddr;
   ServerHandler& serverHandler;
   Server::Client& client;

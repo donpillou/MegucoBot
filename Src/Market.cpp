@@ -15,14 +15,14 @@
 Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& userName, const String& key, const String& secret) :
   serverHandler(serverHandler), user(user),
   __id(id), marketAdapter(&marketAdapter), userName(userName), key(key), secret(secret),
-  state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextRequestId(1)
+  state(BotProtocol::Market::stopped), pid(0), adapterClient(0)
 {
   Memory::zero(&balance, sizeof(balance));
 }
 
 Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
-  state(BotProtocol::Market::stopped), pid(0), adapterClient(0), nextRequestId(1)
+  state(BotProtocol::Market::stopped), pid(0), adapterClient(0)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   __id = data.find("id")->toUInt();
@@ -40,11 +40,8 @@ Market::~Market()
   process.kill();
   if(adapterClient)
     adapterClient->deselectMarket();
-  for(HashMap<ClientHandler*, ClientInfo>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-  {
-    ClientHandler* clientHandler = i.key();
-    clientHandler->deselectMarket();
-  }
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->deselectMarket();
 }
 
 void_t Market::toVariant(Variant& variant)
@@ -90,7 +87,7 @@ bool_t Market::registerClient(ClientHandler& client, bool_t adapter)
     state = BotProtocol::Market::running;
   }
   else
-    clients.append(&client, ClientInfo());
+    clients.append(&client);
   return true;
 }
 
@@ -102,52 +99,7 @@ void_t Market::unregisterClient(ClientHandler& client)
     state = BotProtocol::Market::stopped;
   }
   else
-  {
-    HashMap<ClientHandler* , ClientInfo>::Iterator it = clients.find(&client);
-    if(it != clients.end())
-    {
-      ClientInfo& clientInfo = *it;
-      for(HashSet<uint32_t>::Iterator i =  clientInfo.responseIds.begin(), end = clientInfo.responseIds.end(); i != end; ++i)
-        requestIds.remove(*i);
-      clients.remove(it);
-    }
-  }
-}
-
-uint32_t Market::createRequestId(uint32_t userRequestId, ClientHandler& client)
-{
-  HashMap<ClientHandler*, ClientInfo>::Iterator it = clients.find(&client);
-  if(it == clients.end())
-  {
-    ASSERT(false);
-    return 0;
-  }
-  ClientInfo& clientInfo = *it;
-  uint32_t id = nextRequestId++;
-  RequestId& requestId = requestIds.append(id, RequestId());
-  requestId.client = &client;
-  requestId.userRequestId = userRequestId;
-  clientInfo.responseIds.append(id);
-  return id;
-}
-
-bool_t Market::removeRequestId(uint32_t id, uint32_t& userRequestId, ClientHandler*& client)
-{
-  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(id);
-  if(it == requestIds.end())
-    return false;
-  RequestId& requestId = *it;
-  HashMap<ClientHandler*, ClientInfo>::Iterator itClient = clients.find(requestId.client);
-  if(itClient == clients.end())
-  {
-    requestIds.remove(it);
-    return false;
-  }
-  ClientInfo& clientInfo = *itClient;
-  client = requestId.client;
-  userRequestId = requestId.userRequestId;
-  clientInfo.responseIds.remove(id);
-  return true;
+    clients.remove(&client);
 }
 
 bool_t Market::updateTransaction(const BotProtocol::Transaction& transaction)
@@ -218,13 +170,12 @@ void_t Market::send(ClientHandler* client)
 
 void_t Market::sendEntity(const void_t* data, size_t size)
 {
-  for(HashMap<ClientHandler*, ClientInfo>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    i.key()->sendEntity(0, data, size);
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->sendEntity(0, data, size);
 }
 
 void_t Market::removeEntity(BotProtocol::EntityType type, uint32_t id)
 {
-  for(HashMap<ClientHandler*, ClientInfo>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    i.key()->removeEntity(0, type, id);
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->removeEntity(0, type, id);
 }
-

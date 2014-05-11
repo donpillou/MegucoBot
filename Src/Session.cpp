@@ -90,6 +90,8 @@ Session::~Session()
     botClient->deselectSession();
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->deselectSession();
+  //if(market)
+  //  market->unregisterSession(*this);
 }
 
 void_t Session::toVariant(Variant& variant)
