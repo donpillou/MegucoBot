@@ -27,7 +27,7 @@ const char* botName = "BuyBot";
 class DataConnectionHandler : private DataConnection::Callback
 {
 public:
-  DataConnectionHandler(BotConnection& botConnection) : botConnection(botConnection), lastReceivedTradeId(0) {}
+  DataConnectionHandler(BotConnection& botConnection, Broker& broker) : botConnection(botConnection), broker(broker), lastReceivedTradeId(0) {}
 
   bool_t connect() {return dataConnection.connect();}
   bool_t subscribe(const String& channel) {return dataConnection.subscribe(channel, lastReceivedTradeId);}
@@ -41,6 +41,7 @@ public:
 
 private:
   BotConnection& botConnection;
+  Broker& broker;
   DataConnection dataConnection;
   TradeHandler tradeHandler;
   uint64_t lastReceivedTradeId;
@@ -53,8 +54,10 @@ private: // DataConnection::Callback
   virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade)
   {
     lastReceivedTradeId = trade.id;
+    tradeHandler.add(trade, 0LL);
+    if(!broker.handleTrade(trade))
+      return;
 
-    //tradeHandler.add(trade, 0LL);
     //if(simulation)
     //{
     //  if(startTime == 0)
@@ -113,19 +116,11 @@ int_t main(int_t argc, char_t* argv[])
 
   SimBroker simBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee);
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-  {
-    BotProtocol::Transaction& sessionTransaction = *i;
-    Bot::Broker::Transaction transaction;
-    transaction.id = sessionTransaction.entityId;
-    transaction.date = sessionTransaction.date;
-    transaction.price = sessionTransaction.price;
-    transaction.amount = sessionTransaction.amount;
-    transaction.fee = sessionTransaction.fee;
-    transaction.type = sessionTransaction.type == BotProtocol::Transaction::buy ? Bot::Broker::Transaction::Type::buy : Bot::Broker::Transaction::Type::sell;
-    //simBroker.addTransaction(transaction);
-  }
+    simBroker.loadTransaction(*i);
+  for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+    simBroker.loadOrder(*i);
   
-  DataConnectionHandler dataConnection(botConnection);
+  DataConnectionHandler dataConnection(botConnection, simBroker);
   String marketAdapterName = botConnection.getMarketAdapterName();
   for(;;)
   {
