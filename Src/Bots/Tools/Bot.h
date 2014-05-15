@@ -4,6 +4,8 @@
 #include <nstd/String.h>
 #include <nstd/List.h>
 
+#include "DataProtocol.h" // todo: remove this?
+
 class Bot
 {
 public:
@@ -91,17 +93,17 @@ public:
     virtual void_t warning(const String& message) = 0;
   };
 
-  //class Session
-  //{
-  //public:
-  //  virtual ~Session() {};
-  //  virtual void setParameters(double* parameters) = 0;
-  //  virtual void handle(const DataProtocol::Trade& trade, const Values& values) = 0;
-  //  virtual void handleBuy(const Broker::Transaction& transaction) = 0;
-  //  virtual void handleSell(const Broker::Transaction& transaction) = 0;
-  //};
-  //
-  //virtual ~Bot() {}
-  //virtual Session* createSession(Broker& broker) = 0;
-  //virtual unsigned int getParameterCount() const = 0;
+  class Session
+  {
+  public:
+    virtual ~Session() {};
+    virtual void_t setParameters(double* parameters) = 0;
+    virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0;
+    virtual void_t handleBuy(const Broker::Transaction& transaction) = 0;
+    virtual void_t handleSell(const Broker::Transaction& transaction) = 0;
+  };
+  
+  virtual ~Bot() {}
+  virtual Session* createSession(Broker& broker) = 0;
+  virtual unsigned int getParameterCount() const = 0;
 };

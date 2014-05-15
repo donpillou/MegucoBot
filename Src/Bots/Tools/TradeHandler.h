@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include "Tools/Math.h"
 
 #include "Bot.h"

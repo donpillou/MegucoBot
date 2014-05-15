@@ -1,4 +1,6 @@
 
+#pragma once
+
 #include <nstd/HashMap.h>
 
 #include "Broker.h"

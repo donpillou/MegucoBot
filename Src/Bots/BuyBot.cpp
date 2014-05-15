@@ -1,199 +1,271 @@
 
+#include "BuyBot.h"
 #if 0
-#include <nstd/Thread.h>
-#include <nstd/Time.h>
-#include <nstd/Console.h>
-#include <nstd/Variant.h>
-
-#include "Tools/Json.h"
-#include "Tools/HttpRequest.h"
-#include "BitstampUsd.h"
-
-bool_t BitstampUsd::connect()
+BuyBot::Session::Session(Broker& broker) : broker(broker), minBuyInPrice(0.), maxSellInPrice(0.)
 {
-  close();
+  Memory::fill(&parameters, 0, sizeof(Session::Parameters));
 
-  if(!websocket.connect("ws://ws.pusherapp.com/app/de504dc5763aeef9ff52?protocol=6&client=js&version=2.1.2"))
-  {
-    error = websocket.getErrorString();
-    websocket.close();
-    return false;
-  }
+  //parameters.sellProfitGain = 0.8;
+  //parameters.buyProfitGain = 0.6;
+  
+  //parameters.sellProfitGain = 0.2;
+  parameters.sellProfitGain = 0.4;
+  parameters.buyProfitGain = 0.2;
 
-  if(!websocket.send("{\"event\":\"pusher:subscribe\",\"data\":{\"channel\":\"live_trades\"}}"))
-  {
-    error = websocket.getErrorString();
-    websocket.close();
-    return false;
-  }
-  lastPingTime = Time::time();
+  //parameters.sellProfitGain = 0.;
+  //parameters.buyProfitGain = 0.127171;
 
-  HttpRequest httpRequest;
-  Buffer data;
-  for(int i = 0;; ++i)
-  {
-    if(!httpRequest.get("https://www.bitstamp.net/api/ticker/", data))
-    {
-      error = httpRequest.getErrorString();
-      websocket.close();
-      return false;
-    }
-    timestamp_t localTime = Time::time();
-    //Console::printf("%s\n", (const byte_t*)data);
-    Variant dataVar;
-    if(!Json::parse(data, dataVar))
-    {
-      error = "Could not parse ticker data.";
-      websocket.close();
-      return false;
-    }
-    const HashMap<String, Variant>& dataMap = dataVar.toMap();
-    timestamp_t serverTime = dataMap.find("timestamp")->toInt64() * 1000LL;  // + up to 8 seconds
-    if(i == 0 || serverTime - localTime < localToServerTime)
-      localToServerTime = serverTime - localTime;
-    if(i == 2)
-      break;
-    Thread::sleep(2000);
-  }
-
-  return true;
+  updateBalance();
 }
 
-bool_t BitstampUsd::process(Callback& callback)
+void BuyBot::Session::updateBalance()
 {
-  if(!callback.receivedTime(toServerTime(Time::time())))
-    return false;
+  balanceBtc = broker.getBalanceComm();
+  balanceUsd = broker.getBalanceBase();
+  double fee = broker.getFee();
 
-  HttpRequest httpRequest;
+  maxSellInPrice = 0.;
+  minBuyInPrice = 0.;
+
+  List<Broker::Transaction> transactions;
+  broker.getSellTransactions(transactions);
+  for(List<Broker::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
-    Buffer data;
-    if(!httpRequest.get("https://www.bitstamp.net/api/transactions/", data))
-    {
-      error = httpRequest.getErrorString();
-      websocket.close();
-      return false;
-    }
+    const Broker::Transaction& transaction = *i;
+    balanceUsd -= transaction.amount * transaction.price * (1. + fee);
+    if(maxSellInPrice == 0. || transaction.price > maxSellInPrice)
+      maxSellInPrice = transaction.price;
+  }
 
-    //Console::printf("%s\n", (const byte_t*)data);
-    Variant dataVar;
-    if(!Json::parse(data, dataVar))
-    {
-      error = "Could not parse trade data.";
-      websocket.close();
-      return false;
-    }
+  transactions.clear();
+  broker.getBuyTransactions(transactions);
+  for(List<Broker::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  {
+    const Broker::Transaction& transaction = *i;
+    balanceBtc -= transaction.amount;
+    if(minBuyInPrice == 0. || transaction.price < minBuyInPrice)
+      minBuyInPrice = transaction.price;
+  }
+}
 
-    const List<Variant>& dataList = dataVar.toList();
-    Market::Trade trade;
-    if(!dataList.isEmpty())
-      for(List<Variant>::Iterator i = --List<Variant>::Iterator(dataList.end()), begin = dataList.begin();; --i)
+void BuyBot::Session::setParameters(double* parameters)
+{
+  Memory::copy(&this->parameters, parameters, sizeof(Session::Parameters));
+}
+
+void BuyBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
+{
+  checkBuy(trade, values);
+  checkSell(trade, values);
+}
+
+void BuyBot::Session::handleBuy(const Broker::Transaction& transaction)
+{
+  double price = transaction.price;
+  double amount = transaction.amount;
+
+  // get sell transaction list
+  List<Broker::Transaction> transactions;
+  broker.getSellTransactions(transactions);
+
+  // sort sell transaction list by price
+  QMap<double, Broker::Transaction> sortedTransactions;
+  foreach(const Broker::Transaction& transaction, transactions)
+    sortedTransactions.insert(transaction.price, transaction);
+
+  // iterate over sorted transaction list (ascending)
+  double fee = broker.getFee();
+  double invest = 0.;
+  for(QMap<double, Broker::Transaction>::Iterator i = sortedTransactions.begin(), end = sortedTransactions.end(); i != end; ++i)
+  {
+    Broker::Transaction& transaction = i.value();
+    if(transaction.price >= price * (1. + fee * 2))
+    {
+      if(transaction.amount > amount)
       {
-        const HashMap<String, Variant>& tradeMap = i->toMap();
-        trade.amount =  tradeMap.find("amount")->toDouble();
-        trade.price = tradeMap.find("price")->toDouble();
-        trade.time = tradeMap.find("date")->toUInt64() * 1000ULL;
-        trade.flags = 0;
-        trade.id = tradeMap.find("tid")->toUInt64();
-        if(!callback.receivedTrade(trade))
-            return false;
-        if(i == begin)
+        invest += amount * transaction.price / (1. + fee);
+        transaction.fee *= (transaction.amount - amount) / transaction.amount;
+        transaction.amount -= amount;
+        broker.updateTransaction(transaction.id, transaction);
+        amount = 0.;
+        break;
+      }
+      else
+      {
+        invest += transaction.amount * transaction.price / (1. + fee);
+        broker.removeTransaction(transaction.id);
+        amount -= transaction.amount;
+        if(amount == 0.)
           break;
       }
-  }
-
-  Buffer buffer;
-  String bufferStr;
-  for(;;)
-  {
-    // send ping?
-    if(Time::time() - lastPingTime > 120 * 1000)
-    {
-      if(!websocket.sendPing())
-      {
-        error = websocket.getErrorString();
-        websocket.close();
-        return false;
-      }
-      lastPingTime = Time::time();
-    }
-
-    // wait for data
-    if(!websocket.recv(buffer, 1000))
-    {
-      error = websocket.getErrorString();
-      websocket.close();
-      return false;
-    }
-    if(buffer.isEmpty())
-      continue; // timeout
-    lastPingTime = Time::time();
-    if(!handleStreamData(buffer, callback))
-      return false;
-
-    // request ticker data?
-    timestamp_t now = Time::time();
-    if(now - lastTickerTimer >= 30 * 1000)
-    {
-      if(httpRequest.get("https://www.bitstamp.net/api/ticker/", buffer))
-      {
-        Variant dataVar;
-        if(Json::parse(buffer, dataVar))
-        {
-          const HashMap<String, Variant>& dataMap = dataVar.toMap();
-          Ticker ticker;
-          ticker.time = dataMap.find("timestamp")->toInt64() * 1000LL;
-          ticker.ask = dataMap.find("ask")->toDouble();
-          ticker.bid = dataMap.find("bid")->toDouble();
-          if(!callback.receivedTicker(ticker))
-              return false;
-        }
-      }
-      lastTickerTimer = now;
     }
   }
-  
-  return false; // unreachable
+  if(amount == 0.)
+    broker.warning(QString("Earned? %1.").arg(DataModel::formatPrice(invest - price * transaction.amount * (1. + fee))));
+  else
+    broker.warning("Bought something without profit.");
+
+  updateBalance();
 }
 
-bool_t BitstampUsd::handleStreamData(const Buffer& data, Callback& callback)
+void BuyBot::Session::handleSell(const Broker::Transaction& transaction)
 {
-  timestamp_t localTime = Time::time();
-  //Console::printf("%s\n", (const byte_t*)data);
+  double price = transaction.price;
+  double amount = transaction.amount;
 
-  Variant dataVar;
-  if(Json::parse(data, dataVar))
+  // get buy transaction list
+  QList<Broker::Transaction> transactions;
+  broker.getBuyTransactions(transactions);
+
+  // sort buy transaction list by price
+  QMap<double, Broker::Transaction> sortedTransactions;
+  foreach(const Broker::Transaction& transaction, transactions)
+    sortedTransactions.insert(transaction.price, transaction);
+
+  // iterate over sorted transaction list (descending)
+  double fee = broker.getFee();
+  double invest = 0.;
+  if(!sortedTransactions.isEmpty())
   {
-    const HashMap<String, Variant>& dataMap = dataVar.toMap();
-    String event = dataMap.find("event")->toString();
-    String channel = dataMap.find("channel")->toString();
-
-    if(channel.isEmpty() && event == "pusher:connection_established")
-      return true;
-    else if(channel == "live_trades")
+    for(QMap<double, Broker::Transaction>::Iterator i = --sortedTransactions.end(), begin = sortedTransactions.begin(); ; --i)
     {
-      if(event == "pusher_internal:subscription_succeeded")
-        return true;
-      else if(event == "trade")
+      Broker::Transaction& transaction = i.value();
+      if(price >= transaction.price * (1. + fee * 2))
       {
-        Variant tradeVar;
-        if(Json::parse(dataMap.find("data")->toString(), tradeVar))
+        if(transaction.amount > amount)
         {
-          const HashMap<String, Variant>& tradeMap = tradeVar.toMap();
-
-          Trade trade;
-          trade.id = tradeMap.find("id")->toUInt64();
-          trade.time = toServerTime(localTime);
-          trade.price = tradeMap.find("price")->toDouble();
-          trade.amount = tradeMap.find("amount")->toDouble();
-          trade.flags = 0;
-          if(!callback.receivedTrade(trade))
-            return false;
+          invest += amount * transaction.price * (1. + fee);
+          transaction.fee *= (transaction.amount - amount) / transaction.amount;
+          transaction.amount -= amount;
+          broker.updateTransaction(transaction.id, transaction);
+          amount = 0.;
+          break;
+        }
+        else
+        {
+          invest += transaction.amount * transaction.price * (1. + fee);
+          broker.removeTransaction(transaction.id);
+          amount -= transaction.amount;
+          if(amount == 0.)
+            break;
         }
       }
+      if(i == begin)
+        break;
     }
   }
+  if(amount == 0.)
+    broker.warning(QString("Earned %1.").arg(DataModel::formatPrice(price * transaction.amount / (1. + fee) - invest)));
+  else
+    broker.warning("Sold something without profit.");
 
+  updateBalance();
+}
+
+bool BuyBot::Session::isGoodBuy(const Values& values)
+{
+  for(int i = 0; i < (int)BellRegressions::bellRegression2h; ++i)
+    if(values.bellRegressions[i].incline > 0.)
+      return false; // price is not falling enough
   return true;
 }
 
+bool BuyBot::Session::isVeryGoodBuy(const Values& values)
+{
+  for(int i = 0; i < (int)Regressions::regression24h; ++i)
+    if(values.regressions[i].incline > 0.)
+      return false; // price is not falling enough
+  return true;
+}
+
+bool BuyBot::Session::isGoodSell(const Values& values)
+{
+  for(int i = 0; i < (int)BellRegressions::bellRegression2h; ++i)
+    if(values.bellRegressions[i].incline < 0.)
+      return false; // price is not rising enough
+  return true;
+}
+
+bool BuyBot::Session::isVeryGoodSell(const Values& values)
+{
+  for(int i = 0; i < (int)Regressions::regression24h; ++i)
+    if(values.regressions[i].incline < 0.)
+      return false; // price is not rising enough
+  return true;
+}
+
+
+void BuyBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& values)
+{
+  if(broker.getOpenBuyOrderCount() > 0)
+    return; // there is already an open buy order
+  if(broker.getTimeSinceLastBuy() < 60 * 60)
+    return; // do not buy too often
+
+  double fee = broker.getFee();
+
+  if(isVeryGoodBuy(values) && balanceUsd >= trade.price * 0.02 * (1. + fee) && (minBuyInPrice == 0. || trade.price * (1. + broker.getFee() * 2.) < minBuyInPrice))
+  {
+    if(broker.buy(trade.price, 0.02, 60 * 60))
+      return;
+    return;
+  }
+
+  if(isGoodBuy(values))
+  {
+    double price = trade.price;
+    double fee = broker.getFee() * (1. + parameters.buyProfitGain);
+
+    QList<Broker::Transaction> transactions;
+    broker.getSellTransactions(transactions);
+    double profitableAmount = 0.;
+    foreach(const Broker::Transaction& transaction, transactions)
+    {
+      if(price * (1. + fee * 2.) < transaction.price)
+        profitableAmount += transaction.amount;
+    }
+    if(profitableAmount >= 0.01)
+    {
+      if(broker.buy(trade.price, qMax(qMin(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60))
+        return;
+      return;
+    }
+  }
+}
+
+void BuyBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& values)
+{
+  if(broker.getOpenSellOrderCount() > 0)
+    return; // there is already an open sell order
+  if(broker.getTimeSinceLastSell() < 60 * 60)
+    return; // do not sell too often
+
+  if(isVeryGoodSell(values) && balanceBtc >= 0.02 && (maxSellInPrice == 0. || trade.price > maxSellInPrice * (1. + broker.getFee() *.2)))
+  {
+    if(broker.sell(trade.price, 0.02, 60 * 60))
+      return;
+    return;
+  }
+
+  if(isGoodSell(values))
+  {
+    double price = trade.price;
+    double fee = broker.getFee() * (1. + parameters.sellProfitGain);
+
+    QList<Broker::Transaction> transactions;
+    broker.getBuyTransactions(transactions);
+    double profitableAmount = 0.;
+    foreach(const Broker::Transaction& transaction, transactions)
+    {
+      if(price > transaction.price * (1. + fee * 2.))
+        profitableAmount += transaction.amount;
+    }
+    if(profitableAmount >= 0.01)
+    {
+      if(broker.sell(trade.price, qMax(qMin(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60))
+        return;
+      return;
+    }
+  }
+}
 #endif

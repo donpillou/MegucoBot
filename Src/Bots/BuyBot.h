@@ -3,34 +3,53 @@
 
 #include "Tools/Bot.h"
 
-class BuyBot
-{
-};
-
-/*
-#include "Tools/Market.h"
-#include "Tools/Websocket.h"
-
-class BitstampUsd : public Market
+class BuyBot : public Bot
 {
 public:
-  BitstampUsd() : lastPingTime(0), lastTickerTimer(0) {}
-
-  virtual String getChannelName() const {return String("Bitstamp/USD");}
-  virtual bool_t connect();
-  virtual void_t close() {websocket.close();}
-  virtual bool_t isOpen() const {return websocket.isOpen();}
-  virtual const String& getErrorString() const {return error;}
-  virtual bool_t process(Callback& callback);
 
 private:
-  Websocket websocket;
-  String error;
-  timestamp_t localToServerTime;
-  timestamp_t lastPingTime;
-  timestamp_t lastTickerTimer;
+  class Session : public Bot::Session
+  {
+  public:
+    struct Parameters
+    {
+      double sellProfitGain;
+      double buyProfitGain;
+      //double sellPriceGain;
+      //double buyPriceGain;
+    };
 
-  timestamp_t toServerTime(timestamp_t localTime) const {return localTime + localToServerTime;}
-  bool_t handleStreamData(const Buffer& data, Callback& callback);
+    Session(Broker& broker);
+
+  private:
+    Broker& broker;
+
+    Parameters parameters;
+
+    double balanceUsd;
+    double balanceBtc;
+
+    double minBuyInPrice;
+    double maxSellInPrice;
+
+    virtual ~Session() {}
+
+    virtual void setParameters(double* parameters);
+
+    virtual void handle(const DataProtocol::Trade& trade, const Values& values);
+    virtual void handleBuy(const Broker::Transaction& transaction);
+    virtual void handleSell(const Broker::Transaction& transaction);
+
+    bool isGoodBuy(const Values& values);
+    bool isVeryGoodBuy(const Values& values);
+    bool isGoodSell(const Values& values);
+    bool isVeryGoodSell(const Values& values);
+
+    void updateBalance();
+    void checkBuy(const DataProtocol::Trade& trade, const Values& values);
+    void checkSell(const DataProtocol::Trade& trade, const Values& values);
+  };
+
+  virtual Session* createSession(Broker& broker) {return new Session(broker);};
+  virtual unsigned int getParameterCount() const {return sizeof(Session::Parameters) / sizeof(double);}
 };
-*/

@@ -1,4 +1,5 @@
 
+#pragma once
 
 #include "Bot.h"
 #include "BotProtocol.h"
