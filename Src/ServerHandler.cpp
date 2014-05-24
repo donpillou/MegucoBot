@@ -1,10 +1,10 @@
 
 #include <nstd/File.h>
 #include <nstd/Debug.h>
+#include <nstd/Math.h>
 
 #include "Tools/Json.h"
 #include "Tools/Hex.h"
-#include "Tools/Math.h"
 #include "Tools/Sha256.h"
 #include "ServerHandler.h"
 #include "ClientHandler.h"

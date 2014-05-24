@@ -4,7 +4,8 @@
 #include <nstd/String.h>
 #include <nstd/List.h>
 
-#include "DataProtocol.h" // todo: remove this?
+#include "DataProtocol.h"
+#include "BotProtocol.h"
 
 class Bot
 {
@@ -56,39 +57,22 @@ public:
   class Broker
   {
   public:
-    class Transaction
-    {
-    public:
-      enum class Type
-      {
-        buy,
-        sell,
-      };
-
-      uint32_t id;
-      timestamp_t date;
-      double price;
-      double amount;
-      double fee;
-      Type type;
-    };
-
     virtual ~Broker() {}
     virtual bool_t buy(double price, double amount, timestamp_t timeout) = 0;
     virtual bool_t sell(double price, double amount, timestamp_t timeout) = 0;
     virtual double getBalanceBase() const = 0;
     virtual double getBalanceComm() const = 0;
     virtual double getFee() const = 0;
-    virtual uint_t getOpenBuyOrderCount() const = 0;
-    virtual uint_t getOpenSellOrderCount() const = 0;
+    virtual size_t getOpenBuyOrderCount() const = 0;
+    virtual size_t getOpenSellOrderCount() const = 0;
     virtual timestamp_t getTimeSinceLastBuy() const = 0;
     virtual timestamp_t getTimeSinceLastSell() const = 0;
 
-    virtual void_t getTransactions(List<Transaction>& transactions) const = 0;
-    virtual void_t getBuyTransactions(List<Transaction>& transactions) const = 0;
-    virtual void_t getSellTransactions(List<Transaction>& transactions) const = 0;
+    virtual void_t getTransactions(List<BotProtocol::Transaction>& transactions) const = 0;
+    virtual void_t getBuyTransactions(List<BotProtocol::Transaction>& transactions) const = 0;
+    virtual void_t getSellTransactions(List<BotProtocol::Transaction>& transactions) const = 0;
     virtual void_t removeTransaction(uint32_t id) = 0;
-    virtual void_t updateTransaction(uint32_t id, const Transaction& transaction) = 0;
+    virtual void_t updateTransaction(const BotProtocol::Transaction& transaction) = 0;
 
     virtual void_t warning(const String& message) = 0;
   };
@@ -99,8 +83,8 @@ public:
     virtual ~Session() {};
     virtual void_t setParameters(double* parameters) = 0;
     virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0;
-    virtual void_t handleBuy(const Broker::Transaction& transaction) = 0;
-    virtual void_t handleSell(const Broker::Transaction& transaction) = 0;
+    virtual void_t handleBuy(const BotProtocol::Transaction& transaction) = 0;
+    virtual void_t handleSell(const BotProtocol::Transaction& transaction) = 0;
   };
   
   virtual ~Bot() {}

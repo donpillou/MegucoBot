@@ -28,7 +28,7 @@ public:
     virtual void receivedErrorResponse(const String& message) = 0;
   };
 
-  bool connect();
+  bool connect(uint32_t ip, uint16_t port);
   bool process(Callback& callback);
 
   bool loadChannelList();

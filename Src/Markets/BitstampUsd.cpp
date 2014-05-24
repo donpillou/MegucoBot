@@ -1,8 +1,8 @@
 
 #include <nstd/Time.h>
 #include <nstd/Thread.h>
+#include <nstd/Math.h>
 
-#include "Tools/Math.h"
 #include "Tools/Sha256.h"
 #include "Tools/Hex.h"
 #include "Tools/Json.h"

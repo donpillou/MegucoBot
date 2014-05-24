@@ -1,8 +1,8 @@
 
 #include <nstd/File.h>
 #include <nstd/Debug.h>
+#include <nstd/Math.h>
 
-#include "Tools/Math.h"
 #include "Tools/Sha256.h"
 #include "ClientHandler.h"
 #include "ServerHandler.h"

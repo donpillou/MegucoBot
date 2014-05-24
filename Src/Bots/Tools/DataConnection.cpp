@@ -1,15 +1,17 @@
 
 #include <nstd/Time.h>
+#include <nstd/Math.h>
 
-#include "Tools/Math.h"
 #include "DataConnection.h"
 
-bool DataConnection::connect()
+bool DataConnection::connect(uint32_t ip, uint16_t port)
 {
   socket.close();
   recvBuffer.clear();
 
-  if(!socket.connect(Socket::loopbackAddr, 40123))
+  if(!socket.open() ||
+     !socket.connect(ip, port) ||
+     !socket.setNoDelay())
   {
     error = socket.getLastErrorString();
     return false;

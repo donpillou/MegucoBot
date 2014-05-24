@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "Tools/Math.h"
+#include <nstd/Math.h>
 
 #include "Bot.h"
 #include "DataProtocol.h"

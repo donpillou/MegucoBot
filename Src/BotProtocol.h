@@ -42,6 +42,7 @@ public:
     marketTransaction,
     marketOrder,
     marketBalance,
+    sessionMarker,
   };
 
 #pragma pack(push, 1)
@@ -165,6 +166,20 @@ public:
     double price;
     double amount;
     double fee;
+  };
+
+  struct Marker : public Entity
+  {
+    enum Type
+    {
+      buy,
+      sell,
+      buyAttempt,
+      sellAttempt,
+    };
+
+    uint8_t type;
+    int64_t date;
   };
 
   struct Market : public Entity

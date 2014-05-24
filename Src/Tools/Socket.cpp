@@ -463,3 +463,9 @@ bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t tim
   p->selectedSockets.remove(it);
   return true;
 }
+
+uint32_t Socket::inetAddr(const String& addr)
+{
+  return ntohl(inet_addr((const char_t*)addr));
+  //return inet_addr((const char_t*)addr);
+}

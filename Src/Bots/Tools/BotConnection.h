@@ -27,9 +27,12 @@ public:
   bool_t getSessionOrders(List<BotProtocol::Order>& orders);
 
   bool_t createSessionTransaction(const BotProtocol::Transaction& transaction, uint32_t& id);
+  bool_t updateSessionTransaction(const BotProtocol::Transaction& transaction);
   bool_t removeSessionTransaction(uint32_t id);
   bool_t createSessionOrder(const BotProtocol::Order& order, uint32_t& id);
   bool_t removeSessionOrder(uint32_t id);
+  bool_t createSessionMarker(const BotProtocol::Marker& marker, uint32_t& id);
+  bool_t removeSessionMarker(uint32_t id);
 
 private:
   Socket socket;
@@ -43,6 +46,7 @@ private:
 
 private:
   bool_t createEntity(const void_t* data, size_t size, uint32_t& id);
+  bool_t updateEntity(const void_t* data, size_t size);
   bool_t removeEntity(uint32_t type, uint32_t id);
   //bool_t sendPing();
   bool_t sendControlSession(BotProtocol::ControlSession::Command cmd);

@@ -36,6 +36,7 @@ public:
   static int_t getLastError();
   static String getLastErrorString();
   static String getErrorString(int_t error);
+  static uint32_t inetAddr(const String& addr);
 
   class Selector
   {

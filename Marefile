@@ -61,8 +61,6 @@ targets = {
       "Src/Bots/$(target).h"
       "Src/Tools/Socket.cpp" = cppSource
       "Src/Tools/Socket.h"
-      "Src/Tools/Math.cpp" = cppSource
-      "Src/Tools/Math.h"
       "Src/BotProtocol.h"
       "Src/Bots/Tools/**.cpp" = cppSource
       "Src/Bots/Tools/**.h"

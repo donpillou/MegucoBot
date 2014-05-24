@@ -1,6 +1,9 @@
 
+#include <nstd/Map.h>
+#include <nstd/Math.h>
+
 #include "BuyBot.h"
-#if 0
+
 BuyBot::Session::Session(Broker& broker) : broker(broker), minBuyInPrice(0.), maxSellInPrice(0.)
 {
   Memory::fill(&parameters, 0, sizeof(Session::Parameters));
@@ -27,11 +30,11 @@ void BuyBot::Session::updateBalance()
   maxSellInPrice = 0.;
   minBuyInPrice = 0.;
 
-  List<Broker::Transaction> transactions;
+  List<BotProtocol::Transaction> transactions;
   broker.getSellTransactions(transactions);
-  for(List<Broker::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
-    const Broker::Transaction& transaction = *i;
+    const BotProtocol::Transaction& transaction = *i;
     balanceUsd -= transaction.amount * transaction.price * (1. + fee);
     if(maxSellInPrice == 0. || transaction.price > maxSellInPrice)
       maxSellInPrice = transaction.price;
@@ -39,9 +42,9 @@ void BuyBot::Session::updateBalance()
 
   transactions.clear();
   broker.getBuyTransactions(transactions);
-  for(List<Broker::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
-    const Broker::Transaction& transaction = *i;
+    const BotProtocol::Transaction& transaction = *i;
     balanceBtc -= transaction.amount;
     if(minBuyInPrice == 0. || transaction.price < minBuyInPrice)
       minBuyInPrice = transaction.price;
@@ -59,26 +62,29 @@ void BuyBot::Session::handle(const DataProtocol::Trade& trade, const Values& val
   checkSell(trade, values);
 }
 
-void BuyBot::Session::handleBuy(const Broker::Transaction& transaction)
+void BuyBot::Session::handleBuy(const BotProtocol::Transaction& transaction)
 {
   double price = transaction.price;
   double amount = transaction.amount;
 
   // get sell transaction list
-  List<Broker::Transaction> transactions;
+  List<BotProtocol::Transaction> transactions;
   broker.getSellTransactions(transactions);
 
   // sort sell transaction list by price
-  QMap<double, Broker::Transaction> sortedTransactions;
-  foreach(const Broker::Transaction& transaction, transactions)
+  Map<double, BotProtocol::Transaction> sortedTransactions;
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  {
+    const BotProtocol::Transaction& transaction = *i;
     sortedTransactions.insert(transaction.price, transaction);
+  }
 
   // iterate over sorted transaction list (ascending)
   double fee = broker.getFee();
   double invest = 0.;
-  for(QMap<double, Broker::Transaction>::Iterator i = sortedTransactions.begin(), end = sortedTransactions.end(); i != end; ++i)
+  for(Map<double, BotProtocol::Transaction>::Iterator i = sortedTransactions.begin(), end = sortedTransactions.end(); i != end; ++i)
   {
-    Broker::Transaction& transaction = i.value();
+    BotProtocol::Transaction& transaction = *i;
     if(transaction.price >= price * (1. + fee * 2))
     {
       if(transaction.amount > amount)
@@ -86,14 +92,14 @@ void BuyBot::Session::handleBuy(const Broker::Transaction& transaction)
         invest += amount * transaction.price / (1. + fee);
         transaction.fee *= (transaction.amount - amount) / transaction.amount;
         transaction.amount -= amount;
-        broker.updateTransaction(transaction.id, transaction);
+        broker.updateTransaction(transaction);
         amount = 0.;
         break;
       }
       else
       {
         invest += transaction.amount * transaction.price / (1. + fee);
-        broker.removeTransaction(transaction.id);
+        broker.removeTransaction(transaction.entityId);
         amount -= transaction.amount;
         if(amount == 0.)
           break;
@@ -101,35 +107,42 @@ void BuyBot::Session::handleBuy(const Broker::Transaction& transaction)
     }
   }
   if(amount == 0.)
-    broker.warning(QString("Earned? %1.").arg(DataModel::formatPrice(invest - price * transaction.amount * (1. + fee))));
+  {
+    String message;
+    message.printf("Earned? %.02f.", invest - price * transaction.amount * (1. + fee));
+    broker.warning(message);
+  }
   else
     broker.warning("Bought something without profit.");
 
   updateBalance();
 }
 
-void BuyBot::Session::handleSell(const Broker::Transaction& transaction)
+void BuyBot::Session::handleSell(const BotProtocol::Transaction& transaction)
 {
   double price = transaction.price;
   double amount = transaction.amount;
 
   // get buy transaction list
-  QList<Broker::Transaction> transactions;
+  List<BotProtocol::Transaction> transactions;
   broker.getBuyTransactions(transactions);
 
   // sort buy transaction list by price
-  QMap<double, Broker::Transaction> sortedTransactions;
-  foreach(const Broker::Transaction& transaction, transactions)
+  Map<double, BotProtocol::Transaction> sortedTransactions;
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  {
+    const BotProtocol::Transaction& transaction = *i;
     sortedTransactions.insert(transaction.price, transaction);
+  }
 
   // iterate over sorted transaction list (descending)
   double fee = broker.getFee();
   double invest = 0.;
   if(!sortedTransactions.isEmpty())
   {
-    for(QMap<double, Broker::Transaction>::Iterator i = --sortedTransactions.end(), begin = sortedTransactions.begin(); ; --i)
+    for(Map<double, BotProtocol::Transaction>::Iterator i = --sortedTransactions.end(), begin = sortedTransactions.begin(); ; --i)
     {
-      Broker::Transaction& transaction = i.value();
+      BotProtocol::Transaction& transaction = *i;
       if(price >= transaction.price * (1. + fee * 2))
       {
         if(transaction.amount > amount)
@@ -137,14 +150,14 @@ void BuyBot::Session::handleSell(const Broker::Transaction& transaction)
           invest += amount * transaction.price * (1. + fee);
           transaction.fee *= (transaction.amount - amount) / transaction.amount;
           transaction.amount -= amount;
-          broker.updateTransaction(transaction.id, transaction);
+          broker.updateTransaction(transaction);
           amount = 0.;
           break;
         }
         else
         {
           invest += transaction.amount * transaction.price * (1. + fee);
-          broker.removeTransaction(transaction.id);
+          broker.removeTransaction(transaction.entityId);
           amount -= transaction.amount;
           if(amount == 0.)
             break;
@@ -155,7 +168,11 @@ void BuyBot::Session::handleSell(const Broker::Transaction& transaction)
     }
   }
   if(amount == 0.)
-    broker.warning(QString("Earned %1.").arg(DataModel::formatPrice(price * transaction.amount / (1. + fee) - invest)));
+  {
+    String message;
+    message.printf("Earned? %.02f.", price * transaction.amount / (1. + fee) - invest);
+    broker.warning(message);
+  }
   else
     broker.warning("Sold something without profit.");
 
@@ -199,14 +216,14 @@ void BuyBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& v
 {
   if(broker.getOpenBuyOrderCount() > 0)
     return; // there is already an open buy order
-  if(broker.getTimeSinceLastBuy() < 60 * 60)
+  if(broker.getTimeSinceLastBuy() < 60 * 60 * 1000)
     return; // do not buy too often
 
   double fee = broker.getFee();
 
   if(isVeryGoodBuy(values) && balanceUsd >= trade.price * 0.02 * (1. + fee) && (minBuyInPrice == 0. || trade.price * (1. + broker.getFee() * 2.) < minBuyInPrice))
   {
-    if(broker.buy(trade.price, 0.02, 60 * 60))
+    if(broker.buy(trade.price, 0.02, 60 * 60 * 1000))
       return;
     return;
   }
@@ -216,17 +233,18 @@ void BuyBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& v
     double price = trade.price;
     double fee = broker.getFee() * (1. + parameters.buyProfitGain);
 
-    QList<Broker::Transaction> transactions;
+    List<BotProtocol::Transaction> transactions;
     broker.getSellTransactions(transactions);
     double profitableAmount = 0.;
-    foreach(const Broker::Transaction& transaction, transactions)
+    for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
     {
+      const BotProtocol::Transaction& transaction = *i;
       if(price * (1. + fee * 2.) < transaction.price)
         profitableAmount += transaction.amount;
     }
     if(profitableAmount >= 0.01)
     {
-      if(broker.buy(trade.price, qMax(qMin(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60))
+      if(broker.buy(trade.price, Math::max(Math::min(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60 * 1000))
         return;
       return;
     }
@@ -237,12 +255,12 @@ void BuyBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& 
 {
   if(broker.getOpenSellOrderCount() > 0)
     return; // there is already an open sell order
-  if(broker.getTimeSinceLastSell() < 60 * 60)
+  if(broker.getTimeSinceLastSell() < 60 * 60 * 1000)
     return; // do not sell too often
 
   if(isVeryGoodSell(values) && balanceBtc >= 0.02 && (maxSellInPrice == 0. || trade.price > maxSellInPrice * (1. + broker.getFee() *.2)))
   {
-    if(broker.sell(trade.price, 0.02, 60 * 60))
+    if(broker.sell(trade.price, 0.02, 60 * 60 * 1000))
       return;
     return;
   }
@@ -252,20 +270,20 @@ void BuyBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& 
     double price = trade.price;
     double fee = broker.getFee() * (1. + parameters.sellProfitGain);
 
-    QList<Broker::Transaction> transactions;
+    List<BotProtocol::Transaction> transactions;
     broker.getBuyTransactions(transactions);
     double profitableAmount = 0.;
-    foreach(const Broker::Transaction& transaction, transactions)
+    for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
     {
+      const BotProtocol::Transaction& transaction = *i;
       if(price > transaction.price * (1. + fee * 2.))
         profitableAmount += transaction.amount;
     }
     if(profitableAmount >= 0.01)
     {
-      if(broker.sell(trade.price, qMax(qMin(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60))
+      if(broker.sell(trade.price, Math::max(Math::min(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60 * 1000))
         return;
       return;
     }
   }
 }
-#endif

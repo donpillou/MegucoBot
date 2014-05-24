@@ -99,6 +99,11 @@ bool_t BotConnection::createSessionTransaction(const BotProtocol::Transaction& t
   return createEntity(&transaction, sizeof(transaction), id);
 }
 
+bool_t BotConnection::updateSessionTransaction(const BotProtocol::Transaction& transaction)
+{
+  return updateEntity(&transaction, sizeof(transaction));
+}
+
 bool_t BotConnection::removeSessionTransaction(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionTransaction, id);
@@ -112,6 +117,16 @@ bool_t BotConnection::createSessionOrder(const BotProtocol::Order& order, uint32
 bool_t BotConnection::removeSessionOrder(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionOrder, id);
+}
+
+bool_t BotConnection::createSessionMarker(const BotProtocol::Marker& marker, uint32_t& id)
+{
+  return createEntity(&marker, sizeof(marker), id);
+}
+
+bool_t BotConnection::removeSessionMarker(uint32_t id)
+{
+  return removeEntity(BotProtocol::sessionMarker, id);
 }
 
 bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id)
@@ -138,10 +153,43 @@ bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id
     if(!(header.messageType == BotProtocol::createEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
          entity->entityType == entityType))
     {
-      error = "Could not receive update entity response.";
+      error = "Could not receive create entity response.";
       return false;
     }
     id = entity->entityId;
+  }
+
+  return true;
+}
+
+bool_t BotConnection::updateEntity(const void_t* data, size_t size)
+{
+  ASSERT(size >= sizeof(BotProtocol::Entity));
+  BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType;
+  uint32_t entityId = ((BotProtocol::Entity*)data)->entityId;
+  if(!sendMessage(BotProtocol::updateEntity, 0, data, size))
+    return false;
+
+  // receive update entity response
+  {
+    BotProtocol::Header header;
+    byte_t* data;
+    size_t size;
+    if(!receiveMessage(header, data, size))
+      return false;
+    if(header.messageType == BotProtocol::errorResponse && size >= sizeof(BotProtocol::ErrorResponse))
+    {
+      BotProtocol::ErrorResponse* errorResponse = (BotProtocol::ErrorResponse*)data;
+      error = BotProtocol::getString(errorResponse->errorMessage);
+      return false;
+    }
+    BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
+    if(!(header.messageType == BotProtocol::updateEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
+         entity->entityType == entityType && entityId == entityId))
+    {
+      error = "Could not receive update entity response.";
+      return false;
+    }
   }
 
   return true;

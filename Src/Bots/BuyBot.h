@@ -37,8 +37,8 @@ private:
     virtual void setParameters(double* parameters);
 
     virtual void handle(const DataProtocol::Trade& trade, const Values& values);
-    virtual void handleBuy(const Broker::Transaction& transaction);
-    virtual void handleSell(const Broker::Transaction& transaction);
+    virtual void handleBuy(const BotProtocol::Transaction& transaction);
+    virtual void handleSell(const BotProtocol::Transaction& transaction);
 
     bool isGoodBuy(const Values& values);
     bool isVeryGoodBuy(const Values& values);
@@ -50,6 +50,7 @@ private:
     void checkSell(const DataProtocol::Trade& trade, const Values& values);
   };
 
+public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
   virtual unsigned int getParameterCount() const {return sizeof(Session::Parameters) / sizeof(double);}
 };
