@@ -60,16 +60,16 @@ bool_t User::deleteMarket(uint32_t id)
   return true;
 }
 
-void_t User::sendEntity(const void_t* data, size_t size)
+void_t User::sendUpdateEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(0, data, size);
+    (*i)->sendUpdateEntity(0, data, size);
 }
 
-void_t User::removeEntity(BotProtocol::EntityType type, uint32_t id)
+void_t User::sendRemoveEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->removeEntity(0, type, id);
+    (*i)->sendRemoveEntity(0, type, id);
 }
 
 bool_t User::loadData()

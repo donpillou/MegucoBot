@@ -19,8 +19,8 @@ public:
   void_t deselectMarket();
 
   void_t sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size);
-  void_t sendEntity(uint32_t requestId, const void_t* data, size_t size);
-  void_t removeEntity(uint32_t requestId, BotProtocol::EntityType type, uint32_t id);
+  void_t sendUpdateEntity(uint32_t requestId, const void_t* data, size_t size);
+  void_t sendRemoveEntity(uint32_t requestId, BotProtocol::EntityType type, uint32_t id);
   void_t sendRemoveAllEntities(BotProtocol::EntityType type);
 
 private:

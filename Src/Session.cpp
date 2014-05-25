@@ -300,21 +300,21 @@ void_t Session::send(ClientHandler* client)
   sessionData.balanceBase = balanceBase;
   sessionData.balanceComm = balanceComm;
   if(client)
-    client->sendEntity(0, &sessionData, sizeof(sessionData));
+    client->sendUpdateEntity(0, &sessionData, sizeof(sessionData));
   else
-    user.sendEntity(&sessionData, sizeof(sessionData));
+    user.sendUpdateEntity(&sessionData, sizeof(sessionData));
 }
 
-void_t Session::sendEntity(const void_t* data, size_t size)
+void_t Session::sendUpdateEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(0, data, size);
+    (*i)->sendUpdateEntity(0, data, size);
 }
 
-void_t Session::removeEntity(BotProtocol::EntityType type, uint32_t id)
+void_t Session::sendRemoveEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->removeEntity(0, type, id);
+    (*i)->sendRemoveEntity(0, type, id);
 }
 
 void_t Session::sendRemoveAllEntities(BotProtocol::EntityType type)

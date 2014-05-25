@@ -31,8 +31,8 @@ public:
   bool_t deleteMarket(uint32_t id);
   Market* findMarket(uint32_t id) {return *markets.find(id);}
 
-  void_t sendEntity(const void_t* data, size_t size);
-  void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
+  void_t sendUpdateEntity(const void_t* data, size_t size);
+  void_t sendRemoveEntity(BotProtocol::EntityType type, uint32_t id);
   
   const String& getUserName() const {return userName;}
   const byte_t* getKey() const {return key;}

@@ -14,5 +14,5 @@ void_t MarketAdapter::send(ClientHandler& client)
   BotProtocol::setString(marketAdapterData.name, name);
   BotProtocol::setString(marketAdapterData.currencyBase, currencyBase);
   BotProtocol::setString(marketAdapterData.currencyComm, currencyComm);
-  client.sendEntity(0, &marketAdapterData, sizeof(marketAdapterData));
+  client.sendUpdateEntity(0, &marketAdapterData, sizeof(marketAdapterData));
 }

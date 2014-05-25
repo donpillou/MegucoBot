@@ -163,19 +163,19 @@ void_t Market::send(ClientHandler* client)
   BotProtocol::setString(market.secret, String());
 
   if(client)
-    client->sendEntity(0, &market, sizeof(market));
+    client->sendUpdateEntity(0, &market, sizeof(market));
   else
-    user.sendEntity(&market, sizeof(market));
+    user.sendUpdateEntity(&market, sizeof(market));
 }
 
-void_t Market::sendEntity(const void_t* data, size_t size)
+void_t Market::sendUpdateEntity(const void_t* data, size_t size)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->sendEntity(0, data, size);
+    (*i)->sendUpdateEntity(0, data, size);
 }
 
-void_t Market::removeEntity(BotProtocol::EntityType type, uint32_t id)
+void_t Market::sendRemoveEntity(BotProtocol::EntityType type, uint32_t id)
 {
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
-    (*i)->removeEntity(0, type, id);
+    (*i)->sendRemoveEntity(0, type, id);
 }
