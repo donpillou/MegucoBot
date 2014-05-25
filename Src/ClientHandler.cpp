@@ -822,10 +822,7 @@ void_t ClientHandler::handleBotCreateSessionTransaction(uint32_t requestId, BotP
     return;
   }
 
-  BotProtocol::Entity response;
-  response.entityType = BotProtocol::sessionTransaction;
-  response.entityId = transaction->entityId;
-  sendMessage(BotProtocol::createEntityResponse, requestId, &response, sizeof(response));
+  sendMessage(BotProtocol::createEntityResponse, requestId, transaction, sizeof(BotProtocol::Entity));
 
   session->sendUpdateEntity(transaction, sizeof(BotProtocol::Transaction));
   session->saveData();
@@ -869,10 +866,7 @@ void_t ClientHandler::handleBotCreateSessionOrder(uint32_t requestId, BotProtoco
     return;
   }
 
-  BotProtocol::Entity response;
-  response.entityType = BotProtocol::sessionOrder;
-  response.entityId = order->entityId;
-  sendMessage(BotProtocol::createEntityResponse, requestId, &response, sizeof(response));
+  sendMessage(BotProtocol::createEntityResponse, requestId, order, sizeof(BotProtocol::Entity));
 
   session->sendUpdateEntity(order, sizeof(BotProtocol::Order));
   session->saveData();
@@ -901,10 +895,7 @@ void_t ClientHandler::handleBotCreateSessionMarker(uint32_t requestId, BotProtoc
     return;
   }
 
-  BotProtocol::Entity response;
-  response.entityType = BotProtocol::sessionMarker;
-  response.entityId = marker->entityId;
-  sendMessage(BotProtocol::createEntityResponse, requestId, &response, sizeof(response));
+  sendMessage(BotProtocol::createEntityResponse, requestId, marker, sizeof(BotProtocol::Entity));
 
   session->sendUpdateEntity(marker, sizeof(BotProtocol::Marker));
   session->saveData();
@@ -920,10 +911,7 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotPr
     return;
   }
 
-  BotProtocol::Entity response;
-  response.entityType = BotProtocol::sessionLogMessage;
-  response.entityId = logMessage->entityId;
-  sendMessage(BotProtocol::createEntityResponse, requestId, &response, sizeof(response));
+  sendMessage(BotProtocol::createEntityResponse, requestId, logMessage, sizeof(BotProtocol::Entity));
 
   session->sendUpdateEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
   session->saveData();
@@ -1125,4 +1113,3 @@ void_t ClientHandler::sendRemoveAllEntities(BotProtocol::EntityType type)
   entity.entityType = type;
   sendMessage(BotProtocol::removeAllEntities, 0, &entity, sizeof(entity));
 }
-
