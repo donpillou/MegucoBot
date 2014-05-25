@@ -419,6 +419,7 @@ void_t ClientHandler::handleControlEntity(uint32_t requestId, BotProtocol::Entit
     default:
       break;
     }
+    break;
   case botState:
     switch((BotProtocol::EntityType)entity.entityType)
     {
@@ -577,6 +578,9 @@ void_t ClientHandler::handleUserControlMarket(uint32_t requestId, BotProtocol::C
     market->registerClient(*this, false);
     this->market = market;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
+    sendRemoveAllEntities(BotProtocol::marketBalance);
+    sendRemoveAllEntities(BotProtocol::marketOrder);
+    sendRemoveAllEntities(BotProtocol::marketTransaction);
     {
       const BotProtocol::MarketBalance& balance = market->getBalance();
       if(balance.entityType == BotProtocol::marketBalance)
@@ -677,7 +681,10 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     }
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     session->send();
-    // send remove all stuff to session
+    session->sendRemoveAllEntities(BotProtocol::sessionTransaction);
+    session->sendRemoveAllEntities(BotProtocol::sessionOrder);
+    session->sendRemoveAllEntities(BotProtocol::sessionLogMessage);
+    session->sendRemoveAllEntities(BotProtocol::sessionMarker);
     break;
   case BotProtocol::ControlSession::stop:
     if(!session->stop())
@@ -687,16 +694,11 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     }
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     session->send();
-    // send remove all stuff to session
-    // send all to session
-    break;
-  case BotProtocol::ControlSession::select:
-    if(this->session)
-      this->session->unregisterClient(*this);
-    session->registerClient(*this, false);
-    this->session = session;
-    sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
-    // send remove all stuff to client
+    // todo: do this only if a simulation (or optimization?) was stopped
+    session->sendRemoveAllEntities(BotProtocol::sessionTransaction);
+    session->sendRemoveAllEntities(BotProtocol::sessionOrder);
+    session->sendRemoveAllEntities(BotProtocol::sessionLogMessage);
+    session->sendRemoveAllEntities(BotProtocol::sessionMarker);
     {
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
@@ -704,6 +706,34 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendEntity(0, &*i, sizeof(BotProtocol::Order));
+      const HashMap<uint32_t, BotProtocol::Marker>& markers = session->getMarkers();
+      for(HashMap<uint32_t, BotProtocol::Marker>::Iterator i = markers.begin(), end = markers.end(); i != end; ++i)
+        sendEntity(0, &*i, sizeof(BotProtocol::Marker));
+      const List<BotProtocol::SessionLogMessage>& logMessages = session->getLogMessages();
+      for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
+        sendEntity(0, &*i, sizeof(BotProtocol::SessionLogMessage));
+    }
+    break;
+  case BotProtocol::ControlSession::select:
+    if(this->session)
+      this->session->unregisterClient(*this);
+    session->registerClient(*this, false);
+    this->session = session;
+    sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
+    sendRemoveAllEntities(BotProtocol::sessionTransaction);
+    sendRemoveAllEntities(BotProtocol::sessionOrder);
+    sendRemoveAllEntities(BotProtocol::sessionLogMessage);
+    sendRemoveAllEntities(BotProtocol::sessionMarker);
+    {
+      const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
+      for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        sendEntity(0, &*i, sizeof(BotProtocol::Transaction));
+      const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
+      for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+        sendEntity(0, &*i, sizeof(BotProtocol::Order));
+      const HashMap<uint32_t, BotProtocol::Marker>& markers = session->getMarkers();
+      for(HashMap<uint32_t, BotProtocol::Marker>::Iterator i = markers.begin(), end = markers.end(); i != end; ++i)
+        sendEntity(0, &*i, sizeof(BotProtocol::Marker));
       const List<BotProtocol::SessionLogMessage>& logMessages = session->getLogMessages();
       for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
         sendEntity(0, &*i, sizeof(BotProtocol::SessionLogMessage));
@@ -1087,3 +1117,12 @@ void_t ClientHandler::sendErrorResponse(BotProtocol::MessageType messageType, ui
   BotProtocol::setString(errorResponse.errorMessage, errorMessage);
   sendMessage(BotProtocol::errorResponse, requestId, &errorResponse, sizeof(errorResponse));
 }
+
+void_t ClientHandler::sendRemoveAllEntities(BotProtocol::EntityType type)
+{
+  BotProtocol::Entity entity;
+  entity.entityId = 0;
+  entity.entityType = type;
+  sendMessage(BotProtocol::removeAllEntities, 0, &entity, sizeof(entity));
+}
+

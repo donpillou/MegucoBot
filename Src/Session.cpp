@@ -316,3 +316,9 @@ void_t Session::removeEntity(BotProtocol::EntityType type, uint32_t id)
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->removeEntity(0, type, id);
 }
+
+void_t Session::sendRemoveAllEntities(BotProtocol::EntityType type)
+{
+  for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
+    (*i)->sendRemoveAllEntities(type);
+}

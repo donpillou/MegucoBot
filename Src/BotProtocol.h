@@ -27,6 +27,7 @@ public:
     controlEntityResponse,
     createEntity,
     createEntityResponse,
+    removeAllEntities,
   };
   
   enum EntityType
@@ -37,12 +38,12 @@ public:
     marketAdapter,
     sessionTransaction,
     sessionOrder,
+    sessionMarker,
     sessionLogMessage,
     market,
     marketTransaction,
     marketOrder,
     marketBalance,
-    sessionMarker,
   };
 
 #pragma pack(push, 1)

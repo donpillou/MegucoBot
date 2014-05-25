@@ -51,6 +51,7 @@ public:
   bool_t deleteOrder(uint32_t id);
 
   BotProtocol::Marker* createMarker(BotProtocol::Marker::Type type, timestamp_t date);
+  const HashMap<uint32_t, BotProtocol::Marker>& getMarkers() const {return markers;}
 
   BotProtocol::SessionLogMessage* addLogMessage(timestamp_t date, const String& message);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
@@ -58,6 +59,7 @@ public:
   void_t send(ClientHandler* client = 0);
   void_t sendEntity(const void_t* data, size_t size);
   void_t removeEntity(BotProtocol::EntityType type, uint32_t id);
+  void_t sendRemoveAllEntities(BotProtocol::EntityType type);
 
 private:
   ServerHandler& serverHandler;
