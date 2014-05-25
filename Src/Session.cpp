@@ -139,6 +139,8 @@ void_t Session::toVariant(Variant& variant)
 
 bool_t Session::saveData()
 {
+  if(simulation)
+    return true;
   return user.saveData();
 }
 
@@ -153,8 +155,11 @@ bool_t Session::startSimulation()
   serverHandler.registerSession(pid, *this);
   state = BotProtocol::Session::starting;
 
-  // todo: save backup of orders, transactions, log messages, and markers
-  // todo: clear orders, transactions, log messages and markers
+  // clear and save backup of orders, transactions, log messages, and markers
+  backupTransactions.swap(transactions);
+  backupOrders.swap(orders);
+  backupMarkers.swap(markers);
+  backupLogMessages.swap(logMessages);
 
   return true;
 }
@@ -166,6 +171,16 @@ bool_t Session::stop()
   if(!process.kill())
     return false;
   pid = 0;
+  if(simulation)
+  {
+    simulation = false;
+
+    // todo: restore backup of orders, transactions, log messages, and markers
+    backupTransactions.swap(transactions);
+    backupOrders.swap(orders);
+    backupMarkers.swap(markers);
+    backupLogMessages.swap(logMessages);
+  }
   state = BotProtocol::Session::stopped;
   return true;
 }

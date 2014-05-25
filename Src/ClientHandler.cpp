@@ -677,6 +677,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     }
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     session->send();
+    // send remove all stuff to session
     break;
   case BotProtocol::ControlSession::stop:
     if(!session->stop())
@@ -686,6 +687,8 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     }
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     session->send();
+    // send remove all stuff to session
+    // send all to session
     break;
   case BotProtocol::ControlSession::select:
     if(this->session)
@@ -693,6 +696,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     session->registerClient(*this, false);
     this->session = session;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
+    // send remove all stuff to client
     {
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)

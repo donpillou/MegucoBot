@@ -77,6 +77,10 @@ private:
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::Order> orders;
   HashMap<uint32_t, BotProtocol::Marker> markers;
-  uint32_t nextEntityId;
   List<BotProtocol::SessionLogMessage> logMessages;
+  HashMap<uint32_t, BotProtocol::Transaction> backupTransactions;
+  HashMap<uint32_t, BotProtocol::Order> backupOrders;
+  HashMap<uint32_t, BotProtocol::Marker> backupMarkers;
+  List<BotProtocol::SessionLogMessage> backupLogMessages;
+  uint32_t nextEntityId;
 };
