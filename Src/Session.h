@@ -42,12 +42,15 @@ public:
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
   BotProtocol::Transaction* createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type);
+  BotProtocol::Transaction* updateTransaction(BotProtocol::Transaction& transaction);
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
   BotProtocol::Order* createOrder(double price, double amount, double fee, BotProtocol::Order::Type type);
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
+
+  BotProtocol::Marker* createMarker(BotProtocol::Marker::Type type, timestamp_t date);
 
   BotProtocol::SessionLogMessage* addLogMessage(timestamp_t date, const String& message);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
@@ -73,6 +76,7 @@ private:
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::Order> orders;
+  HashMap<uint32_t, BotProtocol::Marker> markers;
   uint32_t nextEntityId;
   List<BotProtocol::SessionLogMessage> logMessages;
 };

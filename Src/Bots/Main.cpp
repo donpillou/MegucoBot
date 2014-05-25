@@ -66,6 +66,8 @@ private: // DataConnection::Callback
         startTime = trade.time;
       if(trade.time - startTime <= 45 * 60 * 1000)
         return; // wait for 45 minutes of trade data to be evaluated
+      if(trade.flags & DataProtocol::syncFlag)
+        broker.warning("sync");
     }
     else if(trade.flags & DataProtocol::replayedFlag)
       return;
@@ -84,12 +86,12 @@ int_t main(int_t argc, char_t* argv[])
   static const uint32_t dataIp = Socket::inetAddr("192.168.0.49");
   static const uint16_t dataPort = 40123;
 
-  for(;;)
-  {
-    bool stop = true;
-    if(!stop)
-      break;
-  }
+  //for(;;)
+  //{
+  //  bool stop = true;
+  //  if(!stop)
+  //    break;
+  //}
 
   // create bot server connection
   BotConnection botConnection;

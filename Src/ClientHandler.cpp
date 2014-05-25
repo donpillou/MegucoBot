@@ -333,6 +333,10 @@ void_t ClientHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Order))
         handleBotCreateSessionOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
+    case BotProtocol::sessionMarker:
+      if(size >= sizeof(BotProtocol::Marker))
+        handleBotCreateSessionMarker(requestId, *(BotProtocol::Marker*)&entity);
+      break;
     case BotProtocol::sessionLogMessage:
       if(size >= sizeof(BotProtocol::Order))
         handleBotCreateSessionLogMessage(requestId, *(BotProtocol::SessionLogMessage*)&entity);
@@ -464,6 +468,17 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
     case BotProtocol::marketBalance:
       if(size >= sizeof(BotProtocol::MarketBalance))
         handleMarketUpdateMarketBalance(requestId, *(BotProtocol::MarketBalance*)&entity);
+      break;
+    default:
+      break;
+    }
+    break;
+  case botState:
+    switch((BotProtocol::EntityType)entity.entityType)
+    {
+    case BotProtocol::sessionTransaction:
+      if(size >= sizeof(BotProtocol::Transaction))
+        handleBotUpdateSessionTransaction(requestId, *(BotProtocol::Transaction*)&entity);
       break;
     default:
       break;
@@ -782,6 +797,21 @@ void_t ClientHandler::handleBotCreateSessionTransaction(uint32_t requestId, BotP
   session->saveData();
 }
 
+void_t ClientHandler::handleBotUpdateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& transaction)
+{
+  if(!session->updateTransaction(transaction))
+  {
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &transaction, "Could not update session transaction.");
+    return;
+  }
+
+  sendMessage(BotProtocol::updateEntityResponse, requestId, &transaction, sizeof(BotProtocol::Entity));
+
+  session->sendEntity(&transaction, sizeof(transaction));
+  session->saveData();
+
+}
+
 void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity)
 {
   if(!session->deleteTransaction(entity.entityId))
@@ -825,6 +855,24 @@ void_t ClientHandler::handleBotRemoveSessionOrder(uint32_t requestId, const BotP
   sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
   session->removeEntity(BotProtocol::sessionOrder, entity.entityId);
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotCreateSessionMarker(uint32_t requestId, BotProtocol::Marker& markerArgs)
+{
+  BotProtocol::Marker* marker = session->createMarker((BotProtocol::Marker::Type)markerArgs.type, markerArgs.date);
+  if(!marker)
+  {
+    sendErrorResponse(BotProtocol::createEntity, requestId, &markerArgs, "Could not create session marker.");
+    return;
+  }
+
+  BotProtocol::Entity response;
+  response.entityType = BotProtocol::sessionMarker;
+  response.entityId = marker->entityId;
+  sendMessage(BotProtocol::createEntityResponse, requestId, &response, sizeof(response));
+
+  session->sendEntity(marker, sizeof(BotProtocol::Marker));
   session->saveData();
 }
 

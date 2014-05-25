@@ -69,10 +69,13 @@ private:
   void_t handleBotControlMarket(uint32_t requestId, BotProtocol::ControlMarket& controlMarket);
 
   void_t handleBotCreateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& transaction);
+  void_t handleBotUpdateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& transaction);
   void_t handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleBotCreateSessionOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleBotRemoveSessionOrder(uint32_t requestId, const BotProtocol::Entity& entity);
+
+  void_t handleBotCreateSessionMarker(uint32_t requestId, BotProtocol::Marker& marker);
 
   void_t handleBotCreateSessionLogMessage(uint32_t requestId, BotProtocol::SessionLogMessage& logMessage);
 

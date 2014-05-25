@@ -152,6 +152,10 @@ bool_t Session::startSimulation()
     return false;
   serverHandler.registerSession(pid, *this);
   state = BotProtocol::Session::starting;
+
+  // todo: save backup of orders, transactions, log messages, and markers
+  // todo: clear orders, transactions, log messages and markers
+
   return true;
 }
 
@@ -210,6 +214,11 @@ BotProtocol::Transaction* Session::createTransaction(double price, double amount
   return &transactions.append(transaction.entityId, transaction);
 }
 
+BotProtocol::Transaction* Session::updateTransaction(BotProtocol::Transaction& transaction)
+{
+  return &transactions.append(transaction.entityId, transaction);
+}
+
 bool_t Session::deleteTransaction(uint32_t id)
 {
   HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
@@ -239,6 +248,16 @@ bool_t Session::deleteOrder(uint32_t id)
     return false;
   orders.remove(it);
   return true;
+}
+
+BotProtocol::Marker* Session::createMarker(BotProtocol::Marker::Type type, timestamp_t date)
+{
+  BotProtocol::Marker marker;
+  marker.entityType = BotProtocol::sessionMarker;
+  marker.entityId = nextEntityId++;
+  marker.type = type;
+  marker.date = date;
+  return &markers.append(marker.entityId, marker);
 }
 
 BotProtocol::SessionLogMessage* Session::addLogMessage(timestamp_t date, const String& message)
