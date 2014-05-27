@@ -55,17 +55,6 @@ bool_t BotConnection::connect(uint16_t port)
   return true;
 }
 
-bool_t BotConnection::addLogMessage(const String& message)
-{
-  BotProtocol::SessionLogMessage logMessage;
-  logMessage.entityType = BotProtocol::sessionLogMessage;
-  logMessage.entityId = 0;
-  logMessage.date = Time::time();
-  BotProtocol::setString(logMessage.message, message);
-  uint32_t id;
-  return createEntity(&logMessage, sizeof(logMessage), id);
-}
-
 bool_t BotConnection::getMarketBalance(BotProtocol::MarketBalance& balance)
 {
   List<BotProtocol::MarketBalance> result;
@@ -79,6 +68,34 @@ bool_t BotConnection::getMarketBalance(BotProtocol::MarketBalance& balance)
   balance = result.front();
   return true;
 }
+
+bool_t BotConnection::getMarketOrders(List<BotProtocol::Order>& orders)
+{
+  if(!sendControlMarket(BotProtocol::ControlMarket::requestOrders, orders))
+    return false;
+  return true;
+}
+
+bool_t BotConnection::createMarketOrder(BotProtocol::Order& order)
+{
+  return createEntity(&order, sizeof(order));
+}
+
+bool_t BotConnection::removeMarketOrder(uint32_t id)
+{
+  return removeEntity(BotProtocol::marketOrder, id);
+}
+
+bool_t BotConnection::addLogMessage(const String& message)
+{
+  BotProtocol::SessionLogMessage logMessage;
+  logMessage.entityType = BotProtocol::sessionLogMessage;
+  logMessage.entityId = 0;
+  logMessage.date = Time::time();
+  BotProtocol::setString(logMessage.message, message);
+  return createEntity(&logMessage, sizeof(logMessage));
+}
+
 
 bool_t BotConnection::getSessionTransactions(List<BotProtocol::Transaction>& transactions)
 {
@@ -94,9 +111,9 @@ bool_t BotConnection::getSessionOrders(List<BotProtocol::Order>& orders)
   return true;
 }
 
-bool_t BotConnection::createSessionTransaction(const BotProtocol::Transaction& transaction, uint32_t& id)
+bool_t BotConnection::createSessionTransaction(BotProtocol::Transaction& transaction)
 {
-  return createEntity(&transaction, sizeof(transaction), id);
+  return createEntity(&transaction, sizeof(transaction));
 }
 
 bool_t BotConnection::updateSessionTransaction(const BotProtocol::Transaction& transaction)
@@ -109,9 +126,9 @@ bool_t BotConnection::removeSessionTransaction(uint32_t id)
   return removeEntity(BotProtocol::sessionTransaction, id);
 }
 
-bool_t BotConnection::createSessionOrder(const BotProtocol::Order& order, uint32_t& id)
+bool_t BotConnection::createSessionOrder(BotProtocol::Order& order)
 {
-  return createEntity(&order, sizeof(order), id);
+  return createEntity(&order, sizeof(order));
 }
 
 bool_t BotConnection::removeSessionOrder(uint32_t id)
@@ -119,9 +136,9 @@ bool_t BotConnection::removeSessionOrder(uint32_t id)
   return removeEntity(BotProtocol::sessionOrder, id);
 }
 
-bool_t BotConnection::createSessionMarker(const BotProtocol::Marker& marker, uint32_t& id)
+bool_t BotConnection::createSessionMarker(BotProtocol::Marker& marker)
 {
-  return createEntity(&marker, sizeof(marker), id);
+  return createEntity(&marker, sizeof(marker));
 }
 
 bool_t BotConnection::removeSessionMarker(uint32_t id)
@@ -129,11 +146,11 @@ bool_t BotConnection::removeSessionMarker(uint32_t id)
   return removeEntity(BotProtocol::sessionMarker, id);
 }
 
-bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id)
+bool_t BotConnection::createEntity(void_t* entityData, size_t entitySize)
 {
-  ASSERT(size >= sizeof(BotProtocol::Entity));
-  BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType;
-  if(!sendMessage(BotProtocol::createEntity, 0, data, size))
+  ASSERT(entitySize >= sizeof(BotProtocol::Entity));
+  BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)entityData)->entityType;
+  if(!sendMessage(BotProtocol::createEntity, 0, entityData, entitySize))
     return false;
 
   // receive create response
@@ -150,13 +167,13 @@ bool_t BotConnection::createEntity(const void_t* data, size_t size, uint32_t& id
       return false;
     }
     BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(!(header.messageType == BotProtocol::createEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
+    if(!(header.messageType == BotProtocol::createEntityResponse && header.requestId == 0 && size >= entitySize &&
          entity->entityType == entityType))
     {
       error = "Could not receive create entity response.";
       return false;
     }
-    id = entity->entityId;
+    Memory::copy(entityData, data, entitySize);
   }
 
   return true;

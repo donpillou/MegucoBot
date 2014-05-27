@@ -288,21 +288,16 @@ BotProtocol::SessionLogMessage* Session::addLogMessage(timestamp_t date, const S
   return result;
 }
 
-void_t Session::send(ClientHandler* client)
+void_t Session::getEntity(BotProtocol::Session& session) const
 {
-  BotProtocol::Session sessionData;
-  sessionData.entityType = BotProtocol::session;
-  sessionData.entityId = __id;
-  BotProtocol::setString(sessionData.name, name);
-  sessionData.botEngineId = engine->getId();
-  sessionData.marketId = market->getId();
-  sessionData.state = state;
-  sessionData.balanceBase = balanceBase;
-  sessionData.balanceComm = balanceComm;
-  if(client)
-    client->sendUpdateEntity(0, &sessionData, sizeof(sessionData));
-  else
-    user.sendUpdateEntity(&sessionData, sizeof(sessionData));
+  session.entityType = BotProtocol::session;
+  session.entityId = __id;
+  BotProtocol::setString(session.name, name);
+  session.botEngineId = engine->getId();
+  session.marketId = market->getId();
+  session.state = state;
+  session.balanceBase = balanceBase;
+  session.balanceComm = balanceComm;
 }
 
 void_t Session::sendUpdateEntity(const void_t* data, size_t size)

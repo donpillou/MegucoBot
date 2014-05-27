@@ -56,7 +56,7 @@ public:
   BotProtocol::SessionLogMessage* addLogMessage(timestamp_t date, const String& message);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
 
-  void_t send(ClientHandler* client = 0);
+  void_t getEntity(BotProtocol::Session& session) const;
   void_t sendUpdateEntity(const void_t* data, size_t size);
   void_t sendRemoveEntity(BotProtocol::EntityType type, uint32_t id);
   void_t sendRemoveAllEntities(BotProtocol::EntityType type);

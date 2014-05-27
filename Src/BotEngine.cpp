@@ -10,11 +10,9 @@ BotEngine::BotEngine(uint32_t id, const String& path) : __id(id), path(path)
   name = File::basename(path, ".exe");
 }
 
-void_t BotEngine::send(ClientHandler& client)
+void_t BotEngine::getEntity(BotProtocol::BotEngine& botEngine) const
 {
-  BotProtocol::BotEngine botEngine;
   botEngine.entityType = BotProtocol::botEngine;
   botEngine.entityId = __id;
   BotProtocol::setString(botEngine.name, name);
-  client.sendUpdateEntity(0, &botEngine, sizeof(botEngine));
 }

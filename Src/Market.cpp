@@ -151,9 +151,8 @@ bool_t Market::updateBalance(const BotProtocol::MarketBalance& balance)
   return true;
 }
 
-void_t Market::send(ClientHandler* client)
+void_t Market::getEntity(BotProtocol::Market& market) const
 {
-  BotProtocol::Market market;
   market.entityType = BotProtocol::market;
   market.entityId = __id;
   market.marketAdapterId = marketAdapter->getId();
@@ -161,11 +160,6 @@ void_t Market::send(ClientHandler* client)
   BotProtocol::setString(market.userName, String());
   BotProtocol::setString(market.key, String());
   BotProtocol::setString(market.secret, String());
-
-  if(client)
-    client->sendUpdateEntity(0, &market, sizeof(market));
-  else
-    user.sendUpdateEntity(&market, sizeof(market));
 }
 
 void_t Market::sendUpdateEntity(const void_t* data, size_t size)

@@ -7,10 +7,10 @@
 
 class BotConnection;
 
-class SimBroker : public Broker
+class LiveBroker : public Broker
 {
 public:
-  SimBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee);
+  LiveBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee);
 
 private:
   BotConnection& botConnection;
@@ -23,6 +23,10 @@ private:
   timestamp_t lastSellTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   Bot::Session* botSession;
+
+private:
+  void_t refreshOrders();
+  void_t cancelTimedOutOrders();
 
 private: // Bot::Broker
   virtual bool_t buy(double price, double amount, timestamp_t timeout);

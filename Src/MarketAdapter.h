@@ -3,6 +3,8 @@
 
 #include <nstd/String.h>
 
+#include "BotProtocol.h"
+
 class ClientHandler;
 
 class MarketAdapter
@@ -14,7 +16,7 @@ public:
   const String& getCurrencyBase() const {return currencyBase;}
   const String& getCurrencyComm() const {return currencyComm;}
 
-  void_t send(ClientHandler& client);
+  void_t getEntity(BotProtocol::MarketAdapter& marketAdapater) const;
 
 public:
   MarketAdapter(uint32_t id, const String& name, const String& path, const String& currencyBase, const String& currencyComm);

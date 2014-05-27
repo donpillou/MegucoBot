@@ -47,7 +47,7 @@ public:
   bool_t updateBalance(const BotProtocol::MarketBalance& balance);
   const BotProtocol::MarketBalance& getBalance() const {return balance;}
 
-  void_t send(ClientHandler* client = 0);
+  void_t getEntity(BotProtocol::Market& market) const;
   void_t sendUpdateEntity(const void_t* data, size_t size);
   void_t sendRemoveEntity(BotProtocol::EntityType type, uint32_t id);
 

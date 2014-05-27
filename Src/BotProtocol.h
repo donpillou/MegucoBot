@@ -167,6 +167,7 @@ public:
     double price;
     double amount;
     double fee;
+    int64_t timeout;
   };
 
   struct Marker : public Entity

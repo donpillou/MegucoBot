@@ -154,10 +154,7 @@ private:
     if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
       return connection.sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, market->getLastError());
 
-    BotProtocol::Entity response;
-    response.entityType = BotProtocol::marketOrder;
-    response.entityId = order.entityId;
-    if(!connection.sendMessage(BotProtocol::createEntityResponse, requestId, &response, sizeof(response)))
+    if(!connection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
       return false;
     return connection.sendEntity(&order, sizeof(order));
   }

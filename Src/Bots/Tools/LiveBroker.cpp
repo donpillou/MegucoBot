@@ -1,54 +1,60 @@
 
 #include <nstd/Time.h>
 #include <nstd/Math.h>
+#include <nstd/Map.h>
 
-#include "SimBroker.h"
+#include "LiveBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee) :
+LiveBroker::LiveBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee) :
   botConnection(botConnection), balanceBase(balanceBase), balanceComm(balanceComm), fee(fee), 
   time(0), lastBuyTime(0), lastSellTime(0), botSession(0) {}
 
-void_t SimBroker::loadTransaction(const BotProtocol::Transaction& sessionTransaction)
+void_t LiveBroker::loadTransaction(const BotProtocol::Transaction& transaction)
 {
-  //Bot::Broker::Transaction transaction;
-  //transaction.id = sessionTransaction.entityId;
-  //transaction.date = sessionTransaction.date;
-  //transaction.price = sessionTransaction.price;
-  //transaction.amount = sessionTransaction.amount;
-  //transaction.fee = sessionTransaction.fee;
-  //transaction.type = sessionTransaction.type == BotProtocol::Transaction::buy ? Bot::Broker::Transaction::Type::buy : Bot::Broker::Transaction::Type::sell;
-  //transactions.append(transaction.id, transaction);
+  transactions.append(transaction.entityId, transaction);
 }
 
-void_t SimBroker::loadOrder(const BotProtocol::Order& order)
+void_t LiveBroker::loadOrder(const BotProtocol::Order& order)
 {
-  // todo: save timeout in BotProtocol::Order, load order here to allow simulation of sessions that do already contain some data
+  openOrders.append(order);
 }
 
-void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
+void_t LiveBroker::handleTrade(const DataProtocol::Trade& trade)
 {
   time = trade.time;
 
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != openOrders.end(); i = next)
+  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  {
+    const BotProtocol::Order& order = *i;
+    if (Math::abs(order.price - trade.price) <= 0.01)
+    {
+      refreshOrders();
+      break;
+    }
+  }
+
+  cancelTimedOutOrders();
+}
+
+void_t LiveBroker::refreshOrders()
+{
+  List<BotProtocol::Order> orders;
+  if(!botConnection.getMarketOrders(orders))
+    return;
+  Map<uint32_t, const BotProtocol::Order*> openOrderIds;
+  for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+  {
+    const BotProtocol::Order& order = *i;
+    openOrderIds.insert(order.entityId, &order);
+  }
+  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
     next = i;
     ++next;
 
     const BotProtocol::Order& order = *i;
-    if(time >= order.timeout)
-    {
-      if(order.type == BotProtocol::Order::buy)
-        balanceBase += order.amount * order.price + order.fee;
-      else
-        balanceComm += order.amount;
-
-      botConnection.removeSessionOrder(order.entityId);
-      openOrders.remove(i);
-      continue;
-    }
-    else if((order.type == BotProtocol::Order::buy && trade.price < order.price) ||
-            ( order.type == BotProtocol::Order::sell && trade.price > order.price) )
+    if(!openOrderIds.contains(order.entityId))
     {
       BotProtocol::Transaction transaction;
       transaction.entityType = BotProtocol::sessionTransaction;
@@ -70,14 +76,13 @@ void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
         lastSellTime = time;
         balanceBase += order.amount * order.price - order.fee;
       }
-
       botConnection.removeSessionOrder(order.entityId);
       openOrders.remove(i);
 
       BotProtocol::Marker marker;
       marker.entityType = BotProtocol::sessionMarker;
       marker.date = time;
-      if(order.type == BotProtocol::Order::buy)
+      if(order.amount >= 0.)
       {
         marker.type = BotProtocol::Marker::buy;
         botSession->handleBuy(transaction);
@@ -92,25 +97,53 @@ void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
   }
 }
 
-void_t SimBroker::setBotSession(Bot::Session& session)
+void_t LiveBroker::cancelTimedOutOrders()
+{
+  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
+  {
+    next = i;
+    ++next;
+
+    const BotProtocol::Order& order = *i;
+    if(time >= order.timeout)
+    {
+      if(botConnection.removeMarketOrder(order.entityId))
+      {
+        if(order.type == BotProtocol::Order::buy)
+          balanceBase += order.amount * order.price + order.fee;
+        else
+          balanceComm += order.amount;
+
+        botConnection.removeSessionOrder(order.entityId);
+        openOrders.remove(i);
+        continue;
+      }
+      else
+      {
+        refreshOrders();
+        return;
+      }
+    }
+  }
+}
+
+void_t LiveBroker::setBotSession(Bot::Session& session)
 {
   botSession = &session;
 }
 
-bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
+bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)
 {
-  double fee = Math::ceil(amount * price * this->fee * 100.) / 100.;
-  double charge = amount * price + fee;
-  if(charge > balanceBase)
-    return false;
-
   BotProtocol::Order order;
-  order.entityType = BotProtocol::sessionOrder;
+  order.entityType = BotProtocol::marketOrder;
   order.type = BotProtocol::Order::buy;
-  order.date = time;
-  order.amount = amount;
   order.price = price;
-  order.fee = fee;
+  order.amount = amount;
+  if(!botConnection.createMarketOrder(order))
+    return false;
+  double charge = order.price * order.amount + order.fee; 
+
+  order.entityType = BotProtocol::sessionOrder;
   order.timeout = time + timeout;
   botConnection.createSessionOrder(order);
 
@@ -125,18 +158,20 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
   return true;
 }
 
-bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
+bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
 {
   if(amount > balanceComm)
     return false;
 
   BotProtocol::Order order;
-  order.entityType = BotProtocol::sessionOrder;
+  order.entityType = BotProtocol::marketOrder;
   order.type = BotProtocol::Order::sell;
-  order.date = time;
-  order.amount = amount;
   order.price = price;
-  order.fee = Math::ceil(amount * price * this->fee * 100.) / 100.;
+  order.amount = amount;
+  if(!botConnection.createMarketOrder(order))
+    return false;
+
+  order.entityType = BotProtocol::sessionOrder;
   order.timeout = time + timeout;
   botConnection.createSessionOrder(order);
 
@@ -151,7 +186,7 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
   return true;
 }
 
-uint_t SimBroker::getOpenBuyOrderCount() const
+uint_t LiveBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
   for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
@@ -163,7 +198,7 @@ uint_t SimBroker::getOpenBuyOrderCount() const
   return openBuyOrders;
 }
 
-uint_t SimBroker::getOpenSellOrderCount() const
+uint_t LiveBroker::getOpenSellOrderCount() const
 {
   size_t openSellOrders = 0;
   for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
@@ -175,7 +210,7 @@ uint_t SimBroker::getOpenSellOrderCount() const
   return openSellOrders;
 }
 
-void_t SimBroker::getTransactions(List<BotProtocol::Transaction>& transactions) const
+void_t LiveBroker::getTransactions(List<BotProtocol::Transaction>& transactions) const
 {
   for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
   {
@@ -184,7 +219,7 @@ void_t SimBroker::getTransactions(List<BotProtocol::Transaction>& transactions) 
   }
 }
 
-void_t SimBroker::getBuyTransactions(List<BotProtocol::Transaction>& transactions) const
+void_t LiveBroker::getBuyTransactions(List<BotProtocol::Transaction>& transactions) const
 {
   for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
   {
@@ -194,7 +229,7 @@ void_t SimBroker::getBuyTransactions(List<BotProtocol::Transaction>& transaction
   }
 }
 
-void_t SimBroker::getSellTransactions(List<BotProtocol::Transaction>& transactions) const
+void_t LiveBroker::getSellTransactions(List<BotProtocol::Transaction>& transactions) const
 {
   for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
   {
@@ -204,7 +239,7 @@ void_t SimBroker::getSellTransactions(List<BotProtocol::Transaction>& transactio
   }
 }
 
-void_t SimBroker::removeTransaction(uint32_t id)
+void_t LiveBroker::removeTransaction(uint32_t id)
 {
   HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
   if(it == transactions.end())
@@ -214,7 +249,7 @@ void_t SimBroker::removeTransaction(uint32_t id)
   transactions.remove(it);
 }
 
-void_t SimBroker::updateTransaction(const BotProtocol::Transaction& transaction)
+void_t LiveBroker::updateTransaction(const BotProtocol::Transaction& transaction)
 {
   HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(transaction.entityId);
   if(it == transactions.end())
@@ -226,7 +261,7 @@ void_t SimBroker::updateTransaction(const BotProtocol::Transaction& transaction)
   botConnection.updateSessionTransaction(destTransaction);
 }
 
-void_t SimBroker::warning(const String& message)
+void_t LiveBroker::warning(const String& message)
 {
   botConnection.addLogMessage(message);
 }

@@ -21,17 +21,21 @@ public:
   double getBalanceBase() const {return balanceBase;}
   double getBalanceComm() const {return balanceComm;}
 
-  bool_t addLogMessage(const String& message);
   bool_t getMarketBalance(BotProtocol::MarketBalance& balance);
+  bool_t getMarketOrders(List<BotProtocol::Order>& orders);
+  bool_t createMarketOrder(BotProtocol::Order& order);
+  bool_t removeMarketOrder(uint32_t id);
+
+  bool_t addLogMessage(const String& message);
   bool_t getSessionTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getSessionOrders(List<BotProtocol::Order>& orders);
 
-  bool_t createSessionTransaction(const BotProtocol::Transaction& transaction, uint32_t& id);
+  bool_t createSessionTransaction(BotProtocol::Transaction& transaction);
   bool_t updateSessionTransaction(const BotProtocol::Transaction& transaction);
   bool_t removeSessionTransaction(uint32_t id);
-  bool_t createSessionOrder(const BotProtocol::Order& order, uint32_t& id);
+  bool_t createSessionOrder(BotProtocol::Order& order);
   bool_t removeSessionOrder(uint32_t id);
-  bool_t createSessionMarker(const BotProtocol::Marker& marker, uint32_t& id);
+  bool_t createSessionMarker(BotProtocol::Marker& marker);
   bool_t removeSessionMarker(uint32_t id);
 
 private:
@@ -45,7 +49,7 @@ private:
   double balanceComm;
 
 private:
-  bool_t createEntity(const void_t* data, size_t size, uint32_t& id);
+  bool_t createEntity(void_t* data, size_t size);
   bool_t updateEntity(const void_t* data, size_t size);
   bool_t removeEntity(uint32_t type, uint32_t id);
   //bool_t sendPing();

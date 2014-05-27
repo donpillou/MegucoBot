@@ -3,6 +3,8 @@
 
 #include <nstd/String.h>
 
+#include "BotProtocol.h"
+
 class ClientHandler;
 
 class BotEngine
@@ -16,7 +18,7 @@ public:
   const String& getName() const {return name;}
   const String& getPath() const {return path;}
 
-  void_t send(ClientHandler& client);
+  void_t getEntity(BotProtocol::BotEngine& engine) const;
 
 private:
   uint32_t __id;
