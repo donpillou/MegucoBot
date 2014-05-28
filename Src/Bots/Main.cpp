@@ -23,6 +23,11 @@
 typedef BuyBot BotFactory;
 const char* botName = "BuyBot";
 #endif
+#ifdef BOT_TESTBOT
+#include "Bots/TestBot.h"
+typedef TestBot BotFactory;
+const char* botName = "TestBot";
+#endif
 
 class DataConnectionHandler : private DataConnection::Callback
 {
