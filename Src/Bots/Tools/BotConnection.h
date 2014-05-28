@@ -20,6 +20,7 @@ public:
   const String& getMarketAdapterName() const {return marketAdapterName;}
   double getBalanceBase() const {return balanceBase;}
   double getBalanceComm() const {return balanceComm;}
+  bool isSimulation() const {return simulation;}
 
   bool_t getMarketBalance(BotProtocol::MarketBalance& balance);
   bool_t getMarketOrders(List<BotProtocol::Order>& orders);
@@ -47,6 +48,7 @@ private:
   String marketAdapterName;
   double balanceBase;
   double balanceComm;
+  bool simulation;
 
 private:
   bool_t createEntity(void_t* data, size_t size);

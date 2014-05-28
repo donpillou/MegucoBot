@@ -717,6 +717,19 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     session->sendRemoveAllEntities(BotProtocol::sessionLogMessage);
     session->sendRemoveAllEntities(BotProtocol::sessionMarker);
     break;
+  case BotProtocol::ControlSession::startLive:
+    if(!session->startLive())
+    {
+      sendErrorResponse(BotProtocol::controlEntity, requestId, &controlSession, "Could not start simulation session.");
+      return;
+    }
+    sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
+    {
+      BotProtocol::Session sessionEntity;
+      session->getEntity(sessionEntity);
+      session->sendUpdateEntity(&sessionEntity, sizeof(sessionEntity));
+    }
+    break;
   case BotProtocol::ControlSession::stop:
     if(!session->stop())
     {

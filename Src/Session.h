@@ -28,6 +28,7 @@ public:
   bool_t saveData();
 
   bool_t startSimulation();
+  bool_t startLive();
   bool_t stop();
 
   bool_t registerClient(ClientHandler& client, bool_t bot);

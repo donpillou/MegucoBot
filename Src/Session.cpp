@@ -164,6 +164,19 @@ bool_t Session::startSimulation()
   return true;
 }
 
+bool_t Session::startLive()
+{
+  if(pid != 0)
+    return false;
+  simulation = false;
+  pid = process.start(engine->getPath());
+  if(!pid)
+    return false;
+  serverHandler.registerSession(pid, *this);
+  state = BotProtocol::Session::starting;
+  return true;
+}
+
 bool_t Session::stop()
 {
   if(pid == 0)

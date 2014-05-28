@@ -50,6 +50,7 @@ bool_t BotConnection::connect(uint16_t port)
     marketAdapterName = BotProtocol::getString(response->marketAdapterName);
     balanceBase = response->balanceBase;
     balanceComm = response->balanceComm;
+    simulation = response->simulation != 0;
   }
 
   return true;

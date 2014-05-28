@@ -16,6 +16,7 @@
 #include "Tools/BotConnection.h"
 #include "Tools/DataConnection.h"
 #include "Tools/SimBroker.h"
+#include "Tools/LiveBroker.h"
 #include "Tools/TradeHandler.h"
 
 #ifdef BOT_BUYBOT
@@ -125,25 +126,25 @@ int_t main(int_t argc, char_t* argv[])
   }
 
   // create broker
-  bool simulation = true;
-  SimBroker simBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee);
+  Broker* broker = botConnection.isSimulation() ? (Broker*)new SimBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee) :
+    (Broker*)new LiveBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee);
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-    simBroker.loadTransaction(*i);
+    broker->loadTransaction(*i);
   for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-    simBroker.loadOrder(*i);
+    broker->loadOrder(*i);
   
   // create bot session
   BotFactory botFactory;
-  Bot::Session* session = botFactory.createSession(simBroker);
+  Bot::Session* session = botFactory.createSession(*broker);
   if(!session)
   {
     Console::errorf("error: Could not create bot session.");
     return -1;
   }
-  simBroker.setBotSession(*session);
+  broker->setBotSession(*session);
 
   // receive and handle trade data
-  DataConnectionHandler dataConnection(botConnection, simBroker, *session, simulation);
+  DataConnectionHandler dataConnection(botConnection, *broker, *session, botConnection.isSimulation());
   String marketAdapterName = botConnection.getMarketAdapterName();
   for(;;)
   {
@@ -157,9 +158,6 @@ int_t main(int_t argc, char_t* argv[])
         break;
     }
   }
-
-  // delete bot session
-  delete session;
 
   //for(int i = 0;; ++i)
   //{
