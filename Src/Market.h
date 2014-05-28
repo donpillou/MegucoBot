@@ -28,6 +28,7 @@ public:
   bool_t registerClient(ClientHandler& client, bool_t adapter);
   void_t unregisterClient(ClientHandler& client);
 
+  User& getUser() {return user;}
   uint32_t getId() const {return __id;}
   MarketAdapter* getMarketAdapter() const {return marketAdapter;}
   const String& getUserName() const {return userName;}

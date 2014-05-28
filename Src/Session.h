@@ -34,6 +34,7 @@ public:
   bool_t registerClient(ClientHandler& client, bool_t bot);
   void_t unregisterClient(ClientHandler& client);
 
+  User& getUser() {return user;}
   uint32_t getId() const {return __id;}
   const String& getName() const {return name;}
   BotEngine* getEngine() const {return engine;}
