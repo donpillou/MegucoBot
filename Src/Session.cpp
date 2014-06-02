@@ -188,11 +188,16 @@ bool_t Session::stop()
   {
     simulation = false;
 
-    // todo: restore backup of orders, transactions, log messages, and markers
+    // restore backup of orders, transactions, log messages, and markers
     backupTransactions.swap(transactions);
     backupOrders.swap(orders);
     backupMarkers.swap(markers);
     backupLogMessages.swap(logMessages);
+
+    backupTransactions.clear();
+    backupOrders.clear();
+    backupMarkers.clear();
+    backupLogMessages.clear();
   }
   state = BotProtocol::Session::stopped;
   return true;
