@@ -112,6 +112,16 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not retrieve market balance: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
+#ifdef BOT_TESTBOT
+  BotProtocol::Transaction transaction;
+  transaction.entityType = BotProtocol::sessionTransaction;
+  transaction.type = BotProtocol::Transaction::buy;
+  transaction.date = 89;
+  transaction.price = 300;
+  transaction.amount = 0.02;
+  transaction.fee = 0.05;
+  botConnection.createSessionTransaction(transaction);
+#endif
   List<BotProtocol::Transaction> transactions;
   if(!botConnection.getSessionTransactions(transactions))
   {
@@ -132,7 +142,7 @@ int_t main(int_t argc, char_t* argv[])
     broker->loadTransaction(*i);
   for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
     broker->loadOrder(*i);
-  
+
   // create bot session
   BotFactory botFactory;
   Bot::Session* session = botFactory.createSession(*broker);

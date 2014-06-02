@@ -38,6 +38,10 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
       BotProtocol::Transaction& transaction2 = transactions.front();
       if(transaction.amount != transaction2.amount)
         broker.warning("transaction update failed.");
+      broker.removeTransaction(transaction2.entityId);
+      broker.getTransactions(transactions);
+      if(transactions.size() != transactionCount - 1)
+        broker.warning("transaction remove failed.");
     }
     broker.warning("finished test.");
   }
