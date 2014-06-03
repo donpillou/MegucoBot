@@ -31,6 +31,7 @@ private:
     userState,
     botState,
     marketState,
+    marketHandlerState,
   };
 
 private:
@@ -50,6 +51,7 @@ private:
   void_t handleAuth(uint32_t requestId, BotProtocol::AuthRequest& authRequest);
   void_t handleRegisterBot(uint32_t requestId, BotProtocol::RegisterBotRequest& registerBotRequest);
   void_t handleRegisterMarket(uint32_t requestId, BotProtocol::RegisterMarketRequest& registerMarketRequest);
+  void_t handleRegisterMarketHandler(uint32_t requestId, BotProtocol::RegisterMarketHandlerRequest& registerMarketHandlerRequest);
 
   void_t handlePing(const byte_t* data, size_t size);
 

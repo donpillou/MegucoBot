@@ -38,15 +38,11 @@ bool_t BotConnection::connect(uint16_t port)
       error = BotProtocol::getString(errorResponse->errorMessage);
       return false;
     }
-    if(!(header.messageType == BotProtocol::registerMarketResponse && header.requestId == 0 && size >= sizeof(BotProtocol::RegisterBotResponse)))
+    if(!(header.messageType == BotProtocol::registerMarketResponse && header.requestId == 0))
     {
       error = "Could not receive register market response.";
       return false;
     }
-    BotProtocol::RegisterMarketResponse* registerMarketResponse = (BotProtocol::RegisterMarketResponse*)data;
-    userName = BotProtocol::getString(registerMarketResponse->userName);
-    key = BotProtocol::getString(registerMarketResponse->key);
-    secret = BotProtocol::getString(registerMarketResponse->secret);
   }
 
   return true;
@@ -136,30 +132,6 @@ bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t reques
   return true;
 }
 
-bool_t BotConnection::sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize)
-{
-  BotProtocol::Header header;
-  header.size = sizeof(header) + dataSize;
-  header.messageType = type;
-  header.requestId = requestId;
-  if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header))
-  {
-    error = Socket::getLastErrorString();
-    return false;
-  }
-  return true;
-}
-
-bool_t BotConnection::sendMessageData(const void_t* data, size_t size)
-{
-  if(socket.send((const byte_t*)data, size) != size)
-  {
-    error = Socket::getLastErrorString();
-    return false;
-  }
-  return true;
-}
-
 bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size)
 {
   if(socket.recv((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
@@ -184,22 +156,4 @@ bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data,
     }
   }
   return true;
-}
-
-bool_t BotConnection::sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity* entity, const String& errorMessage)
-{
-  BotProtocol::ErrorResponse errorResponse;
-  errorResponse.messageType = messageType;
-  if(entity)
-  {
-    errorResponse.entityType = entity->entityType;
-    errorResponse.entityId = entity->entityId;
-  }
-  else
-  {
-    errorResponse.entityType = BotProtocol::none;
-    errorResponse.entityId = 0;
-  }
-  BotProtocol::setString(errorResponse.errorMessage, errorMessage);
-  return sendMessage(BotProtocol::errorResponse, requestId, &errorResponse, sizeof(errorResponse));
 }

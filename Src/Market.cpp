@@ -15,14 +15,14 @@
 Market::Market(ServerHandler& serverHandler, User& user, uint32_t id, MarketAdapter& marketAdapter, const String& userName, const String& key, const String& secret) :
   serverHandler(serverHandler), user(user),
   __id(id), marketAdapter(&marketAdapter), userName(userName), key(key), secret(secret),
-  state(BotProtocol::Market::stopped), pid(0), adapterClient(0)
+  state(BotProtocol::Market::stopped), pid(0), handlerClient(0), entityClient(0)
 {
   Memory::zero(&balance, sizeof(balance));
 }
 
 Market::Market(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
-  state(BotProtocol::Market::stopped), pid(0), adapterClient(0)
+  state(BotProtocol::Market::stopped), pid(0), handlerClient(0), entityClient(0)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   __id = data.find("id")->toUInt();
@@ -38,8 +38,10 @@ Market::~Market()
   if(pid != 0)
     serverHandler.unregisterMarket(pid);
   process.kill();
-  if(adapterClient)
-    adapterClient->deselectMarket();
+  if(handlerClient)
+    handlerClient->deselectMarket();
+  if(entityClient)
+    entityClient->deselectMarket();
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->deselectMarket();
 }
@@ -77,27 +79,37 @@ bool_t Market::stop()
   return true;
 }
 
-bool_t Market::registerClient(ClientHandler& client, bool_t adapter)
+bool_t Market::registerClient(ClientHandler& client, ClientType type)
 {
-  if(adapter)
+  switch(type)
   {
-    if(adapterClient)
+  case handlerType:
+    if(handlerClient)
       return false;
-    adapterClient = &client;
+    handlerClient = &client;
     state = BotProtocol::Market::running;
-  }
-  else
+    break;
+  case entityType:
+    if(entityClient)
+      return false;
+    entityClient = &client;
+    break;
+  case userType:
     clients.append(&client);
+    break;
+  }
   return true;
 }
 
 void_t Market::unregisterClient(ClientHandler& client)
 {
-  if(&client == adapterClient)
+  if(&client == handlerClient)
   {
-    adapterClient = 0;
+    handlerClient = 0;
     state = BotProtocol::Market::stopped;
   }
+  else if(&client == entityClient)
+    entityClient = 0;
   else
     clients.remove(&client);
 }

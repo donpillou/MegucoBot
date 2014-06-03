@@ -33,7 +33,7 @@ ClientHandler::~ClientHandler()
   if(market)
   {
     market->unregisterClient(*this);
-    if(state == marketState)
+    if(state == marketHandlerState)
     {
       BotProtocol::Market marketEntity;
       market->getEntity(marketEntity);
@@ -102,6 +102,10 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& header, byte_t* d
       if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterMarketRequest))
         handleRegisterMarket(header.requestId, *(BotProtocol::RegisterMarketRequest*)data);
       break;
+    case BotProtocol::registerMarketHandlerRequest:
+      if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterMarketHandlerRequest))
+        handleRegisterMarketHandler(header.requestId, *(BotProtocol::RegisterMarketHandlerRequest*)data);
+      break;
     default:
       break;
     }
@@ -152,6 +156,12 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& header, byte_t* d
       if(size >= sizeof(BotProtocol::Entity))
         handleRemoveEntity(header.requestId, *(const BotProtocol::Entity*)data);
       break;
+    default:
+      break;
+    }
+  case marketHandlerState:
+    switch((BotProtocol::MessageType)header.messageType)
+    {
     case BotProtocol::createEntityResponse:
     case BotProtocol::updateEntityResponse:
     case BotProtocol::removeEntityResponse:
@@ -289,20 +299,41 @@ void_t ClientHandler::handleRegisterMarket(uint32_t requestId, BotProtocol::Regi
     sendErrorResponse(BotProtocol::registerMarketRequest, requestId, 0, "Unknown market.");
     return;
   }
-  if(!market->registerClient(*this, true))
+
+  if(!market->registerClient(*this, Market::entityType))
   {
     sendErrorResponse(BotProtocol::registerMarketRequest, requestId, 0, "Invalid market.");
     return;
   } 
 
-  BotProtocol::RegisterMarketResponse response;
+  this->market = market;
+  state = marketState;
+
+  sendMessage(BotProtocol::registerMarketResponse, requestId, 0, 0);
+}
+
+void_t ClientHandler::handleRegisterMarketHandler(uint32_t requestId, BotProtocol::RegisterMarketHandlerRequest& registerMarketHandlerRequest)
+{
+  Market* market = serverHandler.findMarketByPid(registerMarketHandlerRequest.pid);
+  if(!market)
+  {
+    sendErrorResponse(BotProtocol::registerMarketHandlerRequest, requestId, 0, "Unknown market.");
+    return;
+  }
+  if(!market->registerClient(*this, Market::handlerType))
+  {
+    sendErrorResponse(BotProtocol::registerMarketHandlerRequest, requestId, 0, "Invalid market.");
+    return;
+  } 
+
+  BotProtocol::RegisterMarketHandlerResponse response;
   BotProtocol::setString(response.userName, market->getUserName());
   BotProtocol::setString(response.key, market->getKey());
   BotProtocol::setString(response.secret, market->getSecret());
-  sendMessage(BotProtocol::registerMarketResponse, requestId, &response, sizeof(response));
+  sendMessage(BotProtocol::registerMarketHandlerResponse, requestId, &response, sizeof(response));
 
   this->market = market;
-  state = marketState;
+  state = marketHandlerState;
 
   BotProtocol::Market marketEntity;
   market->getEntity(marketEntity);
@@ -532,7 +563,7 @@ void_t ClientHandler::handleResponse(BotProtocol::MessageType messageType, uint3
 {
   switch(state)
   {
-  case marketState:
+  case marketHandlerState:
     if(requestId != 0)
     {
       uint32_t requesterRequestId;
@@ -613,7 +644,7 @@ void_t ClientHandler::handleUserControlMarket(uint32_t requestId, BotProtocol::C
   case BotProtocol::ControlMarket::select:
     if(this->market)
       this->market->unregisterClient(*this);
-    market->registerClient(*this, false);
+    market->registerClient(*this, Market::userType);
     this->market = market;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     sendRemoveAllEntities(BotProtocol::marketBalance);
@@ -635,14 +666,14 @@ void_t ClientHandler::handleUserControlMarket(uint32_t requestId, BotProtocol::C
   case BotProtocol::ControlMarket::refreshOrders:
   case BotProtocol::ControlMarket::refreshBalance:
     {
-      ClientHandler* adapterClient = market->getAdapaterClient();
-      if(!adapterClient)
+      ClientHandler* handlerClient = market->getHandlerClient();
+      if(!handlerClient)
       {
-        sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "Invalid market adapter.");
+        sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "No market handler.");
         return;
       }
-      uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *adapterClient);
-      adapterClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
+      uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+      handlerClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
     }
     break;
   }
@@ -856,14 +887,14 @@ void_t ClientHandler::handleBotControlMarket(uint32_t requestId, BotProtocol::Co
   case BotProtocol::ControlMarket::requestOrders:
   case BotProtocol::ControlMarket::requestBalance:
     {
-      ClientHandler* adapterClient = market->getAdapaterClient();
-      if(!adapterClient)
+      ClientHandler* handlerClient = market->getHandlerClient();
+      if(!handlerClient)
       {
-        sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "Invalid market adapter.");
+        sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, "No market handler.");
         return;
       }
-      uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *adapterClient);
-      adapterClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
+      uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+      handlerClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
     }
     break;
   default:
@@ -991,29 +1022,29 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotPr
 void_t ClientHandler::handleBotCreateMarketOrder(uint32_t requestId, BotProtocol::Order& createOrderArgs)
 {
   Market* market = session->getMarket();
-  ClientHandler* marketAdapter = market->getAdapaterClient();
-  if(!marketAdapter)
+  ClientHandler* handlerClient = market->getHandlerClient();
+  if(!handlerClient)
   {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "Invalid market adapter.");
+    sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "No market handler.");
     return;
   }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
-  marketAdapter->sendMessage(BotProtocol::createEntity, requesteeRequestId, &createOrderArgs, sizeof(createOrderArgs));
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &createOrderArgs, sizeof(createOrderArgs));
 }
 
 void_t ClientHandler::handleBotRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity)
 {
   Market* market = session->getMarket();
-  ClientHandler* marketAdapter = market->getAdapaterClient();
-  if(!marketAdapter)
+  ClientHandler* handlerClient = market->getHandlerClient();
+  if(!handlerClient)
   {
-    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Invalid market adapter.");
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "No market handler.");
     return;
   }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
-  marketAdapter->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
 }
 
 void_t ClientHandler::handleMarketUpdateMarketTransaction(uint32_t requestId, BotProtocol::Transaction& transaction)
@@ -1088,15 +1119,15 @@ void_t ClientHandler::handleUserCreateMarketOrder(uint32_t requestId, BotProtoco
     sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "Invalid market.");
     return;
   }
-  ClientHandler* marketAdapter = market->getAdapaterClient();
-  if(!marketAdapter)
+  ClientHandler* handlerClient = market->getHandlerClient();
+  if(!handlerClient)
   {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "Invalid market adapter.");
+    sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "No market handler.");
     return;
   }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
-  marketAdapter->sendMessage(BotProtocol::createEntity, requesteeRequestId, &createOrderArgs, sizeof(createOrderArgs));
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &createOrderArgs, sizeof(createOrderArgs));
 }
 
 void_t ClientHandler::handleUserUpdateMarketOrder(uint32_t requestId, BotProtocol::Order& order)
@@ -1106,15 +1137,15 @@ void_t ClientHandler::handleUserUpdateMarketOrder(uint32_t requestId, BotProtoco
     sendErrorResponse(BotProtocol::updateEntity, requestId, &order, "Invalid market.");
     return;
   }
-  ClientHandler* marketAdapter = market->getAdapaterClient();
-  if(!marketAdapter)
+  ClientHandler* handlerClient = market->getHandlerClient();
+  if(!handlerClient)
   {
-    sendErrorResponse(BotProtocol::updateEntity, requestId, &order, "Invalid market adapter.");
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &order, "No market handler.");
     return;
   }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
-  marketAdapter->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &order, sizeof(order));
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &order, sizeof(order));
 }
 
 void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity)
@@ -1124,15 +1155,15 @@ void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t requestId, const BotP
     sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Invalid market.");
     return;
   }
-  ClientHandler* marketAdapter = market->getAdapaterClient();
-  if(!marketAdapter)
+  ClientHandler* handlerClient = market->getHandlerClient();
+  if(!handlerClient)
   {
-    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Invalid market adapter.");
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "No market handler.");
     return;
   }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
-  marketAdapter->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)

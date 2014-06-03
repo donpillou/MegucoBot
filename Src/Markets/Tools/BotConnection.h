@@ -18,15 +18,6 @@ public:
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
 
-  const String& getUserName() const {return userName;}
-  const String& getKey() const {return key;}
-  const String& getSecret() const {return secret;}
-
-  bool_t sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size);
-  bool_t sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize);
-  bool_t sendMessageData(const void_t* data, size_t size);
-  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
-  bool_t sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity* entity, const String& errorMessage);
   bool_t sendEntity(const void_t* data, size_t size);
   bool_t removeEntity(uint32_t type, uint32_t id);
 
@@ -35,7 +26,7 @@ private:
   String error;
   Buffer recvBuffer;
 
-  String userName;
-  String key;
-  String secret;
+private:
+  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
+  bool_t sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size);
 };

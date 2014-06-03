@@ -15,6 +15,7 @@
 //#include <nstd/Error.h>
 
 #include "Tools/BotConnection.h"
+#include "Tools/HandlerConnection.h"
 
 #ifdef MARKET_BITSTAMPUSD
 #include "Markets/BitstampUsd.h"
@@ -36,10 +37,12 @@ public:
     if(market)
       return false;
 
-    if(!connection.connect(port))
+    if(!handlerConnection.connect(port))
+      return false;
+    if(!botConnection.connect(port))
       return false;
 
-    market = new MarketAdapter(connection.getUserName(), connection.getKey(), connection.getSecret());
+    market = new MarketAdapter(handlerConnection.getUserName(), handlerConnection.getKey(), handlerConnection.getSecret());
     return true;
   }
 
@@ -50,17 +53,24 @@ public:
     size_t size;
     for(;;)
     {
-      if(!connection.receiveMessage(header, data, size))
+      if(!handlerConnection.receiveMessage(header, data, size))
         return false;
       if(!handleMessage(header, data, size))
         return false;
     }
   }
 
-  const String& getErrorString() const {return connection.getErrorString();}
+  String getErrorString() const
+  {
+    String error = handlerConnection.getErrorString();
+    if(!error.isEmpty())
+      return error;
+    return botConnection.getErrorString();
+  }
 
 private:
-  BotConnection connection;
+  HandlerConnection handlerConnection;
+  BotConnection botConnection;
   Market* market;
 
   HashSet<uint32_t> orders;
@@ -152,49 +162,49 @@ private:
   {
     BotProtocol::Order order;
     if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
-      return connection.sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, market->getLastError());
+      return handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, market->getLastError());
 
-    if(!connection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
+    if(!handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
       return false;
-    return connection.sendEntity(&order, sizeof(order));
+    return botConnection.sendEntity(&order, sizeof(order));
   }
 
   bool_t handleUpdateOrder(uint32_t requestId, BotProtocol::Order& updateOrderArgs)
   {
     // step #1 cancel current order
     if(!market->cancelOrder(updateOrderArgs.entityId))
-      return connection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError());
+      return handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError());
 
     // step #2 create new order with same id
     BotProtocol::Order order;
     if(!market->createOrder(updateOrderArgs.entityId, (BotProtocol::Order::Type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, order))
     {
-      if(!connection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError()))
+      if(!handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError()))
         return false;
-      if(!connection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
+      if(!botConnection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
         return false;
       return true;
     }
-    if(!connection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updateOrderArgs, sizeof(BotProtocol::Entity)))
+    if(!handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updateOrderArgs, sizeof(BotProtocol::Entity)))
       return false;
-    return connection.sendEntity(&order, sizeof(order));
+    return botConnection.sendEntity(&order, sizeof(order));
   }
 
   bool_t handleRemoveOrder(uint32_t requestId, const BotProtocol::Entity& entity)
   {
     if(!market->cancelOrder(entity.entityId))
     {
-      if(!connection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, market->getLastError()))
+      if(!handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, market->getLastError()))
         return false;
       BotProtocol::Order order;
       if(market->getOrder(entity.entityId, order))
-        if(!connection.sendEntity(&order, sizeof(order)))
+        if(!botConnection.sendEntity(&order, sizeof(order)))
           return false;
       return true;
     }
-    if(!connection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity)))
+    if(!handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity)))
       return false;
-    return connection.removeEntity(BotProtocol::marketOrder, entity.entityId);
+    return botConnection.removeEntity(BotProtocol::marketOrder, entity.entityId);
   }
 
   bool_t handleControlMarket(uint32_t requestId, BotProtocol::ControlMarket& controlMarket)
@@ -210,20 +220,20 @@ private:
       {
         List<BotProtocol::Order> orders;
         if(!market->loadOrders(orders))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!connection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
+        if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
         HashSet<uint32_t> ordersToRemove;
         ordersToRemove.swap(this->orders);
         for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         {
           this->orders.append(i->entityId);
-          if(!connection.sendEntity(&*i, sizeof(BotProtocol::Order)))
+          if(!botConnection.sendEntity(&*i, sizeof(BotProtocol::Order)))
             return false;
           ordersToRemove.remove(i->entityId);
         }
         for(HashSet<uint32_t>::Iterator i = ordersToRemove.begin(), end = ordersToRemove.end(); i != end; ++i)
-          if(!connection.removeEntity(BotProtocol::marketOrder, *i))
+          if(!botConnection.removeEntity(BotProtocol::marketOrder, *i))
             return false;
       }
       break;
@@ -231,20 +241,20 @@ private:
       {
         List<BotProtocol::Transaction> transactions;
         if(!market->loadTransactions(transactions))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!connection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
+        if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
         HashSet<uint32_t> transactionsToRemove;
         transactionsToRemove.swap(this->transactions);
         for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         {
           this->transactions.append(i->entityId);
-          if(!connection.sendEntity(&*i, sizeof(BotProtocol::Transaction)))
+          if(!botConnection.sendEntity(&*i, sizeof(BotProtocol::Transaction)))
             return false;
           transactionsToRemove.remove(i->entityId);
         }
         for(HashSet<uint32_t>::Iterator i = transactionsToRemove.begin(), end = transactionsToRemove.end(); i != end; ++i)
-          if(!connection.removeEntity(BotProtocol::marketTransaction, *i))
+          if(!botConnection.removeEntity(BotProtocol::marketTransaction, *i))
             return false;
       }
       break;
@@ -252,10 +262,10 @@ private:
       {
         BotProtocol::MarketBalance balance;
         if(!market->loadBalance(balance))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!connection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
+        if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
-        if(!connection.sendEntity(&balance, sizeof(balance)))
+        if(!botConnection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
       break;
@@ -263,13 +273,13 @@ private:
       {
         BotProtocol::MarketBalance balance;
         if(!market->loadBalance(balance))
-          return connection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
+          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
         size_t dataSize = sizeof(response) + sizeof(balance);
-        if(!connection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
-           !connection.sendMessageData(&response, sizeof(response)) ||
-           !connection.sendMessageData(&balance, sizeof(balance)))
+        if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
+           !handlerConnection.sendMessageData(&response, sizeof(response)) ||
+           !handlerConnection.sendMessageData(&balance, sizeof(balance)))
           return false;
-        if(!connection.sendEntity(&balance, sizeof(balance)))
+        if(!botConnection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
       break;

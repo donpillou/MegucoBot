@@ -19,6 +19,8 @@ public:
     registerBotResponse,
     registerMarketRequest,
     registerMarketResponse,
+    registerMarketHandlerRequest,
+    registerMarketHandlerResponse,
     updateEntity,
     updateEntityResponse,
     removeEntity,
@@ -96,7 +98,12 @@ public:
     uint32_t pid;
   };
 
-  struct RegisterMarketResponse
+  struct RegisterMarketHandlerRequest
+  {
+    uint32_t pid;
+  };
+
+  struct RegisterMarketHandlerResponse
   {
     char_t userName[33];
     char_t key[65];
