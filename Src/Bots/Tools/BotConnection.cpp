@@ -132,6 +132,11 @@ bool_t BotConnection::createSessionOrder(BotProtocol::Order& order)
   return createEntity(&order, sizeof(order));
 }
 
+bool_t BotConnection::updateSessionOrder(BotProtocol::Order& order)
+{
+  return updateEntity(&order, sizeof(order));
+}
+
 bool_t BotConnection::removeSessionOrder(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionOrder, id);
@@ -238,7 +243,7 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
       return false;
     }
     BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
-    if(!(header.messageType == BotProtocol::removeEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::removeEntity) &&
+    if(!(header.messageType == BotProtocol::removeEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
          entity->entityType == type && entity->entityId == id))
     {
       error = "Could not receive remove entity response.";

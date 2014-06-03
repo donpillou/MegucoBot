@@ -74,11 +74,15 @@ private:
   void_t handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleBotCreateSessionOrder(uint32_t requestId, BotProtocol::Order& order);
+  void_t handleBotUpdateSessionOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleBotRemoveSessionOrder(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleBotCreateSessionMarker(uint32_t requestId, BotProtocol::Marker& marker);
 
   void_t handleBotCreateSessionLogMessage(uint32_t requestId, BotProtocol::SessionLogMessage& logMessage);
+
+  void_t handleBotCreateMarketOrder(uint32_t requestId, BotProtocol::Order& order);
+  void_t handleBotRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleMarketUpdateMarketTransaction(uint32_t requestId, BotProtocol::Transaction& transaction);
   void_t handleMarketRemoveMarketTransaction(uint32_t requestId, const BotProtocol::Entity& entity);

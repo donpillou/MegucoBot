@@ -369,6 +369,9 @@ void_t ClientHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Order))
         handleBotCreateSessionLogMessage(requestId, *(BotProtocol::SessionLogMessage*)&entity);
       break;
+    case BotProtocol::marketOrder:
+      if(size >= sizeof(BotProtocol::Order))
+        handleBotCreateMarketOrder(requestId, *(BotProtocol::Order*)&entity);
     default:
       break;
     }
@@ -406,6 +409,9 @@ void_t ClientHandler::handleRemoveEntity(uint32_t requestId, const BotProtocol::
       break;
     case BotProtocol::sessionOrder:
       handleBotRemoveSessionOrder(requestId, entity);
+      break;
+    case BotProtocol::marketOrder:
+      handleBotRemoveMarketOrder(requestId, entity);
       break;
     default:
       break;
@@ -508,6 +514,10 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
     case BotProtocol::sessionTransaction:
       if(size >= sizeof(BotProtocol::Transaction))
         handleBotUpdateSessionTransaction(requestId, *(BotProtocol::Transaction*)&entity);
+      break;
+    case BotProtocol::sessionOrder:
+      if(size >= sizeof(BotProtocol::Order))
+        handleBotUpdateSessionOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
     default:
       break;
@@ -888,7 +898,6 @@ void_t ClientHandler::handleBotUpdateSessionTransaction(uint32_t requestId, BotP
 
   session->sendUpdateEntity(&transaction, sizeof(transaction));
   session->saveData();
-
 }
 
 void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity)
@@ -917,6 +926,20 @@ void_t ClientHandler::handleBotCreateSessionOrder(uint32_t requestId, BotProtoco
   sendMessage(BotProtocol::createEntityResponse, requestId, order, sizeof(*order));
 
   session->sendUpdateEntity(order, sizeof(BotProtocol::Order));
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotUpdateSessionOrder(uint32_t requestId, BotProtocol::Order& order)
+{
+  if(!session->updateOrder(order))
+  {
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &order, "Could not update session order.");
+    return;
+  }
+
+  sendMessage(BotProtocol::updateEntityResponse, requestId, &order, sizeof(BotProtocol::Entity));
+
+  session->sendUpdateEntity(&order, sizeof(order));
   session->saveData();
 }
 
@@ -963,6 +986,34 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotPr
 
   session->sendUpdateEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
   session->saveData();
+}
+
+void_t ClientHandler::handleBotCreateMarketOrder(uint32_t requestId, BotProtocol::Order& createOrderArgs)
+{
+  Market* market = session->getMarket();
+  ClientHandler* marketAdapter = market->getAdapaterClient();
+  if(!marketAdapter)
+  {
+    sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "Invalid market adapter.");
+    return;
+  }
+
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
+  marketAdapter->sendMessage(BotProtocol::createEntity, requesteeRequestId, &createOrderArgs, sizeof(createOrderArgs));
+}
+
+void_t ClientHandler::handleBotRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity)
+{
+  Market* market = session->getMarket();
+  ClientHandler* marketAdapter = market->getAdapaterClient();
+  if(!marketAdapter)
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Invalid market adapter.");
+    return;
+  }
+
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *marketAdapter);
+  marketAdapter->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
 }
 
 void_t ClientHandler::handleMarketUpdateMarketTransaction(uint32_t requestId, BotProtocol::Transaction& transaction)

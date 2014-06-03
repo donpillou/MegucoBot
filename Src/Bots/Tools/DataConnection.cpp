@@ -199,7 +199,8 @@ bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTrade
   }
   else
   {
-    subscribeRequest->maxAge = 24ULL * 60ULL * 60ULL * 1000ULL * 7ULL;
+    //subscribeRequest->maxAge = 24ULL * 60ULL * 60ULL * 1000ULL * 7ULL;
+    subscribeRequest->maxAge = 60ULL * 60ULL * 1000ULL;
     subscribeRequest->sinceId =  0;
   }
   if(socket.send(message, sizeof(message)) != sizeof(message))

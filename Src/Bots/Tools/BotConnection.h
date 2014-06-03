@@ -35,6 +35,7 @@ public:
   bool_t updateSessionTransaction(const BotProtocol::Transaction& transaction);
   bool_t removeSessionTransaction(uint32_t id);
   bool_t createSessionOrder(BotProtocol::Order& order);
+  bool_t updateSessionOrder(BotProtocol::Order& order);
   bool_t removeSessionOrder(uint32_t id);
   bool_t createSessionMarker(BotProtocol::Marker& marker);
   bool_t removeSessionMarker(uint32_t id);

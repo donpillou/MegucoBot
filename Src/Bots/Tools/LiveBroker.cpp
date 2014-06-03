@@ -139,13 +139,13 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)
   order.type = BotProtocol::Order::buy;
   order.price = price;
   order.amount = amount;
+  order.timeout = time + timeout;
   if(!botConnection.createMarketOrder(order))
     return false;
   double charge = order.price * order.amount + order.fee; 
 
   order.entityType = BotProtocol::sessionOrder;
-  order.timeout = time + timeout;
-  botConnection.createSessionOrder(order);
+  botConnection.updateSessionOrder(order);
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;
@@ -168,12 +168,12 @@ bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
   order.type = BotProtocol::Order::sell;
   order.price = price;
   order.amount = amount;
+  order.timeout = time + timeout;
   if(!botConnection.createMarketOrder(order))
     return false;
 
   order.entityType = BotProtocol::sessionOrder;
-  order.timeout = time + timeout;
-  botConnection.createSessionOrder(order);
+  botConnection.updateSessionOrder(order);
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;

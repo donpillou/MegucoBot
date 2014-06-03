@@ -49,6 +49,7 @@ public:
   bool_t deleteTransaction(uint32_t id);
 
   BotProtocol::Order* createOrder(double price, double amount, double fee, BotProtocol::Order::Type type);
+  BotProtocol::Order* updateOrder(BotProtocol::Order& order);
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 

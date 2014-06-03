@@ -274,6 +274,11 @@ BotProtocol::Order* Session::createOrder(double price, double amount, double fee
   return &orders.append(order.entityId, order);
 }
 
+BotProtocol::Order* Session::updateOrder(BotProtocol::Order& order)
+{
+  return &orders.append(order.entityId, order);
+}
+
 bool_t Session::deleteOrder(uint32_t id)
 {
   HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(id);
