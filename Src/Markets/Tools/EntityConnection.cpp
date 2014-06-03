@@ -2,9 +2,9 @@
 #include <nstd/Process.h>
 #include <nstd/Debug.h>
 
-#include "BotConnection.h"
+#include "EntityConnection.h"
 
-bool_t BotConnection::connect(uint16_t port)
+bool_t EntityConnection::connect(uint16_t port)
 {
   close();
 
@@ -48,7 +48,7 @@ bool_t BotConnection::connect(uint16_t port)
   return true;
 }
 
-bool_t BotConnection::sendEntity(const void_t* data, size_t size)
+bool_t EntityConnection::sendEntity(const void_t* data, size_t size)
 {
   ASSERT(size >= sizeof(BotProtocol::Entity));
   BotProtocol::EntityType entityType = (BotProtocol::EntityType)((BotProtocol::Entity*)data)->entityType;
@@ -81,7 +81,7 @@ bool_t BotConnection::sendEntity(const void_t* data, size_t size)
   return true;
 }
 
-bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
+bool_t EntityConnection::removeEntity(uint32_t type, uint32_t id)
 {
   // send remove entity message
   {
@@ -117,7 +117,7 @@ bool_t BotConnection::removeEntity(uint32_t type, uint32_t id)
   return true;
 }
 
-bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)
+bool_t EntityConnection::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)
 {
   BotProtocol::Header header;
   header.size = sizeof(header) + size;
@@ -132,7 +132,7 @@ bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t reques
   return true;
 }
 
-bool_t BotConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size)
+bool_t EntityConnection::receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size)
 {
   if(socket.recv((byte_t*)&header, sizeof(header), sizeof(header)) != sizeof(header))
   {

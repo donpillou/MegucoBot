@@ -14,7 +14,7 @@
 #include <nstd/HashSet.h>
 //#include <nstd/Error.h>
 
-#include "Tools/BotConnection.h"
+#include "Tools/EntityConnection.h"
 #include "Tools/HandlerConnection.h"
 
 #ifdef MARKET_BITSTAMPUSD
@@ -39,7 +39,7 @@ public:
 
     if(!handlerConnection.connect(port))
       return false;
-    if(!botConnection.connect(port))
+    if(!entityConnection.connect(port))
       return false;
 
     market = new MarketAdapter(handlerConnection.getUserName(), handlerConnection.getKey(), handlerConnection.getSecret());
@@ -65,12 +65,12 @@ public:
     String error = handlerConnection.getErrorString();
     if(!error.isEmpty())
       return error;
-    return botConnection.getErrorString();
+    return entityConnection.getErrorString();
   }
 
 private:
   HandlerConnection handlerConnection;
-  BotConnection botConnection;
+  EntityConnection entityConnection;
   Market* market;
 
   HashSet<uint32_t> orders;
@@ -166,7 +166,7 @@ private:
 
     if(!handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
       return false;
-    return botConnection.sendEntity(&order, sizeof(order));
+    return entityConnection.sendEntity(&order, sizeof(order));
   }
 
   bool_t handleUpdateOrder(uint32_t requestId, BotProtocol::Order& updateOrderArgs)
@@ -181,13 +181,13 @@ private:
     {
       if(!handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError()))
         return false;
-      if(!botConnection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
+      if(!entityConnection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
         return false;
       return true;
     }
     if(!handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updateOrderArgs, sizeof(BotProtocol::Entity)))
       return false;
-    return botConnection.sendEntity(&order, sizeof(order));
+    return entityConnection.sendEntity(&order, sizeof(order));
   }
 
   bool_t handleRemoveOrder(uint32_t requestId, const BotProtocol::Entity& entity)
@@ -198,13 +198,13 @@ private:
         return false;
       BotProtocol::Order order;
       if(market->getOrder(entity.entityId, order))
-        if(!botConnection.sendEntity(&order, sizeof(order)))
+        if(!entityConnection.sendEntity(&order, sizeof(order)))
           return false;
       return true;
     }
     if(!handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity)))
       return false;
-    return botConnection.removeEntity(BotProtocol::marketOrder, entity.entityId);
+    return entityConnection.removeEntity(BotProtocol::marketOrder, entity.entityId);
   }
 
   bool_t handleControlMarket(uint32_t requestId, BotProtocol::ControlMarket& controlMarket)
@@ -228,12 +228,12 @@ private:
         for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         {
           this->orders.append(i->entityId);
-          if(!botConnection.sendEntity(&*i, sizeof(BotProtocol::Order)))
+          if(!entityConnection.sendEntity(&*i, sizeof(BotProtocol::Order)))
             return false;
           ordersToRemove.remove(i->entityId);
         }
         for(HashSet<uint32_t>::Iterator i = ordersToRemove.begin(), end = ordersToRemove.end(); i != end; ++i)
-          if(!botConnection.removeEntity(BotProtocol::marketOrder, *i))
+          if(!entityConnection.removeEntity(BotProtocol::marketOrder, *i))
             return false;
       }
       break;
@@ -249,12 +249,12 @@ private:
         for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         {
           this->transactions.append(i->entityId);
-          if(!botConnection.sendEntity(&*i, sizeof(BotProtocol::Transaction)))
+          if(!entityConnection.sendEntity(&*i, sizeof(BotProtocol::Transaction)))
             return false;
           transactionsToRemove.remove(i->entityId);
         }
         for(HashSet<uint32_t>::Iterator i = transactionsToRemove.begin(), end = transactionsToRemove.end(); i != end; ++i)
-          if(!botConnection.removeEntity(BotProtocol::marketTransaction, *i))
+          if(!entityConnection.removeEntity(BotProtocol::marketTransaction, *i))
             return false;
       }
       break;
@@ -265,7 +265,7 @@ private:
           return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
         if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
-        if(!botConnection.sendEntity(&balance, sizeof(balance)))
+        if(!entityConnection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
       break;
@@ -279,7 +279,7 @@ private:
            !handlerConnection.sendMessageData(&response, sizeof(response)) ||
            !handlerConnection.sendMessageData(&balance, sizeof(balance)))
           return false;
-        if(!botConnection.sendEntity(&balance, sizeof(balance)))
+        if(!entityConnection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
       break;

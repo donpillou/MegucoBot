@@ -8,10 +8,10 @@
 #include "Tools/Socket.h"
 #include "BotProtocol.h"
 
-class BotConnection
+class EntityConnection
 {
 public:
-  BotConnection() {}
+  EntityConnection() {}
 
   bool_t connect(uint16_t port);
   void_t close() {socket.close();}
