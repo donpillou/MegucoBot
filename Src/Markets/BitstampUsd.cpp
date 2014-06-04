@@ -28,7 +28,7 @@ bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type t
   if(!loadBalanceAndFee())
     return false;
 
-  bool buy = type == BotProtocol::Order::Type::buy;
+  bool buy = type == BotProtocol::Order::buy;
   double maxAmount = Math::abs(buy ? getMaxBuyAmout(price) : getMaxSellAmout());
   if(Math::abs(amount) > maxAmount)
     amount = maxAmount;

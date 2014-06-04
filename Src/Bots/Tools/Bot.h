@@ -10,7 +10,7 @@
 class Bot
 {
 public:
-  enum class Regressions
+  enum Regressions
   {
     regression1m,
     regression3m,
@@ -28,7 +28,7 @@ public:
     numOfRegressions,
   };
 
-  enum class BellRegressions
+  enum BellRegressions
   {
     bellRegression1m,
     bellRegression3m,
@@ -50,8 +50,8 @@ public:
       double incline; // b
       double average;
     };
-    RegressionLine regressions[(int)Regressions::numOfRegressions];
-    RegressionLine bellRegressions[(int)BellRegressions::numOfBellRegressions];
+    RegressionLine regressions[(int)numOfRegressions];
+    RegressionLine bellRegressions[(int)numOfBellRegressions];
   };
 
   class Broker

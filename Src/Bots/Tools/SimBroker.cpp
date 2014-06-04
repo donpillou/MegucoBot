@@ -24,7 +24,7 @@ void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
 {
   time = trade.time;
 
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != openOrders.end(); i = next)
+  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
     next = i;
     ++next;

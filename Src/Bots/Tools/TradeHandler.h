@@ -18,7 +18,7 @@ public:
     bool updateValues = tradeAge == 0;
     uint64_t time = trade.time / 1000ULL;
     uint64_t depths[] = {1 * 60, 3 * 60, 5 * 60, 10 * 60, 15 * 60, 20 * 60, 30 * 60, 1 * 60 * 60, 2 * 60 * 60, 4 * 60 * 60, 6 * 60 * 60, 12 * 60 * 60, 24 * 60 * 60};
-    for(int i = 0; i < (int)Bot::Regressions::numOfRegressions; ++i)
+    for(int i = 0; i < (int)Bot::numOfRegressions; ++i)
     {
       if(tradeAgeSecs <= depths[i])
       {
@@ -32,7 +32,7 @@ public:
       }
     }
 
-    for(int i = 0; i < (int)Bot::BellRegressions::numOfBellRegressions; ++i)
+    for(int i = 0; i < (int)Bot::numOfBellRegressions; ++i)
     {
       if(tradeAgeSecs <= depths[i] * 3ULL)
       {
@@ -288,6 +288,6 @@ private:
     double sumN;
   };
 
-  Averager averager[(int)Bot::Regressions::numOfRegressions];
-  BellAverager bellAverager[(int)Bot::BellRegressions::numOfBellRegressions];
+  Averager averager[(int)Bot::numOfRegressions];
+  BellAverager bellAverager[(int)Bot::numOfBellRegressions];
 };

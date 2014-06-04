@@ -676,6 +676,8 @@ void_t ClientHandler::handleUserControlMarket(uint32_t requestId, BotProtocol::C
       handlerClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
     }
     break;
+  default:
+    break;
   }
 }
 
@@ -827,6 +829,8 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionLogMessage));
     }
+    break;
+  default:
     break;
   }
 }

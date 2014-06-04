@@ -124,7 +124,7 @@ bool_t BotConnection::sendMessage(BotProtocol::MessageType type, uint32_t reques
   header.messageType = type;
   header.requestId = requestId;
   if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header) ||
-     (size > 0 && socket.send((const byte_t*)data, size) != size))
+     (size > 0 && socket.send((const byte_t*)data, size) != (ssize_t)size))
   {
     error = Socket::getLastErrorString();
     return false;

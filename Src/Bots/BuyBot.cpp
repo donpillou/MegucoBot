@@ -181,7 +181,7 @@ void BuyBot::Session::handleSell(const BotProtocol::Transaction& transaction)
 
 bool BuyBot::Session::isGoodBuy(const Values& values)
 {
-  for(int i = 0; i < (int)BellRegressions::bellRegression2h; ++i)
+  for(int i = 0; i < (int)bellRegression2h; ++i)
     if(values.bellRegressions[i].incline > 0.)
       return false; // price is not falling enough
   return true;
@@ -189,7 +189,7 @@ bool BuyBot::Session::isGoodBuy(const Values& values)
 
 bool BuyBot::Session::isVeryGoodBuy(const Values& values)
 {
-  for(int i = 0; i < (int)Regressions::regression24h; ++i)
+  for(int i = 0; i < (int)regression24h; ++i)
     if(values.regressions[i].incline > 0.)
       return false; // price is not falling enough
   return true;
@@ -197,7 +197,7 @@ bool BuyBot::Session::isVeryGoodBuy(const Values& values)
 
 bool BuyBot::Session::isGoodSell(const Values& values)
 {
-  for(int i = 0; i < (int)BellRegressions::bellRegression2h; ++i)
+  for(int i = 0; i < (int)bellRegression2h; ++i)
     if(values.bellRegressions[i].incline < 0.)
       return false; // price is not rising enough
   return true;
@@ -205,7 +205,7 @@ bool BuyBot::Session::isGoodSell(const Values& values)
 
 bool BuyBot::Session::isVeryGoodSell(const Values& values)
 {
-  for(int i = 0; i < (int)Regressions::regression24h; ++i)
+  for(int i = 0; i < (int)regression24h; ++i)
     if(values.regressions[i].incline < 0.)
       return false; // price is not rising enough
   return true;

@@ -59,7 +59,7 @@ bool_t HandlerConnection::sendMessage(BotProtocol::MessageType type, uint32_t re
   header.messageType = type;
   header.requestId = requestId;
   if(socket.send((const byte_t*)&header, sizeof(header)) != sizeof(header) ||
-     (size > 0 && socket.send((const byte_t*)data, size) != size))
+     (size > 0 && socket.send((const byte_t*)data, size) != (ssize_t)size))
   {
     error = Socket::getLastErrorString();
     return false;
@@ -109,7 +109,7 @@ bool_t HandlerConnection::sendMessageHeader(BotProtocol::MessageType type, uint3
 
 bool_t HandlerConnection::sendMessageData(const void_t* data, size_t size)
 {
-  if(socket.send((const byte_t*)data, size) != size)
+  if(socket.send((const byte_t*)data, size) != (ssize_t)size)
   {
     error = Socket::getLastErrorString();
     return false;
