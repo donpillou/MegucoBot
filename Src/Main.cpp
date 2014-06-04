@@ -107,7 +107,11 @@ int_t main(int_t argc, char_t* argv[])
   server.setListener(&serverHandler);
 
   // load market list
+#ifdef _WIN32
   serverHandler.addMarketAdapter("Bitstamp/USD", "BitstampUsd.exe", "USD", "BTC");
+#else
+  serverHandler.addMarketAdapter("Bitstamp/USD", "BitstampUsd", "USD", "BTC");
+#endif
 
   // load bot engine list
   {
