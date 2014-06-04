@@ -163,6 +163,7 @@ private:
     BotProtocol::Order order;
     if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
       return handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, market->getLastError());
+    order.timeout = createOrderArgs.timeout;
 
     if(!handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
       return false;
@@ -185,6 +186,7 @@ private:
         return false;
       return true;
     }
+    order.timeout = updateOrderArgs.timeout;
     if(!handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updateOrderArgs, sizeof(BotProtocol::Entity)))
       return false;
     return botConnection.sendEntity(&order, sizeof(order));

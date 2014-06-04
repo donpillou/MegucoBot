@@ -904,7 +904,7 @@ void_t ClientHandler::handleBotControlMarket(uint32_t requestId, BotProtocol::Co
 
 void_t ClientHandler::handleBotCreateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& createTransactionArgs)
 {
-  BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs.price, createTransactionArgs.amount, createTransactionArgs.fee, (BotProtocol::Transaction::Type)createTransactionArgs.type);
+  BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs);
   if(!transaction)
   {
     sendErrorResponse(BotProtocol::createEntity, requestId, &createTransactionArgs, "Could not create session transaction.");
@@ -947,7 +947,7 @@ void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t requestId, cons
 
 void_t ClientHandler::handleBotCreateSessionOrder(uint32_t requestId, BotProtocol::Order& createOrderArgs)
 {
-  BotProtocol::Order* order = session->createOrder(createOrderArgs.price, createOrderArgs.amount, createOrderArgs.fee, (BotProtocol::Order::Type)createOrderArgs.type);
+  BotProtocol::Order* order = session->createOrder(createOrderArgs);
   if(!order)
   {
     sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "Could not create session order.");
@@ -990,7 +990,7 @@ void_t ClientHandler::handleBotRemoveSessionOrder(uint32_t requestId, const BotP
 
 void_t ClientHandler::handleBotCreateSessionMarker(uint32_t requestId, BotProtocol::Marker& markerArgs)
 {
-  BotProtocol::Marker* marker = session->createMarker((BotProtocol::Marker::Type)markerArgs.type, markerArgs.date);
+  BotProtocol::Marker* marker = session->createMarker(markerArgs);
   if(!marker)
   {
     sendErrorResponse(BotProtocol::createEntity, requestId, &markerArgs, "Could not create session marker.");
@@ -1005,8 +1005,7 @@ void_t ClientHandler::handleBotCreateSessionMarker(uint32_t requestId, BotProtoc
 
 void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotProtocol::SessionLogMessage& logMessageArgs)
 {
-  String message = BotProtocol::getString(logMessageArgs.message);
-  BotProtocol::SessionLogMessage* logMessage = session->addLogMessage(logMessageArgs.date, message);
+  BotProtocol::SessionLogMessage* logMessage = session->addLogMessage(logMessageArgs);
   if(!logMessage)
   {
     sendErrorResponse(BotProtocol::createEntity, requestId, &logMessageArgs, "Could not add session log message.");

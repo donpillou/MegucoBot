@@ -234,20 +234,16 @@ void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) cons
   balanceComm = this->balanceComm;
 }
 
-BotProtocol::Transaction* Session::createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type)
+BotProtocol::Transaction* Session::createTransaction(const BotProtocol::Transaction& transaction)
 {
-  BotProtocol::Transaction transaction;
-  transaction.entityType = BotProtocol::sessionTransaction;
-  transaction.entityId = nextEntityId++;
-  transaction.type = type;
-  transaction.date = Time::time();
-  transaction.price = price;
-  transaction.amount = amount;
-  transaction.fee = fee;
-  return &transactions.append(transaction.entityId, transaction);
+  uint32_t entityId = nextEntityId++;
+  BotProtocol::Transaction& result = transactions.append(entityId, transaction);
+  result.entityId = entityId;
+  result.date = Time::time();
+  return &result;
 }
 
-BotProtocol::Transaction* Session::updateTransaction(BotProtocol::Transaction& transaction)
+BotProtocol::Transaction* Session::updateTransaction(const BotProtocol::Transaction& transaction)
 {
   return &transactions.append(transaction.entityId, transaction);
 }
@@ -261,20 +257,16 @@ bool_t Session::deleteTransaction(uint32_t id)
   return true;
 }
 
-BotProtocol::Order* Session::createOrder(double price, double amount, double fee, BotProtocol::Order::Type type)
+BotProtocol::Order* Session::createOrder(const BotProtocol::Order& order)
 {
-  BotProtocol::Order order;
-  order.entityType = BotProtocol::sessionOrder;
-  order.entityId = nextEntityId++;
-  order.type = type;
-  order.date = Time::time();
-  order.price = price;
-  order.amount = amount;
-  order.fee = fee;
-  return &orders.append(order.entityId, order);
+  uint32_t entityId = nextEntityId++;
+  BotProtocol::Order& result = orders.append(entityId, order);
+  result.entityId = entityId;
+  result.date = Time::time();
+  return &result;
 }
 
-BotProtocol::Order* Session::updateOrder(BotProtocol::Order& order)
+BotProtocol::Order* Session::updateOrder(const BotProtocol::Order& order)
 {
   return &orders.append(order.entityId, order);
 }
@@ -288,24 +280,18 @@ bool_t Session::deleteOrder(uint32_t id)
   return true;
 }
 
-BotProtocol::Marker* Session::createMarker(BotProtocol::Marker::Type type, timestamp_t date)
+BotProtocol::Marker* Session::createMarker(const BotProtocol::Marker& marker)
 {
-  BotProtocol::Marker marker;
-  marker.entityType = BotProtocol::sessionMarker;
-  marker.entityId = nextEntityId++;
-  marker.type = type;
-  marker.date = date;
-  return &markers.append(marker.entityId, marker);
+  uint32_t entityId = nextEntityId++;
+  BotProtocol::Marker& result = markers.append(entityId, marker);
+  result.entityId = entityId;
+  return &result;
 }
 
-BotProtocol::SessionLogMessage* Session::addLogMessage(timestamp_t date, const String& message)
+BotProtocol::SessionLogMessage* Session::addLogMessage(const BotProtocol::SessionLogMessage& logMessage)
 {
-  BotProtocol::SessionLogMessage logMessage;
-  logMessage.entityType = BotProtocol::sessionLogMessage;
-  logMessage.entityId = 0;
-  logMessage.date = date;
-  BotProtocol::setString(logMessage.message, message);
   BotProtocol::SessionLogMessage* result = &logMessages.append(logMessage);
+  result->entityId = 0;
   while(logMessages.size() > 100)
     logMessages.removeFront();
   return result;

@@ -1,4 +1,5 @@
 
+#include <nstd/Debug.h>
 #include <nstd/Time.h>
 #include <nstd/Math.h>
 
@@ -104,8 +105,10 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
   order.amount = amount;
   order.price = price;
   order.fee = fee;
-  order.timeout = time + timeout;
+  timestamp_t orderTimeout = time + timeout;;
+  order.timeout = orderTimeout;
   botConnection.createSessionOrder(order);
+  ASSERT(order.timeout == orderTimeout);
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;
@@ -130,8 +133,10 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
   order.amount = amount;
   order.price = price;
   order.fee = Math::ceil(amount * price * this->fee * 100.) / 100.;
-  order.timeout = time + timeout;
+  timestamp_t orderTimeout = time + timeout;
+  order.timeout = orderTimeout;
   botConnection.createSessionOrder(order);
+  ASSERT(order.timeout == orderTimeout);
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;

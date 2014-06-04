@@ -43,20 +43,20 @@ public:
   bool isSimulation() const {return simulation;}
   void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
 
-  BotProtocol::Transaction* createTransaction(double price, double amount, double fee, BotProtocol::Transaction::Type type);
-  BotProtocol::Transaction* updateTransaction(BotProtocol::Transaction& transaction);
+  BotProtocol::Transaction* createTransaction(const BotProtocol::Transaction& transaction);
+  BotProtocol::Transaction* updateTransaction(const BotProtocol::Transaction& transaction);
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
-  BotProtocol::Order* createOrder(double price, double amount, double fee, BotProtocol::Order::Type type);
-  BotProtocol::Order* updateOrder(BotProtocol::Order& order);
+  BotProtocol::Order* createOrder(const BotProtocol::Order& order);
+  BotProtocol::Order* updateOrder(const BotProtocol::Order& order);
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
-  BotProtocol::Marker* createMarker(BotProtocol::Marker::Type type, timestamp_t date);
+  BotProtocol::Marker* createMarker(const BotProtocol::Marker& marker);
   const HashMap<uint32_t, BotProtocol::Marker>& getMarkers() const {return markers;}
 
-  BotProtocol::SessionLogMessage* addLogMessage(timestamp_t date, const String& message);
+  BotProtocol::SessionLogMessage* addLogMessage(const BotProtocol::SessionLogMessage& logMessage);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
 
   void_t getEntity(BotProtocol::Session& session) const;
