@@ -9,11 +9,20 @@
 #include "User.h"
 #include "Market.h"
 
-Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm) :
+Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double initialBalanceBase, double initialBalanceComm) :
   serverHandler(serverHandler), user(user),
   __id(id), name(name), engine(&engine), market(&market),
-  simulation(true), balanceBase(balanceBase), balanceComm(balanceComm),
-  state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1) {}
+  simulation(true), initialBalanceBase(initialBalanceBase), initialBalanceComm(initialBalanceComm),
+  state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1)
+{
+  balance.entityType = BotProtocol::sessionBalance;
+  balance.entityId = 0;
+  balance.reservedUsd = 0.;
+  balance.reservedBtc = 0.;
+  balance.availableUsd = initialBalanceBase;
+  balance.availableBtc = initialBalanceComm;
+  balance.fee = 0.;
+}
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
@@ -24,8 +33,15 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   name = data.find("name")->toString();
   engine = serverHandler.findBotEngine(data.find("engine")->toString());
   market = user.findMarket(data.find("marketId")->toUInt());
-  balanceBase = data.find("balanceBase")->toDouble();
-  balanceComm = data.find("balanceComm")->toDouble();
+  initialBalanceBase = data.find("investmentBase")->toDouble();
+  initialBalanceComm = data.find("investmentComm")->toDouble();
+  balance.entityType = BotProtocol::sessionBalance;
+  balance.entityId = 0;
+  balance.availableUsd = data.find("balanceBase")->toDouble();
+  balance.availableBtc = data.find("balanceComm")->toDouble();
+  balance.reservedUsd = data.find("reservedBase")->toDouble();
+  balance.reservedBtc = data.find("reservedComm")->toDouble();
+  balance.fee = data.find("fee")->toDouble();
   {
     const List<Variant>& transactionsVar = data.find("transactions")->toList();
     BotProtocol::Transaction transaction;
@@ -101,8 +117,13 @@ void_t Session::toVariant(Variant& variant)
   data.append("name", name);
   data.append("engine", engine->getName());
   data.append("marketId", market->getId());
-  data.append("balanceBase", balanceBase);
-  data.append("balanceComm", balanceComm);
+  data.append("investmentBase", initialBalanceBase);
+  data.append("investmentComm", initialBalanceComm);
+  data.append("balanceBase", balance.availableUsd);
+  data.append("balanceComm", balance.availableBtc);
+  data.append("reservedBase", balance.reservedUsd);
+  data.append("reservedComm", balance.reservedBtc);
+  data.append("fee", balance.fee);
   List<Variant>& transactionsVar = data.append("transactions", Variant()).toList();
   for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
@@ -156,6 +177,12 @@ bool_t Session::startSimulation()
   state = BotProtocol::Session::starting;
 
   // clear and save backup of orders, transactions, log messages, and markers
+  backupBalance = balance;
+  balance.availableUsd = initialBalanceBase;
+  balance.availableBtc = initialBalanceComm;
+  balance.reservedUsd = 0.;
+  balance.reservedBtc = 0.;
+  balance.fee = 0.;
   backupTransactions.swap(transactions);
   backupOrders.swap(orders);
   backupMarkers.swap(markers);
@@ -189,6 +216,7 @@ bool_t Session::stop()
     simulation = false;
 
     // restore backup of orders, transactions, log messages, and markers
+    balance = backupBalance;
     backupTransactions.swap(transactions);
     backupOrders.swap(orders);
     backupMarkers.swap(markers);
@@ -228,12 +256,6 @@ void_t Session::unregisterClient(ClientHandler& client)
     clients.remove(&client);
 }
 
-void_t Session::getInitialBalance(double& balanceBase, double& balanceComm) const
-{
-  balanceBase = this->balanceBase;
-  balanceComm = this->balanceComm;
-}
-
 BotProtocol::Transaction* Session::createTransaction(const BotProtocol::Transaction& transaction)
 {
   uint32_t entityId = nextEntityId++;
@@ -264,11 +286,6 @@ BotProtocol::Order* Session::createOrder(const BotProtocol::Order& order)
   result.entityId = entityId;
   result.date = Time::time();
   return &result;
-}
-
-BotProtocol::Order* Session::updateOrder(const BotProtocol::Order& order)
-{
-  return &orders.append(order.entityId, order);
 }
 
 bool_t Session::deleteOrder(uint32_t id)
@@ -305,8 +322,8 @@ void_t Session::getEntity(BotProtocol::Session& session) const
   session.botEngineId = engine->getId();
   session.marketId = market->getId();
   session.state = state;
-  session.balanceBase = balanceBase;
-  session.balanceComm = balanceComm;
+  session.balanceBase = initialBalanceBase;
+  session.balanceComm = initialBalanceComm;
 }
 
 void_t Session::sendUpdateEntity(const void_t* data, size_t size)

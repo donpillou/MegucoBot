@@ -17,7 +17,7 @@ bool_t BitstampMarket::loadBalanceAndFee()
 {
   if(balanceLoaded)
     return true;
-  BotProtocol::MarketBalance balance;
+  BotProtocol::Balance balance;
   if(!loadBalance(balance))
     return false;
   return true;
@@ -197,7 +197,7 @@ bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
   return true;
 }
 
-bool_t BitstampMarket::loadBalance(BotProtocol::MarketBalance& balance)
+bool_t BitstampMarket::loadBalance(BotProtocol::Balance& balance)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/balance/", false, HashMap<String, Variant>(), result))

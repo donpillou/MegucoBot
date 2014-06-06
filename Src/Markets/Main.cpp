@@ -262,7 +262,7 @@ private:
       break;
     case BotProtocol::ControlMarket::refreshBalance:
       {
-        BotProtocol::MarketBalance balance;
+        BotProtocol::Balance balance;
         if(!market->loadBalance(balance))
           return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
         if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
@@ -273,7 +273,7 @@ private:
       break;
     case BotProtocol::ControlMarket::requestBalance:
       {
-        BotProtocol::MarketBalance balance;
+        BotProtocol::Balance balance;
         if(!market->loadBalance(balance))
           return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
         size_t dataSize = sizeof(response) + sizeof(balance);

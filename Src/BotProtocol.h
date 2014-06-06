@@ -42,6 +42,7 @@ public:
     sessionOrder,
     sessionMarker,
     sessionLogMessage,
+    sessionBalance,
     market,
     marketTransaction,
     marketOrder,
@@ -89,8 +90,6 @@ public:
     uint32_t marketId;
     char_t marketAdapterName[33];
     uint8_t simulation;
-    double balanceBase;
-    double balanceComm;
   };
 
   struct RegisterMarketRequest
@@ -207,10 +206,10 @@ public:
     char_t secret[65];
   };
 
-  struct MarketBalance : public Entity
+  struct Balance : public Entity
   {
-    double reservedUsd;
-    double reservedBtc;
+    double reservedUsd; // usd in open orders
+    double reservedBtc; // btc in open orders
     double availableUsd;
     double availableBtc;
     double fee;
@@ -232,6 +231,7 @@ public:
       select,
       requestTransactions,
       requestOrders,
+      requestBalance,
     };
 
     uint8_t cmd;

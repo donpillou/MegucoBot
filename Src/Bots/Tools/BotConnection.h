@@ -10,7 +10,7 @@
 class BotConnection
 {
 public:
-  BotConnection() : sessionId(0), balanceBase(0.), balanceComm(0.) {}
+  BotConnection() : sessionId(0), marketId(0), simulation(true) {}
 
   bool_t connect(uint16_t port);
   void_t close() {socket.close();}
@@ -18,11 +18,9 @@ public:
   const String& getErrorString() const {return error;}
 
   const String& getMarketAdapterName() const {return marketAdapterName;}
-  double getBalanceBase() const {return balanceBase;}
-  double getBalanceComm() const {return balanceComm;}
   bool isSimulation() const {return simulation;}
 
-  bool_t getMarketBalance(BotProtocol::MarketBalance& balance);
+  bool_t getMarketBalance(BotProtocol::Balance& balance);
   bool_t getMarketOrders(List<BotProtocol::Order>& orders);
   bool_t createMarketOrder(BotProtocol::Order& order);
   bool_t removeMarketOrder(uint32_t id);
@@ -39,6 +37,8 @@ public:
   bool_t removeSessionOrder(uint32_t id);
   bool_t createSessionMarker(BotProtocol::Marker& marker);
   bool_t removeSessionMarker(uint32_t id);
+  bool_t getSessionBalance(BotProtocol::Balance& balance);
+  bool_t updateSessionBalance(BotProtocol::Balance& balance);
 
 private:
   Socket socket;
@@ -47,8 +47,6 @@ private:
   uint32_t sessionId;
   uint32_t marketId;
   String marketAdapterName;
-  double balanceBase;
-  double balanceComm;
   bool simulation;
 
 private:

@@ -20,7 +20,7 @@ class Order;
 class Session
 {
 public:
-  Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm);
+  Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double initialBalanceBase, double initialBalanceComm);
   Session(ServerHandler& serverHandler, User& user, const Variant& variant);
   ~Session();
   void_t toVariant(Variant& variant);
@@ -41,7 +41,7 @@ public:
   Market* getMarket() const {return market;}
   BotProtocol::Session::State getState() const {return state;}
   bool isSimulation() const {return simulation;}
-  void_t getInitialBalance(double& balanceBase, double& balanceComm) const;
+  const BotProtocol::Balance& getBalance() const {return balance;}
 
   BotProtocol::Transaction* createTransaction(const BotProtocol::Transaction& transaction);
   BotProtocol::Transaction* updateTransaction(const BotProtocol::Transaction& transaction);
@@ -49,7 +49,7 @@ public:
   bool_t deleteTransaction(uint32_t id);
 
   BotProtocol::Order* createOrder(const BotProtocol::Order& order);
-  BotProtocol::Order* updateOrder(const BotProtocol::Order& order);
+  void_t updateOrder(const BotProtocol::Order& order) {orders.append(order.entityId, order);}
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
@@ -58,6 +58,8 @@ public:
 
   BotProtocol::SessionLogMessage* addLogMessage(const BotProtocol::SessionLogMessage& logMessage);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
+
+  void_t updateBalance(const BotProtocol::Balance& balance) {this->balance = balance;}
 
   void_t getEntity(BotProtocol::Session& session) const;
   void_t sendUpdateEntity(const void_t* data, size_t size);
@@ -72,8 +74,9 @@ private:
   BotEngine* engine;
   Market* market;
   bool simulation;
-  double balanceBase;
-  double balanceComm;
+  double initialBalanceBase;
+  double initialBalanceComm;
+  BotProtocol::Balance balance;
   BotProtocol::Session::State state;
   Process process;
   uint32_t pid;
@@ -83,6 +86,7 @@ private:
   HashMap<uint32_t, BotProtocol::Order> orders;
   HashMap<uint32_t, BotProtocol::Marker> markers;
   List<BotProtocol::SessionLogMessage> logMessages;
+  BotProtocol::Balance backupBalance;
   HashMap<uint32_t, BotProtocol::Transaction> backupTransactions;
   HashMap<uint32_t, BotProtocol::Order> backupOrders;
   HashMap<uint32_t, BotProtocol::Marker> backupMarkers;

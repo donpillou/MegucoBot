@@ -106,7 +106,7 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
-  BotProtocol::MarketBalance marketBalance;
+  BotProtocol::Balance marketBalance;
   if(!botConnection.getMarketBalance(marketBalance))
   {
     Console::errorf("error: Could not retrieve market balance: %s\n", (const char_t*)botConnection.getErrorString());
@@ -134,10 +134,17 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not retrieve session orders: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
+  BotProtocol::Balance sessionBalance;
+  if(!botConnection.getSessionBalance(sessionBalance))
+  {
+    Console::errorf("error: Could not retrieve session balance: %s\n", (const char_t*)botConnection.getErrorString());
+    return -1;
+  }
+  sessionBalance.fee = marketBalance.fee;
 
   // create broker
-  Broker* broker = botConnection.isSimulation() ? (Broker*)new SimBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee) :
-    (Broker*)new LiveBroker(botConnection, botConnection.getBalanceBase(), botConnection.getBalanceComm(), marketBalance.fee);
+  Broker* broker = botConnection.isSimulation() ? (Broker*)new SimBroker(botConnection, sessionBalance) :
+    (Broker*)new LiveBroker(botConnection, sessionBalance);
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
     broker->loadTransaction(*i);
   for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)

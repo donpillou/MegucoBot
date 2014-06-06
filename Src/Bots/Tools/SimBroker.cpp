@@ -6,8 +6,8 @@
 #include "SimBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee) :
-  botConnection(botConnection), balanceBase(balanceBase), balanceComm(balanceComm), fee(fee), 
+SimBroker::SimBroker(BotConnection& botConnection, const BotProtocol::Balance& balance) :
+  botConnection(botConnection), balance(balance), 
   time(0), lastBuyTime(0), lastSellTime(0), botSession(0) {}
 
 void_t SimBroker::loadTransaction(const BotProtocol::Transaction& transaction)
@@ -33,12 +33,20 @@ void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
     if(time >= order.timeout)
     {
       if(order.type == BotProtocol::Order::buy)
-        balanceBase += order.amount * order.price + order.fee;
+      {
+        double charge = order.amount * order.price + order.fee;
+        balance.availableUsd += charge;
+        balance.reservedUsd -= charge;
+      }
       else
-        balanceComm += order.amount;
+      {
+        balance.availableBtc += order.amount;
+        balance.reservedBtc -= order.amount;
+      }
 
       botConnection.removeSessionOrder(order.entityId);
       openOrders.remove(i);
+      botConnection.updateSessionBalance(balance);
       continue;
     }
     else if((order.type == BotProtocol::Order::buy && trade.price < order.price) ||
@@ -57,16 +65,19 @@ void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
       if(order.type == BotProtocol::Order::buy)
       {
         lastBuyTime = time;
-        balanceComm += order.amount;
+        balance.reservedUsd -= order.amount * order.price + order.fee;
+        balance.availableBtc += order.amount;
       }
       else
       {
         lastSellTime = time;
-        balanceBase += order.amount * order.price - order.fee;
+        balance.reservedBtc -= order.amount;
+        balance.availableUsd += order.amount * order.price - order.fee;
       }
 
       botConnection.removeSessionOrder(order.entityId);
       openOrders.remove(i);
+      botConnection.updateSessionBalance(balance);
 
       BotProtocol::Marker marker;
       marker.entityType = BotProtocol::sessionMarker;
@@ -93,9 +104,10 @@ void_t SimBroker::setBotSession(Bot::Session& session)
 
 bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
 {
-  double fee = Math::ceil(amount * price * this->fee * 100.) / 100.;
+  double fee = Math::ceil(amount * price * balance.fee * 100.) / 100.;
+  // todo: fee = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100. - amount * price; ???
   double charge = amount * price + fee;
-  if(charge > balanceBase)
+  if(charge > balance.availableUsd)
     return false;
 
   BotProtocol::Order order;
@@ -117,13 +129,15 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balanceBase -= charge;
+  balance.availableUsd -= charge;
+  balance.reservedUsd += charge;
+  botConnection.updateSessionBalance(balance);
   return true;
 }
 
 bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
 {
-  if(amount > balanceComm)
+  if(amount > balance.availableBtc)
     return false;
 
   BotProtocol::Order order;
@@ -132,7 +146,8 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
   order.date = time;
   order.amount = amount;
   order.price = price;
-  order.fee = Math::ceil(amount * price * this->fee * 100.) / 100.;
+  order.fee = Math::ceil(amount * price * balance.fee * 100.) / 100.;
+  // todo: think about fee computation
   timestamp_t orderTimeout = time + timeout;
   order.timeout = orderTimeout;
   botConnection.createSessionOrder(order);
@@ -145,7 +160,9 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balanceComm -= amount;
+  balance.availableBtc -= amount;
+  balance.reservedBtc += amount;
+  botConnection.updateSessionBalance(balance);
   return true;
 }
 

@@ -83,6 +83,8 @@ private:
 
   void_t handleBotCreateSessionLogMessage(uint32_t requestId, BotProtocol::SessionLogMessage& logMessage);
 
+  void_t handleBotUpdateSessionBalance(uint32_t requestId, BotProtocol::Balance& balance);
+
   void_t handleBotCreateMarketOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleBotRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity);
 
@@ -92,7 +94,7 @@ private:
   void_t handleMarketUpdateMarketOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleMarketRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity);
 
-  void_t handleMarketUpdateMarketBalance(uint32_t requestId, BotProtocol::MarketBalance& balance);
+  void_t handleMarketUpdateMarketBalance(uint32_t requestId, BotProtocol::Balance& balance);
 
   void_t handleUserCreateMarketOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleUserUpdateMarketOrder(uint32_t requestId, BotProtocol::Order& order);

@@ -16,7 +16,7 @@ private:
   String key;
   String secret;
 
-  BotProtocol::MarketBalance balance;
+  BotProtocol::Balance balance;
   bool_t balanceLoaded;
   HashMap<uint32_t, BotProtocol::Order> orders;
 
@@ -50,7 +50,7 @@ private:
 private: // Market
   virtual const String& getLastError() const {return error;}
   virtual bool_t loadOrders(List<BotProtocol::Order>& orders);
-  virtual bool_t loadBalance(BotProtocol::MarketBalance& balance);
+  virtual bool_t loadBalance(BotProtocol::Balance& balance);
   virtual bool_t loadTransactions(List<BotProtocol::Transaction>& transactions);
   virtual bool_t createOrder(uint32_t id, BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order);
   virtual bool_t getOrder(uint32_t id, BotProtocol::Order& order);

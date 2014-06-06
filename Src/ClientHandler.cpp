@@ -280,7 +280,6 @@ void_t ClientHandler::handleRegisterBot(uint32_t requestId, BotProtocol::Registe
   response.marketId = session->getMarket()->getId();
   BotProtocol::setString(response.marketAdapterName, session->getMarket()->getMarketAdapter()->getName());
   response.simulation = session->isSimulation();
-  session->getInitialBalance(response.balanceBase, response.balanceComm);
   sendMessage(BotProtocol::registerBotResponse, requestId, &response, sizeof(response));
 
   this->session = session;
@@ -532,8 +531,8 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
         handleMarketUpdateMarketOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
     case BotProtocol::marketBalance:
-      if(size >= sizeof(BotProtocol::MarketBalance))
-        handleMarketUpdateMarketBalance(requestId, *(BotProtocol::MarketBalance*)&entity);
+      if(size >= sizeof(BotProtocol::Balance))
+        handleMarketUpdateMarketBalance(requestId, *(BotProtocol::Balance*)&entity);
       break;
     default:
       break;
@@ -549,6 +548,10 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
     case BotProtocol::sessionOrder:
       if(size >= sizeof(BotProtocol::Order))
         handleBotUpdateSessionOrder(requestId, *(BotProtocol::Order*)&entity);
+      break;
+    case BotProtocol::sessionBalance:
+      if(size >= sizeof(BotProtocol::Balance))
+        handleBotUpdateSessionBalance(requestId, *(BotProtocol::Balance*)&entity);
       break;
     default:
       break;
@@ -651,7 +654,7 @@ void_t ClientHandler::handleUserControlMarket(uint32_t requestId, BotProtocol::C
     sendRemoveAllEntities(BotProtocol::marketOrder);
     sendRemoveAllEntities(BotProtocol::marketTransaction);
     {
-      const BotProtocol::MarketBalance& balance = market->getBalance();
+      const BotProtocol::Balance& balance = market->getBalance();
       if(balance.entityType == BotProtocol::marketBalance)
         sendUpdateEntity(0, &balance, sizeof(balance));
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = market->getTransactions();
@@ -811,11 +814,13 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     session->registerClient(*this, false);
     this->session = session;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
+    sendRemoveAllEntities(BotProtocol::sessionBalance);
     sendRemoveAllEntities(BotProtocol::sessionTransaction);
     sendRemoveAllEntities(BotProtocol::sessionOrder);
     sendRemoveAllEntities(BotProtocol::sessionLogMessage);
     sendRemoveAllEntities(BotProtocol::sessionMarker);
     {
+      sendUpdateEntity(0, &session->getBalance(), sizeof(BotProtocol::Balance));
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::Transaction));
@@ -869,6 +874,15 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
       sendMessageData(&response, sizeof(response));
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendMessageData(&*i, sizeof(BotProtocol::Order));
+    }
+    break;
+  case BotProtocol::ControlSession::requestBalance:
+    {
+      const BotProtocol::Balance& balance = session->getBalance();
+      size_t dataSize = sizeof(response) + sizeof(BotProtocol::Balance);
+      sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
+      sendMessageData(&response, sizeof(response));
+      sendMessageData(&balance, sizeof(balance));
     }
     break;
   default:
@@ -966,11 +980,7 @@ void_t ClientHandler::handleBotCreateSessionOrder(uint32_t requestId, BotProtoco
 
 void_t ClientHandler::handleBotUpdateSessionOrder(uint32_t requestId, BotProtocol::Order& order)
 {
-  if(!session->updateOrder(order))
-  {
-    sendErrorResponse(BotProtocol::updateEntity, requestId, &order, "Could not update session order.");
-    return;
-  }
+  session->updateOrder(order);
 
   sendMessage(BotProtocol::updateEntityResponse, requestId, &order, sizeof(BotProtocol::Entity));
 
@@ -1019,6 +1029,16 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotPr
   sendMessage(BotProtocol::createEntityResponse, requestId, logMessage, sizeof(*logMessage));
 
   session->sendUpdateEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotUpdateSessionBalance(uint32_t requestId, BotProtocol::Balance& balance)
+{
+  session->updateBalance(balance);
+
+  sendMessage(BotProtocol::updateEntityResponse, requestId, &balance, sizeof(BotProtocol::Entity));
+
+  session->sendUpdateEntity(&balance, sizeof(balance));
   session->saveData();
 }
 
@@ -1102,7 +1122,7 @@ void_t ClientHandler::handleMarketRemoveMarketOrder(uint32_t requestId, const Bo
   market->sendRemoveEntity(BotProtocol::marketOrder, entity.entityId);
 }
 
-void_t ClientHandler::handleMarketUpdateMarketBalance(uint32_t requestId, BotProtocol::MarketBalance& balance)
+void_t ClientHandler::handleMarketUpdateMarketBalance(uint32_t requestId, BotProtocol::Balance& balance)
 {
   if(!market->updateBalance(balance))
   {

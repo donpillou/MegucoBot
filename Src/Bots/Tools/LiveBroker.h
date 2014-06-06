@@ -10,14 +10,12 @@ class BotConnection;
 class LiveBroker : public Broker
 {
 public:
-  LiveBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee);
+  LiveBroker(BotConnection& botConnection, const BotProtocol::Balance& balance);
 
 private:
   BotConnection& botConnection;
   List<BotProtocol::Order> openOrders;
-  double balanceBase;
-  double balanceComm;
-  double fee;
+  BotProtocol::Balance balance;
   timestamp_t time;
   timestamp_t lastBuyTime;
   timestamp_t lastSellTime;
@@ -31,9 +29,9 @@ private:
 private: // Bot::Broker
   virtual bool_t buy(double price, double amount, timestamp_t timeout);
   virtual bool_t sell(double price, double amount, timestamp_t timeout);
-  virtual double getBalanceBase() const {return balanceBase;}
-  virtual double getBalanceComm() const {return balanceComm;}
-  virtual double getFee() const {return fee;}
+  virtual double getBalanceBase() const {return balance.availableUsd;}
+  virtual double getBalanceComm() const {return balance.availableBtc;}
+  virtual double getFee() const {return balance.fee;}
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}

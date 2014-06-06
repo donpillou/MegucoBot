@@ -6,8 +6,8 @@
 #include "LiveBroker.h"
 #include "BotConnection.h"
 
-LiveBroker::LiveBroker(BotConnection& botConnection, double balanceBase, double balanceComm, double fee) :
-  botConnection(botConnection), balanceBase(balanceBase), balanceComm(balanceComm), fee(fee), 
+LiveBroker::LiveBroker(BotConnection& botConnection, const BotProtocol::Balance& balance) :
+  botConnection(botConnection), balance(balance),
   time(0), lastBuyTime(0), lastSellTime(0), botSession(0) {}
 
 void_t LiveBroker::loadTransaction(const BotProtocol::Transaction& transaction)
@@ -69,15 +69,18 @@ void_t LiveBroker::refreshOrders()
       if(order.type == BotProtocol::Order::buy)
       {
         lastBuyTime = time;
-        balanceComm += order.amount;
+        balance.reservedUsd -= order.amount * order.price + order.fee;
+        balance.availableBtc += order.amount;
       }
       else
       {
         lastSellTime = time;
-        balanceBase += order.amount * order.price - order.fee;
+        balance.reservedBtc -= order.amount;
+        balance.availableUsd += order.amount * order.price - order.fee;
       }
       botConnection.removeSessionOrder(order.entityId);
       openOrders.remove(i);
+      botConnection.updateSessionBalance(balance);
 
       BotProtocol::Marker marker;
       marker.entityType = BotProtocol::sessionMarker;
@@ -110,12 +113,20 @@ void_t LiveBroker::cancelTimedOutOrders()
       if(botConnection.removeMarketOrder(order.entityId))
       {
         if(order.type == BotProtocol::Order::buy)
-          balanceBase += order.amount * order.price + order.fee;
+        {
+          double charge = order.amount * order.price + order.fee;
+          balance.availableUsd += charge;
+          balance.reservedUsd -= charge;
+        }
         else
-          balanceComm += order.amount;
+        {
+          balance.availableBtc += order.amount;
+          balance.reservedBtc -= order.amount;
+        }
 
         botConnection.removeSessionOrder(order.entityId);
         openOrders.remove(i);
+        botConnection.updateSessionBalance(balance);
         continue;
       }
       else
@@ -156,13 +167,15 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balanceBase -= charge;
+  balance.availableUsd -= charge;
+  balance.reservedUsd += charge;
+  botConnection.updateSessionBalance(balance);
   return true;
 }
 
 bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
 {
-  if(amount > balanceComm)
+  if(amount > balance.availableBtc)
     return false;
 
   BotProtocol::Order order;
@@ -186,7 +199,9 @@ bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balanceComm -= amount;
+  balance.availableBtc -= amount;
+  balance.reservedBtc += amount;
+  botConnection.updateSessionBalance(balance);
   return true;
 }
 

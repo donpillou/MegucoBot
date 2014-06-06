@@ -157,7 +157,7 @@ bool_t Market::deleteOrder(uint32_t id)
   return true;
 }
 
-bool_t Market::updateBalance(const BotProtocol::MarketBalance& balance)
+bool_t Market::updateBalance(const BotProtocol::Balance& balance)
 {
   this->balance = balance;
   return true;

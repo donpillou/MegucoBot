@@ -48,17 +48,15 @@ bool_t BotConnection::connect(uint16_t port)
     sessionId = response->sessionId;
     marketId = response->marketId;
     marketAdapterName = BotProtocol::getString(response->marketAdapterName);
-    balanceBase = response->balanceBase;
-    balanceComm = response->balanceComm;
     simulation = response->simulation != 0;
   }
 
   return true;
 }
 
-bool_t BotConnection::getMarketBalance(BotProtocol::MarketBalance& balance)
+bool_t BotConnection::getMarketBalance(BotProtocol::Balance& balance)
 {
-  List<BotProtocol::MarketBalance> result;
+  List<BotProtocol::Balance> result;
   if(!sendControlMarket(BotProtocol::ControlMarket::requestBalance, result))
     return false;
   if(result.isEmpty())
@@ -150,6 +148,25 @@ bool_t BotConnection::createSessionMarker(BotProtocol::Marker& marker)
 bool_t BotConnection::removeSessionMarker(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionMarker, id);
+}
+
+bool_t BotConnection::getSessionBalance(BotProtocol::Balance& balance)
+{
+  List<BotProtocol::Balance> result;
+  if(!sendControlSession(BotProtocol::ControlSession::requestBalance, result))
+    return false;
+  if(result.isEmpty())
+  {
+    error = "Received response without session balance.";
+    return false;
+  }
+  balance = result.front();
+  return true;
+}
+
+bool_t BotConnection::updateSessionBalance(BotProtocol::Balance& balance)
+{
+  return updateEntity(&balance, sizeof(balance));
 }
 
 bool_t BotConnection::createEntity(void_t* entityData, size_t entitySize)
