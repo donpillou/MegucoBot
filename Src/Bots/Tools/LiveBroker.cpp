@@ -85,7 +85,7 @@ void_t LiveBroker::refreshOrders()
       BotProtocol::Marker marker;
       marker.entityType = BotProtocol::sessionMarker;
       marker.date = time;
-      if(order.amount >= 0.)
+      if(order.type == BotProtocol::Order::buy)
       {
         marker.type = BotProtocol::Marker::buy;
         botSession->handleBuy(transaction);
@@ -150,12 +150,27 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)
   order.type = BotProtocol::Order::buy;
   order.price = price;
   order.amount = amount;
-  timestamp_t orderTimeout = time + timeout;
-  order.timeout = orderTimeout;
   if(!botConnection.createMarketOrder(order))
     return false;
-  ASSERT(order.timeout == orderTimeout);
-  double charge = order.price * order.amount + order.fee; 
+  order.timeout = time + timeout;
+  double charge = order.price * order.amount + order.fee;
+
+#ifdef BOT_TESTBOT
+  List<BotProtocol::Order> marketOrders;
+  botConnection.getMarketOrders(marketOrders);
+  for(List<BotProtocol::Order>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
+  {
+    if(i->entityId == order.entityId)
+    {
+      ASSERT(i->type == BotProtocol::Order::buy);
+      ASSERT(i->amount == order.amount);
+      ASSERT(i->price == order.price);
+      goto testok;
+    }
+  }
+  ASSERT(false);
+testok:
+#endif
 
   order.entityType = BotProtocol::sessionOrder;
   botConnection.updateSessionOrder(order);
@@ -183,11 +198,26 @@ bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
   order.type = BotProtocol::Order::sell;
   order.price = price;
   order.amount = amount;
-  timestamp_t orderTimeout = time + timeout;
-  order.timeout = orderTimeout;
   if(!botConnection.createMarketOrder(order))
     return false;
-  ASSERT(order.timeout == orderTimeout);
+  order.timeout = time + timeout;
+
+#ifdef BOT_TESTBOT
+  List<BotProtocol::Order> marketOrders;
+  botConnection.getMarketOrders(marketOrders);
+  for(List<BotProtocol::Order>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
+  {
+    if(i->entityId == order.entityId)
+    {
+      ASSERT(i->type == BotProtocol::Order::sell);
+      ASSERT(i->amount == order.amount);
+      ASSERT(i->price == order.price);
+      goto testok;
+    }
+  }
+  ASSERT(false);
+testok:
+#endif
 
   order.entityType = BotProtocol::sessionOrder;
   botConnection.updateSessionOrder(order);

@@ -170,7 +170,7 @@ void BuyBot::Session::handleSell(const BotProtocol::Transaction& transaction)
   if(amount == 0.)
   {
     String message;
-    message.printf("Earned? %.02f.", price * transaction.amount / (1. + fee) - invest);
+    message.printf("sold something, Earned %.02f.", price * transaction.amount / (1. + fee) - invest);
     broker.warning(message);
   }
   else

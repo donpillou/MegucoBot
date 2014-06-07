@@ -167,6 +167,7 @@ private:
 
     if(!handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
       return false;
+    this->orders.append(order.entityId);
     return botConnection.sendEntity(&order, sizeof(order));
   }
 
@@ -182,6 +183,7 @@ private:
     {
       if(!handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError()))
         return false;
+      this->orders.remove(updateOrderArgs.entityId);
       if(!botConnection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
         return false;
       return true;
@@ -189,6 +191,7 @@ private:
     order.timeout = updateOrderArgs.timeout;
     if(!handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updateOrderArgs, sizeof(BotProtocol::Entity)))
       return false;
+    this->orders.append(order.entityId);
     return botConnection.sendEntity(&order, sizeof(order));
   }
 
@@ -206,6 +209,7 @@ private:
     }
     if(!handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity)))
       return false;
+    this->orders.remove(entity.entityId);
     return botConnection.removeEntity(BotProtocol::marketOrder, entity.entityId);
   }
 
@@ -219,12 +223,26 @@ private:
     switch((BotProtocol::ControlMarket::Command)controlMarket.cmd)
     {
     case BotProtocol::ControlMarket::refreshOrders:
+    case BotProtocol::ControlMarket::requestOrders:
       {
         List<BotProtocol::Order> orders;
         if(!market->loadOrders(orders))
           return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+        if(controlMarket.cmd == BotProtocol::ControlMarket::refreshOrders)
+        {
+          if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
             return false;
+        }
+        else
+        {
+          size_t dataSize = sizeof(response) + sizeof(BotProtocol::Order) * orders.size();
+          if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
+             !handlerConnection.sendMessageData(&response, sizeof(response)))
+            return false;
+          for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+            if(!handlerConnection.sendMessageData(&*i, sizeof(BotProtocol::Order)))
+              return false;
+        }
         HashSet<uint32_t> ordersToRemove;
         ordersToRemove.swap(this->orders);
         for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
@@ -240,12 +258,26 @@ private:
       }
       break;
     case BotProtocol::ControlMarket::refreshTransactions:
+    case BotProtocol::ControlMarket::requestTransactions:
       {
         List<BotProtocol::Transaction> transactions;
         if(!market->loadTransactions(transactions))
           return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+        if(controlMarket.cmd == BotProtocol::ControlMarket::refreshTransactions)
+        {
+          if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+              return false;
+        }
+        else
+        {
+          size_t dataSize = sizeof(response) + sizeof(BotProtocol::Transaction) * transactions.size();
+          if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
+             !handlerConnection.sendMessageData(&response, sizeof(response)))
             return false;
+          for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+            if(!handlerConnection.sendMessageData(&*i, sizeof(BotProtocol::Transaction)))
+              return false;
+        }
         HashSet<uint32_t> transactionsToRemove;
         transactionsToRemove.swap(this->transactions);
         for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
@@ -261,26 +293,24 @@ private:
       }
       break;
     case BotProtocol::ControlMarket::refreshBalance:
-      {
-        BotProtocol::Balance balance;
-        if(!market->loadBalance(balance))
-          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
-            return false;
-        if(!botConnection.sendEntity(&balance, sizeof(balance)))
-          return false;
-      }
-      break;
     case BotProtocol::ControlMarket::requestBalance:
       {
         BotProtocol::Balance balance;
         if(!market->loadBalance(balance))
           return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        size_t dataSize = sizeof(response) + sizeof(balance);
-        if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
-           !handlerConnection.sendMessageData(&response, sizeof(response)) ||
-           !handlerConnection.sendMessageData(&balance, sizeof(balance)))
-          return false;
+        if(controlMarket.cmd == BotProtocol::ControlMarket::refreshBalance)
+        {
+          if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
+            return false;
+        }
+        else
+        {
+          size_t dataSize = sizeof(response) + sizeof(balance);
+          if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
+             !handlerConnection.sendMessageData(&response, sizeof(response)) ||
+             !handlerConnection.sendMessageData(&balance, sizeof(balance)))
+            return false;
+        }
         if(!botConnection.sendEntity(&balance, sizeof(balance)))
           return false;
       }
