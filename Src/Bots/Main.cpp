@@ -163,7 +163,7 @@ int_t main(int_t argc, char_t* argv[])
   // receive and handle trade data
   DataConnectionHandler dataConnection(botConnection, *broker, *session, botConnection.isSimulation());
   String marketAdapterName = botConnection.getMarketAdapterName();
-  for(;;)
+  for(;; Thread::sleep(10 * 1000))
   {
     if(!dataConnection.connect(dataIp, dataPort))
       continue;
