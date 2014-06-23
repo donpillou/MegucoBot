@@ -24,6 +24,11 @@
 typedef BuyBot BotFactory;
 const char* botName = "BuyBot";
 #endif
+#ifdef BOT_ITEMBOT
+#include "Bots/ItemBot.h"
+typedef ItemBot BotFactory;
+const char* botName = "ItemBot";
+#endif
 #ifdef BOT_TESTBOT
 #include "Bots/TestBot.h"
 typedef TestBot BotFactory;
