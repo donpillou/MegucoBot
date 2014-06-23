@@ -75,6 +75,10 @@ private:
   void_t handleBotUpdateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& transaction);
   void_t handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity);
 
+  void_t handleBotCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& item);
+  void_t handleBotUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& item);
+  void_t handleBotRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
+
   void_t handleBotCreateSessionOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleBotUpdateSessionOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleBotRemoveSessionOrder(uint32_t requestId, const BotProtocol::Entity& entity);

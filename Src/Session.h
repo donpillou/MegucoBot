@@ -48,6 +48,11 @@ public:
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
+  BotProtocol::SessionItem* createItem(const BotProtocol::SessionItem& item);
+  BotProtocol::SessionItem* updateItem(const BotProtocol::SessionItem& item);
+  const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
+  bool_t deleteItem(uint32_t id);
+
   BotProtocol::Order* createOrder(const BotProtocol::Order& order);
   void_t updateOrder(const BotProtocol::Order& order) {orders.append(order.entityId, order);}
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
@@ -83,11 +88,13 @@ private:
   ClientHandler* botClient;
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
+  HashMap<uint32_t, BotProtocol::SessionItem> items;
   HashMap<uint32_t, BotProtocol::Order> orders;
   HashMap<uint32_t, BotProtocol::Marker> markers;
   List<BotProtocol::SessionLogMessage> logMessages;
   BotProtocol::Balance backupBalance;
   HashMap<uint32_t, BotProtocol::Transaction> backupTransactions;
+  HashMap<uint32_t, BotProtocol::SessionItem> backupItems;
   HashMap<uint32_t, BotProtocol::Order> backupOrders;
   HashMap<uint32_t, BotProtocol::Marker> backupMarkers;
   List<BotProtocol::SessionLogMessage> backupLogMessages;

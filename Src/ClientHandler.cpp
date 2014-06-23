@@ -387,6 +387,10 @@ void_t ClientHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Transaction))
         handleBotCreateSessionTransaction(requestId, *(BotProtocol::Transaction*)&entity);
       break;
+    case BotProtocol::sessionItem:
+      if(size >= sizeof(BotProtocol::SessionItem))
+        handleBotCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+      break;
     case BotProtocol::sessionOrder:
       if(size >= sizeof(BotProtocol::Order))
         handleBotCreateSessionOrder(requestId, *(BotProtocol::Order*)&entity);
@@ -436,6 +440,9 @@ void_t ClientHandler::handleRemoveEntity(uint32_t requestId, const BotProtocol::
     {
     case BotProtocol::sessionTransaction:
       handleBotRemoveSessionTransaction(requestId, entity);
+      break;
+    case BotProtocol::sessionItem:
+      handleBotRemoveSessionItem(requestId, entity);
       break;
     case BotProtocol::sessionOrder:
       handleBotRemoveSessionOrder(requestId, entity);
@@ -544,6 +551,10 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
     case BotProtocol::sessionTransaction:
       if(size >= sizeof(BotProtocol::Transaction))
         handleBotUpdateSessionTransaction(requestId, *(BotProtocol::Transaction*)&entity);
+      break;
+    case BotProtocol::sessionItem:
+      if(size >= sizeof(BotProtocol::SessionItem))
+        handleBotUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
       break;
     case BotProtocol::sessionOrder:
       if(size >= sizeof(BotProtocol::Order))
@@ -863,7 +874,16 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
       sendMessageData(&response, sizeof(response));
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendMessageData(&*i, sizeof(BotProtocol::Transaction));
-
+    }
+    break;
+  case BotProtocol::ControlSession::requestItems:
+    {
+      const HashMap<uint32_t, BotProtocol::SessionItem>& items = session->getItems();
+      size_t dataSize = sizeof(response) + items.size() * sizeof(BotProtocol::SessionItem);
+      sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
+      sendMessageData(&response, sizeof(response));
+      for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+        sendMessageData(&*i, sizeof(BotProtocol::SessionItem));
     }
     break;
   case BotProtocol::ControlSession::requestOrders:
@@ -960,6 +980,49 @@ void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t requestId, cons
   sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
   session->sendRemoveEntity(BotProtocol::sessionTransaction, entity.entityId);
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& args)
+{
+  BotProtocol::SessionItem* item = session->createItem(args);
+  if(!item)
+  {
+    sendErrorResponse(BotProtocol::createEntity, requestId, &args, "Could not create session item.");
+    return;
+  }
+
+  sendMessage(BotProtocol::createEntityResponse, requestId, item, sizeof(*item));
+
+  session->sendUpdateEntity(item, sizeof(*item));
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& item)
+{
+  if(!session->updateItem(item))
+  {
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &item, "Could not update session item.");
+    return;
+  }
+
+  sendMessage(BotProtocol::updateEntityResponse, requestId, &item, sizeof(BotProtocol::Entity));
+
+  session->sendUpdateEntity(&item, sizeof(item));
+  session->saveData();
+}
+
+void_t ClientHandler::handleBotRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
+{
+  if(!session->deleteItem(entity.entityId))
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown session item.");
+    return;
+  }
+
+  sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
+
+  session->sendRemoveEntity(BotProtocol::sessionItem, entity.entityId);
   session->saveData();
 }
 

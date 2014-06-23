@@ -47,6 +47,7 @@ public:
     marketTransaction,
     marketOrder,
     marketBalance,
+    sessionItem,
   };
 
 #pragma pack(push, 4)
@@ -221,6 +222,22 @@ public:
     char_t message[129];
   };
 
+  struct SessionItem : public Entity
+  {
+    enum Type
+    {
+      buy,
+      sell
+    };
+
+    uint8_t initialType;
+    uint8_t currentType;
+    int64_t date;
+    double price;
+    double amount;
+    double flipPrice;
+  };
+
   struct ControlSession : public Entity
   {
     enum Command
@@ -232,6 +249,7 @@ public:
       requestTransactions,
       requestOrders,
       requestBalance,
+      requestItems,
     };
 
     uint8_t cmd;

@@ -63,6 +63,27 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
     }
   }
   {
+    const List<Variant>& itemsVar = data.find("items")->toList();
+    BotProtocol::SessionItem item;
+    item.entityType = BotProtocol::sessionItem;
+    for(List<Variant>::Iterator i = itemsVar.begin(), end = itemsVar.end(); i != end; ++i)
+    {
+      const HashMap<String, Variant>& itemVar = i->toMap();
+      item.entityId = itemVar.find("id")->toUInt();
+      item.initialType = itemVar.find("initialType")->toUInt();
+      item.currentType = itemVar.find("currentType")->toUInt();
+      item.date = itemVar.find("date")->toInt64();
+      item.price = itemVar.find("price")->toDouble();
+      item.amount = itemVar.find("amount")->toDouble();
+      item.flipPrice = itemVar.find("flipPrice")->toDouble();
+      if(items.find(item.entityId) != items.end())
+        continue;
+      items.append(item.entityId, item);
+      if(item.entityId >= nextEntityId)
+        nextEntityId = item.entityId + 1;
+    }
+  }
+  {
     const List<Variant>& ordersVar = data.find("orders")->toList();
     BotProtocol::Order order;
     order.entityType = BotProtocol::sessionOrder;
@@ -124,37 +145,58 @@ void_t Session::toVariant(Variant& variant)
   data.append("reservedBase", balance.reservedUsd);
   data.append("reservedComm", balance.reservedBtc);
   data.append("fee", balance.fee);
-  List<Variant>& transactionsVar = data.append("transactions", Variant()).toList();
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
-    const BotProtocol::Transaction& transaction = *i;
-    HashMap<String, Variant>& transactionVar = transactionsVar.append(Variant()).toMap();
-    transactionVar.append("id", transaction.entityId);
-    transactionVar.append("type", (uint32_t)transaction.type);
-    transactionVar.append("date", transaction.date);
-    transactionVar.append("price", transaction.price);
-    transactionVar.append("amount", transaction.amount);
-    transactionVar.append("fee", transaction.fee);
+    List<Variant>& transactionsVar = data.append("transactions", Variant()).toList();
+    for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+    {
+      const BotProtocol::Transaction& transaction = *i;
+      HashMap<String, Variant>& transactionVar = transactionsVar.append(Variant()).toMap();
+      transactionVar.append("id", transaction.entityId);
+      transactionVar.append("type", (uint32_t)transaction.type);
+      transactionVar.append("date", transaction.date);
+      transactionVar.append("price", transaction.price);
+      transactionVar.append("amount", transaction.amount);
+      transactionVar.append("fee", transaction.fee);
+    }
   }
-  List<Variant>& ordersVar = data.append("orders", Variant()).toList();
-  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
   {
-    const BotProtocol::Order& order = *i;
-    HashMap<String, Variant>& orderVar = ordersVar.append(Variant()).toMap();
-    orderVar.append("id", order.entityId);
-    orderVar.append("type", (uint32_t)order.type);
-    orderVar.append("date", order.date);
-    orderVar.append("price", order.price);
-    orderVar.append("amount", order.amount);
-    orderVar.append("fee", order.fee);
+    List<Variant>& itemsVar = data.append("items", Variant()).toList();
+    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    {
+      const BotProtocol::SessionItem& item = *i;
+      HashMap<String, Variant>& transactionVar = itemsVar.append(Variant()).toMap();
+      transactionVar.append("id", item.entityId);
+      transactionVar.append("initialType", (uint32_t)item.initialType);
+      transactionVar.append("currentType", (uint32_t)item.currentType);
+      transactionVar.append("date", item.date);
+      transactionVar.append("price", item.price);
+      transactionVar.append("amount", item.amount);
+      transactionVar.append("flipPrice", item.flipPrice);
+    }
   }
-  List<Variant>& logMessagesVar = data.append("logMessages", Variant()).toList();
-  for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
   {
-    BotProtocol::SessionLogMessage& logMessage = *i;
-    HashMap<String, Variant>& logMessageVar = logMessagesVar.append(Variant()).toMap();
-    logMessageVar.append("date", logMessage.date);
-    logMessageVar.append("message", BotProtocol::getString(logMessage.message));
+    List<Variant>& ordersVar = data.append("orders", Variant()).toList();
+    for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+    {
+      const BotProtocol::Order& order = *i;
+      HashMap<String, Variant>& orderVar = ordersVar.append(Variant()).toMap();
+      orderVar.append("id", order.entityId);
+      orderVar.append("type", (uint32_t)order.type);
+      orderVar.append("date", order.date);
+      orderVar.append("price", order.price);
+      orderVar.append("amount", order.amount);
+      orderVar.append("fee", order.fee);
+    }
+  }
+  {
+    List<Variant>& logMessagesVar = data.append("logMessages", Variant()).toList();
+    for(List<BotProtocol::SessionLogMessage>::Iterator i = logMessages.begin(), end = logMessages.end(); i != end; ++i)
+    {
+      BotProtocol::SessionLogMessage& logMessage = *i;
+      HashMap<String, Variant>& logMessageVar = logMessagesVar.append(Variant()).toMap();
+      logMessageVar.append("date", logMessage.date);
+      logMessageVar.append("message", BotProtocol::getString(logMessage.message));
+    }
   }
 }
 
@@ -184,6 +226,7 @@ bool_t Session::startSimulation()
   balance.reservedBtc = 0.;
   balance.fee = 0.;
   backupTransactions.swap(transactions);
+  backupItems.swap(items);
   backupOrders.swap(orders);
   backupMarkers.swap(markers);
   backupLogMessages.swap(logMessages);
@@ -218,11 +261,13 @@ bool_t Session::stop()
     // restore backup of orders, transactions, log messages, and markers
     balance = backupBalance;
     backupTransactions.swap(transactions);
+    backupItems.swap(items);
     backupOrders.swap(orders);
     backupMarkers.swap(markers);
     backupLogMessages.swap(logMessages);
 
     backupTransactions.clear();
+    backupItems.clear();
     backupOrders.clear();
     backupMarkers.clear();
     backupLogMessages.clear();
@@ -270,12 +315,35 @@ BotProtocol::Transaction* Session::updateTransaction(const BotProtocol::Transact
   return &transactions.append(transaction.entityId, transaction);
 }
 
+BotProtocol::SessionItem* Session::createItem(const BotProtocol::SessionItem& item)
+{
+  uint32_t entityId = nextEntityId++;
+  BotProtocol::SessionItem& result = items.append(entityId, item);
+  result.entityId = entityId;
+  result.date = Time::time();
+  return &result;
+}
+
+BotProtocol::SessionItem* Session::updateItem(const BotProtocol::SessionItem& item)
+{
+  return &items.append(item.entityId, item);
+}
+
 bool_t Session::deleteTransaction(uint32_t id)
 {
   HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
   if(it == transactions.end())
     return false;
   transactions.remove(it);
+  return true;
+}
+
+bool_t Session::deleteItem(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
+  if(it == items.end())
+    return false;
+  items.remove(it);
   return true;
 }
 
