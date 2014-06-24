@@ -103,6 +103,13 @@ bool_t BotConnection::getSessionTransactions(List<BotProtocol::Transaction>& tra
   return true;
 }
 
+bool_t BotConnection::getSessionItems(List<BotProtocol::SessionItem>& items)
+{
+  if(!sendControlSession(BotProtocol::ControlSession::requestItems, items))
+    return false;
+  return true;
+}
+
 bool_t BotConnection::getSessionOrders(List<BotProtocol::Order>& orders)
 {
   if(!sendControlSession(BotProtocol::ControlSession::requestOrders, orders))
@@ -123,6 +130,21 @@ bool_t BotConnection::updateSessionTransaction(const BotProtocol::Transaction& t
 bool_t BotConnection::removeSessionTransaction(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionTransaction, id);
+}
+
+bool_t BotConnection::createSessionItem(BotProtocol::SessionItem& item)
+{
+  return createEntity(&item, sizeof(item));
+}
+
+bool_t BotConnection::updateSessionItem(const BotProtocol::SessionItem& item)
+{
+  return updateEntity(&item, sizeof(item));
+}
+
+bool_t BotConnection::removeSessionItem(uint32_t id)
+{
+  return removeEntity(BotProtocol::sessionItem, id);
 }
 
 bool_t BotConnection::createSessionOrder(BotProtocol::Order& order)

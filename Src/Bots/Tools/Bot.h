@@ -68,11 +68,19 @@ public:
     virtual timestamp_t getTimeSinceLastBuy() const = 0;
     virtual timestamp_t getTimeSinceLastSell() const = 0;
 
+    // todo: remove transaction stuff
     virtual void_t getTransactions(List<BotProtocol::Transaction>& transactions) const = 0;
     virtual void_t getBuyTransactions(List<BotProtocol::Transaction>& transactions) const = 0;
     virtual void_t getSellTransactions(List<BotProtocol::Transaction>& transactions) const = 0;
     virtual void_t removeTransaction(uint32_t id) = 0;
     virtual void_t updateTransaction(const BotProtocol::Transaction& transaction) = 0;
+
+    virtual void_t getItems(List<BotProtocol::SessionItem>& items) const = 0;
+    virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const = 0;
+    virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const = 0;
+    virtual bool_t createItem(BotProtocol::SessionItem& item) = 0;
+    virtual void_t removeItem(uint32_t id) = 0;
+    virtual void_t updateItem(const BotProtocol::SessionItem& item) = 0;
 
     virtual void_t warning(const String& message) = 0;
   };

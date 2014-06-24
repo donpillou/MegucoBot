@@ -15,6 +15,11 @@ void_t LiveBroker::loadTransaction(const BotProtocol::Transaction& transaction)
   transactions.append(transaction.entityId, transaction);
 }
 
+void_t LiveBroker::loadItem(const BotProtocol::SessionItem& item)
+{
+  items.append(item.entityId, item);
+}
+
 void_t LiveBroker::loadOrder(const BotProtocol::Order& order)
 {
   openOrders.append(order);
@@ -308,6 +313,65 @@ void_t LiveBroker::updateTransaction(const BotProtocol::Transaction& transaction
   destTransaction.entityType = BotProtocol::sessionTransaction;
   destTransaction.entityId = transaction.entityId;
   botConnection.updateSessionTransaction(destTransaction);
+}
+
+void_t LiveBroker::getItems(List<BotProtocol::SessionItem>& items) const
+{
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    items.append(item);
+  }
+}
+
+void_t LiveBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
+{
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    if(item.currentType == BotProtocol::SessionItem::buy)
+      items.append(item);
+  }
+}
+
+void_t LiveBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
+{
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    if(item.currentType == BotProtocol::SessionItem::sell)
+      items.append(item);
+  }
+}
+
+bool_t LiveBroker::createItem(BotProtocol::SessionItem& item)
+{
+  if(!botConnection.createSessionItem(item))
+    return false;
+  items.append(item.entityId, item);
+  return true;
+}
+
+void_t LiveBroker::removeItem(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
+  if(it == items.end())
+    return;
+  const BotProtocol::SessionItem& item = *it;
+  botConnection.removeSessionItem(item.entityId);
+  items.remove(it);
+}
+
+void_t LiveBroker::updateItem(const BotProtocol::SessionItem& item)
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(item.entityId);
+  if(it == items.end())
+    return;
+  BotProtocol::SessionItem& destItem = *it;
+  destItem = item;
+  destItem.entityType = BotProtocol::sessionItem;
+  destItem.entityId = item.entityId;
+  botConnection.updateSessionItem(destItem);
 }
 
 void_t LiveBroker::warning(const String& message)

@@ -15,6 +15,11 @@ void_t SimBroker::loadTransaction(const BotProtocol::Transaction& transaction)
   transactions.append(transaction.entityId, transaction);
 }
 
+void_t SimBroker::loadItem(const BotProtocol::SessionItem& item)
+{
+  items.append(item.entityId, item);
+}
+
 void_t SimBroker::loadOrder(const BotProtocol::Order& order)
 {
   openOrders.append(order);
@@ -239,6 +244,65 @@ void_t SimBroker::updateTransaction(const BotProtocol::Transaction& transaction)
   destTransaction.entityType = BotProtocol::sessionTransaction;
   destTransaction.entityId = transaction.entityId;
   botConnection.updateSessionTransaction(destTransaction);
+}
+
+void_t SimBroker::getItems(List<BotProtocol::SessionItem>& items) const
+{
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    items.append(item);
+  }
+}
+
+void_t SimBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
+{
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    if(item.currentType == BotProtocol::SessionItem::buy)
+      items.append(item);
+  }
+}
+
+void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
+{
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    if(item.currentType == BotProtocol::SessionItem::sell)
+      items.append(item);
+  }
+}
+
+bool_t SimBroker::createItem(BotProtocol::SessionItem& item)
+{
+  if(!botConnection.createSessionItem(item))
+    return false;
+  items.append(item.entityId, item);
+  return true;
+}
+
+void_t SimBroker::removeItem(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
+  if(it == items.end())
+    return;
+  const BotProtocol::SessionItem& item = *it;
+  botConnection.removeSessionItem(item.entityId);
+  items.remove(it);
+}
+
+void_t SimBroker::updateItem(const BotProtocol::SessionItem& item)
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(item.entityId);
+  if(it == items.end())
+    return;
+  BotProtocol::SessionItem& destItem = *it;
+  destItem = item;
+  destItem.entityType = BotProtocol::sessionItem;
+  destItem.entityId = item.entityId;
+  botConnection.updateSessionItem(destItem);
 }
 
 void_t SimBroker::warning(const String& message)

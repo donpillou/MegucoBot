@@ -20,6 +20,7 @@ private:
   timestamp_t lastBuyTime;
   timestamp_t lastSellTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
+  HashMap<uint32_t, BotProtocol::SessionItem> items;
   Bot::Session* botSession;
 
 private: // Bot::Broker
@@ -39,10 +40,18 @@ private: // Bot::Broker
   virtual void_t removeTransaction(uint32_t id);
   virtual void_t updateTransaction(const BotProtocol::Transaction& transaction);
 
+  virtual void_t getItems(List<BotProtocol::SessionItem>& items) const;
+  virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const;
+  virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const;
+  virtual bool_t createItem(BotProtocol::SessionItem& item);
+  virtual void_t removeItem(uint32_t id);
+  virtual void_t updateItem(const BotProtocol::SessionItem& item);
+
   virtual void_t warning(const String& message);
 
 public: // Broker
   virtual void_t loadTransaction(const BotProtocol::Transaction& transaction);
+  virtual void_t loadItem(const BotProtocol::SessionItem& item);
   virtual void_t loadOrder(const BotProtocol::Order& order);
   virtual void_t handleTrade(const DataProtocol::Trade& trade);
   virtual void_t setBotSession(Bot::Session& session);
