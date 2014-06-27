@@ -181,54 +181,5 @@ int_t main(int_t argc, char_t* argv[])
     }
   }
 
-  //for(int i = 0;; ++i)
-  //{
-  //  String message;
-  //  message.printf("bot test log message iteration %d", i);
-  //  if(!botConnection.addLogMessage(message))
-  //  {
-  //    Console::errorf("error: Could not add test log message: %s\n", (const char_t*)botConnection.getErrorString());
-  //    return -1;
-  //  }
-  //
-  //  BotProtocol::Transaction transaction;
-  //  transaction.entityType = BotProtocol::sessionTransaction;
-  //  transaction.amount = 1.;
-  //  transaction.fee = 0.01;
-  //  transaction.price = 1000.;
-  //  transaction.type = BotProtocol::Transaction::buy;
-  //  uint32_t entityId;
-  //  if(!botConnection.createSessionTransaction(transaction, entityId))
-  //  {
-  //    Console::errorf("error: Could not create test transaction: %s\n", (const char_t*)botConnection.getErrorString());
-  //    return -1;
-  //  }
-  //
-  //  Thread::sleep(2500);
-  //  if(!botConnection.removeSessionTransaction(entityId))
-  //  {
-  //    Console::errorf("error: Could not remove test transaction: %s\n", (const char_t*)botConnection.getErrorString());
-  //    return -1;
-  //  }
-  //  Thread::sleep(1000);
-  //
-  //  BotProtocol::Order order;
-  //  order.entityType = BotProtocol::sessionOrder;
-  //  order.amount = 1.;
-  //  order.fee = 0.01;
-  //  order.price = 1000.;
-  //  order.type = BotProtocol::Order::buy;
-  //  if(!botConnection.createSessionOrder(order, entityId))
-  //  {
-  //    Console::errorf("error: Could not create test order: %s\n", (const char_t*)botConnection.getErrorString());
-  //    return -1;
-  //  }
-  //  Thread::sleep(2500);
-  //  if(!botConnection.removeSessionOrder(entityId))
-  //  {
-  //    Console::errorf("error: Could not remove test order: %s\n", (const char_t*)botConnection.getErrorString());
-  //    return -1;
-  //  }
-  //}
   return 0;
 }
