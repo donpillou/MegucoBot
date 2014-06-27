@@ -26,9 +26,6 @@ private:
 
     Parameters parameters;
 
-    double balanceUsd;
-    double balanceBtc;
-
     double minBuyInPrice;
     double maxSellInPrice;
 
@@ -40,12 +37,6 @@ private:
     virtual void handleBuy(const BotProtocol::Transaction& transaction);
     virtual void handleSell(const BotProtocol::Transaction& transaction);
 
-    bool isGoodBuy(const Values& values);
-    bool isVeryGoodBuy(const Values& values);
-    bool isGoodSell(const Values& values);
-    bool isVeryGoodSell(const Values& values);
-
-    void updateBalance();
     void checkBuy(const DataProtocol::Trade& trade, const Values& values);
     void checkSell(const DataProtocol::Trade& trade, const Values& values);
   };

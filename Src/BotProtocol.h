@@ -235,6 +235,7 @@ public:
     int64_t date;
     double price;
     double amount;
+    double profitablePrice;
     double flipPrice;
   };
 

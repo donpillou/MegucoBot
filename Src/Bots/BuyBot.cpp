@@ -143,7 +143,7 @@ void BuyBot::Session::handleSell(const BotProtocol::Transaction& transaction)
     for(Map<double, BotProtocol::Transaction>::Iterator i = --sortedTransactions.end(), begin = sortedTransactions.begin(); ; --i)
     {
       BotProtocol::Transaction& transaction = *i;
-      if(price >= transaction.price * (1. + fee * 2))
+      if(transaction.price * (1. + fee * 2) <= price)
       {
         if(transaction.amount > amount)
         {
