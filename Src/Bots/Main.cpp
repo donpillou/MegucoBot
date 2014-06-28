@@ -1,23 +1,13 @@
 
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <cstring>
-#endif
-
 #include <nstd/Console.h>
-#include <nstd/String.h>
+//#include <nstd/String.h>
 #include <nstd/Thread.h> // sleep
 //#include <nstd/Error.h>
 
 #include "Tools/BotConnection.h"
-#include "Tools/DataConnection.h"
+#include "Tools/DataConnectionHandler.h"
 #include "Tools/SimBroker.h"
 #include "Tools/LiveBroker.h"
-#include "Tools/TradeHandler.h"
 
 #ifdef BOT_BUYBOT
 #include "Bots/BuyBot.h"
@@ -34,62 +24,6 @@ const char* botName = "ItemBot";
 typedef TestBot BotFactory;
 const char* botName = "TestBot";
 #endif
-
-class DataConnectionHandler : private DataConnection::Callback
-{
-public:
-  DataConnectionHandler(BotConnection& botConnection, Broker& broker, Bot::Session& session, bool simulation) :
-    botConnection(botConnection), broker(broker), session(session), simulation(simulation), lastReceivedTradeId(0), startTime(0) {}
-
-  bool_t connect(uint32_t ip, uint16_t port) {return dataConnection.connect(ip, port);}
-  bool_t subscribe(const String& channel) {return dataConnection.subscribe(channel, lastReceivedTradeId);}
-
-  bool_t process()
-  {
-    for(;;)
-      if(!dataConnection.process(*this))
-        return false;
-  }
-
-private:
-  BotConnection& botConnection;
-  Broker& broker;
-  DataConnection dataConnection;
-  Bot::Session& session;
-  bool simulation;
-  TradeHandler tradeHandler;
-  uint64_t lastReceivedTradeId;
-  timestamp_t startTime;
-
-private: // DataConnection::Callback
-  virtual void receivedChannelInfo(const String& channelName) {};
-  virtual void receivedSubscribeResponse(const String& channelName, uint64_t channelId) {};
-  virtual void receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) {};
-
-  virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade)
-  {
-    lastReceivedTradeId = trade.id;
-    tradeHandler.add(trade, 0LL);
-
-    if(simulation)
-    {
-      if(startTime == 0)
-        startTime = trade.time;
-      if(trade.time - startTime <= 45 * 60 * 1000)
-        return; // wait for 45 minutes of trade data to be evaluated
-      if(trade.flags & DataProtocol::syncFlag)
-        broker.warning("sync");
-    }
-    else if(trade.flags & DataProtocol::replayedFlag)
-      return;
-
-    broker.handleTrade(trade);
-    session.handle(trade, tradeHandler.values);
-  }
-
-  virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {};
-  virtual void receivedErrorResponse(const String& message) {};
-};
 
 int_t main(int_t argc, char_t* argv[])
 {
