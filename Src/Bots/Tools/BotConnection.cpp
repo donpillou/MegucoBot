@@ -247,7 +247,7 @@ bool_t BotConnection::updateEntity(const void_t* data, size_t size)
     }
     BotProtocol::Entity* entity = (BotProtocol::Entity*)data;
     if(!(header.messageType == BotProtocol::updateEntityResponse && header.requestId == 0 && size >= sizeof(BotProtocol::Entity) &&
-         entity->entityType == entityType && entityId == entityId))
+         entity->entityType == entityType && entity->entityId == entityId))
     {
       error = "Could not receive update entity response.";
       return false;
