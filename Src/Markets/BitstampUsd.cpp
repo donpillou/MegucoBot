@@ -81,15 +81,15 @@ bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type t
 
   order.price = orderData.find("price")->toDouble();
   order.amount = Math::abs(orderData.find("amount")->toDouble());
-  double charge = getOrderCharge(buy ? order.amount : -order.amount, order.price);
-  order.fee = Math::abs(charge) - Math::abs(order.price * order.amount);
+  double total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
+  order.fee = Math::abs(total - Math::abs(order.price * order.amount));
   this->orders.append(order.entityId, order);
 
   // update balance
   if(order.amount > 0) // buy order
   {
-    balance.availableUsd -= charge;
-    balance.reservedUsd += charge;
+    balance.availableUsd -= total;
+    balance.reservedUsd += total;
   }
   else // sell order
   {
