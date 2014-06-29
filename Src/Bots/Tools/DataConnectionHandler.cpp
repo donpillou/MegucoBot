@@ -1,4 +1,5 @@
 
+#if 0
 #include "DataConnectionHandler.h"
 
 void DataConnectionHandler::receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade)
@@ -21,3 +22,4 @@ void DataConnectionHandler::receivedTrade(uint64_t channelId, const DataProtocol
   broker.handleTrade(trade);
   session.handle(trade, tradeHandler.values);
 }
+#endif

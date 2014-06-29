@@ -6,27 +6,38 @@
 #include "SimBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection, const BotProtocol::Balance& balance) :
+SimBroker::SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders) :
   botConnection(botConnection), balance(balance), 
-  time(0), lastBuyTime(0), lastSellTime(0), botSession(0) {}
-
-void_t SimBroker::loadTransaction(const BotProtocol::Transaction& transaction)
+  time(0), lastBuyTime(0), lastSellTime(0), startTime(0)
 {
-  transactions.append(transaction.entityId, transaction);
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  {
+    const BotProtocol::Transaction& transaction = *i;
+    this->transactions.append(transaction.entityId, transaction);
+  }
+  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    this->items.append(item.entityId, item);
+  }
+  for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+  {
+    const BotProtocol::Order& order = *i;
+    this->openOrders.append(order);
+  }
 }
 
-void_t SimBroker::loadItem(const BotProtocol::SessionItem& item)
+void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trade& trade)
 {
-  items.append(item.entityId, item);
-}
+  tradeHandler.add(trade, 0LL);
 
-void_t SimBroker::loadOrder(const BotProtocol::Order& order)
-{
-  openOrders.append(order);
-}
+  if(startTime == 0)
+    startTime = trade.time;
+  if(trade.time - startTime <= 45 * 60 * 1000)
+    return; // wait for 45 minutes of trade data to be evaluated
+  if(trade.flags & DataProtocol::syncFlag)
+    warning("sync");
 
-void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
-{
   time = trade.time;
 
   for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
@@ -90,21 +101,18 @@ void_t SimBroker::handleTrade(const DataProtocol::Trade& trade)
       if(order.type == BotProtocol::Order::buy)
       {
         marker.type = BotProtocol::Marker::buy;
-        botSession->handleBuy(transaction);
+        botSession.handleBuy(transaction);
       }
       else
       {
         marker.type = BotProtocol::Marker::sell;
-        botSession->handleSell(transaction);
+        botSession.handleSell(transaction);
       }
       botConnection.createSessionMarker(marker);
     }
   }
-}
 
-void_t SimBroker::setBotSession(Bot::Session& session)
-{
-  botSession = &session;
+  botSession.handle(trade, tradeHandler.values);
 }
 
 bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)

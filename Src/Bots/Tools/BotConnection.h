@@ -4,6 +4,7 @@
 #include <nstd/String.h>
 #include <nstd/List.h>
 #include <nstd/Buffer.h>
+
 #include "Tools/Socket.h"
 #include "BotProtocol.h"
 
@@ -14,7 +15,7 @@ public:
 
   bool_t connect(uint16_t port);
   void_t close() {socket.close();}
-  bool_t isOpen() const {return socket.isOpen();}
+
   const String& getErrorString() const {return error;}
 
   bool_t getMarketBalance(BotProtocol::Balance& balance);
@@ -23,9 +24,11 @@ public:
   bool_t removeMarketOrder(uint32_t id);
 
   bool_t addLogMessage(const String& message);
+
   bool_t getSessionTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getSessionItems(List<BotProtocol::SessionItem>& items);
   bool_t getSessionOrders(List<BotProtocol::Order>& orders);
+  bool_t getSessionBalance(BotProtocol::Balance& balance);
 
   bool_t createSessionTransaction(BotProtocol::Transaction& transaction);
   bool_t updateSessionTransaction(const BotProtocol::Transaction& transaction);
@@ -38,7 +41,6 @@ public:
   bool_t removeSessionOrder(uint32_t id);
   bool_t createSessionMarker(BotProtocol::Marker& marker);
   bool_t removeSessionMarker(uint32_t id);
-  bool_t getSessionBalance(BotProtocol::Balance& balance);
   bool_t updateSessionBalance(BotProtocol::Balance& balance);
 
 private:

@@ -6,7 +6,7 @@
 
 bool_t HandlerConnection::connect(uint16_t port)
 {
-  socket.close();
+  close();
 
   // connect to server
   if(!socket.open() ||
@@ -48,6 +48,25 @@ bool_t HandlerConnection::connect(uint16_t port)
     simulation = registerBotHandlerResponse->simulation != 0;
   }
 
+  return true;
+}
+
+bool_t HandlerConnection::process(Callback& callback)
+{
+  BotProtocol::Header header;
+  byte_t* data;
+  size_t size;
+  if(!receiveMessage(header, data, size))
+    return false;
+  switch((BotProtocol::MessageType)header.messageType)
+  {
+  case BotProtocol::controlEntity:
+    if(size >= sizeof(BotProtocol::Entity)) 
+      callback.receivedControlEntity(*(BotProtocol::Entity*)data, size);
+    break;
+  default:
+    break;
+  }
   return true;
 }
 

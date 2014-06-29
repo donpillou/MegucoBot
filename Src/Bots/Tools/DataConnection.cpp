@@ -6,8 +6,7 @@
 
 bool DataConnection::connect(uint32_t ip, uint16_t port)
 {
-  socket.close();
-  recvBuffer.clear();
+  close();
 
   if(!socket.open() ||
      !socket.connect(ip, port) ||
@@ -52,6 +51,12 @@ bool DataConnection::connect(uint32_t ip, uint16_t port)
   }
 
   return true;
+}
+
+void_t DataConnection::close()
+{
+  socket.close();
+  recvBuffer.clear();
 }
 
 bool DataConnection::process(Callback& callback)

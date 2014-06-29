@@ -3,14 +3,15 @@
 
 #include <nstd/HashMap.h>
 
-#include "Broker.h"
+#include "Tools/Broker.h"
+#include "Tools/TradeHandler.h"
 
 class BotConnection;
 
 class LiveBroker : public Broker
 {
 public:
-  LiveBroker(BotConnection& botConnection, const BotProtocol::Balance& balance);
+  LiveBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders);
 
 private:
   BotConnection& botConnection;
@@ -21,11 +22,11 @@ private:
   timestamp_t lastSellTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;
-  Bot::Session* botSession;
+  TradeHandler tradeHandler;
 
 private:
-  void_t refreshOrders();
-  void_t cancelTimedOutOrders();
+  void_t refreshOrders(Bot::Session& botSession);
+  void_t cancelTimedOutOrders(Bot::Session& botSession);
 
 private: // Bot::Broker
   virtual bool_t buy(double price, double amount, timestamp_t timeout);
@@ -54,10 +55,6 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
-  virtual void_t loadTransaction(const BotProtocol::Transaction& transaction);
-  virtual void_t loadItem(const BotProtocol::SessionItem& item);
-  virtual void_t loadOrder(const BotProtocol::Order& order);
-  virtual void_t handleTrade(const DataProtocol::Trade& trade);
-  virtual void_t setBotSession(Bot::Session& session);
+  virtual void_t handleTrade(Bot::Session& session, const DataProtocol::Trade& trade);
 };
 

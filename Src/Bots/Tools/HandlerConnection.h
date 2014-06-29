@@ -11,10 +11,22 @@
 class HandlerConnection
 {
 public:
+  class Callback
+  {
+  public:
+    virtual void_t receivedControlEntity(BotProtocol::Entity& entity, size_t size) = 0;
+  };
+
+public:
   HandlerConnection() : simulation(true) {}
 
   bool_t connect(uint16_t port);
+  void_t close() {socket.close();}
+
   const String& getErrorString() const {return error;}
+  Socket& getSocket() {return socket;}
+
+  bool_t process(Callback& callback);
 
   const String& getMarketAdapterName() const {return marketAdapterName;}
   bool isSimulation() const {return simulation;}
@@ -23,7 +35,6 @@ public:
   bool_t sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize);
   bool_t sendMessageData(const void_t* data, size_t size);
   bool_t sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity* entity, const String& errorMessage);
-  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
 
 private:
   Socket socket;
@@ -32,4 +43,7 @@ private:
 
   String marketAdapterName;
   bool simulation;
+
+private:
+  bool_t receiveMessage(BotProtocol::Header& header, byte_t*& data, size_t& size);
 };

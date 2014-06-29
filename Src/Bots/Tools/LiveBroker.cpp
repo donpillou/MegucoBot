@@ -6,27 +6,34 @@
 #include "LiveBroker.h"
 #include "BotConnection.h"
 
-LiveBroker::LiveBroker(BotConnection& botConnection, const BotProtocol::Balance& balance) :
+LiveBroker::LiveBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders) :
   botConnection(botConnection), balance(balance),
-  time(0), lastBuyTime(0), lastSellTime(0), botSession(0) {}
-
-void_t LiveBroker::loadTransaction(const BotProtocol::Transaction& transaction)
+  time(0), lastBuyTime(0), lastSellTime(0)
 {
-  transactions.append(transaction.entityId, transaction);
+  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+  {
+    const BotProtocol::Transaction& transaction = *i;
+    this->transactions.append(transaction.entityId, transaction);
+  }
+  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    this->items.append(item.entityId, item);
+  }
+  for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+  {
+    const BotProtocol::Order& order = *i;
+    this->openOrders.append(order);
+  }
 }
 
-void_t LiveBroker::loadItem(const BotProtocol::SessionItem& item)
+void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trade& trade)
 {
-  items.append(item.entityId, item);
-}
+  tradeHandler.add(trade, 0LL);
 
-void_t LiveBroker::loadOrder(const BotProtocol::Order& order)
-{
-  openOrders.append(order);
-}
+  if(trade.flags & DataProtocol::replayedFlag)
+    return;
 
-void_t LiveBroker::handleTrade(const DataProtocol::Trade& trade)
-{
   time = trade.time;
 
   for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
@@ -34,15 +41,17 @@ void_t LiveBroker::handleTrade(const DataProtocol::Trade& trade)
     const BotProtocol::Order& order = *i;
     if (Math::abs(order.price - trade.price) <= 0.01)
     {
-      refreshOrders();
+      refreshOrders(botSession);
       break;
     }
   }
 
-  cancelTimedOutOrders();
+  cancelTimedOutOrders(botSession);
+
+  botSession.handle(trade, tradeHandler.values);
 }
 
-void_t LiveBroker::refreshOrders()
+void_t LiveBroker::refreshOrders(Bot::Session& botSession)
 {
   List<BotProtocol::Order> orders;
   if(!botConnection.getMarketOrders(orders))
@@ -93,19 +102,19 @@ void_t LiveBroker::refreshOrders()
       if(order.type == BotProtocol::Order::buy)
       {
         marker.type = BotProtocol::Marker::buy;
-        botSession->handleBuy(transaction);
+        botSession.handleBuy(transaction);
       }
       else
       {
         marker.type = BotProtocol::Marker::sell;
-        botSession->handleSell(transaction);
+        botSession.handleSell(transaction);
       }
       botConnection.createSessionMarker(marker);
     }
   }
 }
 
-void_t LiveBroker::cancelTimedOutOrders()
+void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
 {
   for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
@@ -136,16 +145,11 @@ void_t LiveBroker::cancelTimedOutOrders()
       }
       else
       {
-        refreshOrders();
+        refreshOrders(botSession);
         return;
       }
     }
   }
-}
-
-void_t LiveBroker::setBotSession(Bot::Session& session)
-{
-  botSession = &session;
 }
 
 bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)

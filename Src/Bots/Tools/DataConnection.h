@@ -12,24 +12,27 @@ public:
   class Callback
   {
   public:
-    virtual void receivedChannelInfo(const String& channelName) = 0;
-    virtual void receivedSubscribeResponse(const String& channelName, uint64_t channelId) = 0;
-    virtual void receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) = 0;
-    virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade) = 0;
-    virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) = 0;
-    virtual void receivedErrorResponse(const String& message) = 0;
+    virtual void_t receivedChannelInfo(const String& channelName) = 0;
+    virtual void_t receivedSubscribeResponse(const String& channelName, uint64_t channelId) = 0;
+    virtual void_t receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) = 0;
+    virtual void_t receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade) = 0;
+    virtual void_t receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) = 0;
+    virtual void_t receivedErrorResponse(const String& message) = 0;
   };
 
 public:
-  bool connect(uint32_t ip, uint16_t port);
+  bool_t connect(uint32_t ip, uint16_t port);
+  void_t close();
+
   const String& getLastError() {return error;}
+  Socket& getSocket() {return socket;}
 
-  bool process(Callback& callback);
+  bool_t process(Callback& callback);
 
-  bool loadChannelList();
+  bool_t loadChannelList();
 
-  bool subscribe(const String& channel, uint64_t lastReceivedTradeId);
-  bool unsubscribe(const String& channel);
+  bool_t subscribe(const String& channel, uint64_t lastReceivedTradeId);
+  bool_t unsubscribe(const String& channel);
 
   //bool readTrade(uint64_t& channelId, DataProtocol::Trade& trade);
 
@@ -41,5 +44,5 @@ private:
   timestamp_t serverTimeToLocalTime;
 
 private:
-  void handleMessage(DataProtocol::MessageType messageType, char* data, unsigned int dataSize);
+  void_t handleMessage(DataProtocol::MessageType messageType, char_t* data, uint_t dataSize);
 };

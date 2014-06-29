@@ -93,7 +93,6 @@ bool_t BotConnection::addLogMessage(const String& message)
   return createEntity(&logMessage, sizeof(logMessage));
 }
 
-
 bool_t BotConnection::getSessionTransactions(List<BotProtocol::Transaction>& transactions)
 {
   if(!sendControlSession(BotProtocol::ControlSession::requestTransactions, transactions))
@@ -112,6 +111,20 @@ bool_t BotConnection::getSessionOrders(List<BotProtocol::Order>& orders)
 {
   if(!sendControlSession(BotProtocol::ControlSession::requestOrders, orders))
     return false;
+  return true;
+}
+
+bool_t BotConnection::getSessionBalance(BotProtocol::Balance& balance)
+{
+  List<BotProtocol::Balance> result;
+  if(!sendControlSession(BotProtocol::ControlSession::requestBalance, result))
+    return false;
+  if(result.isEmpty())
+  {
+    error = "Received response without session balance.";
+    return false;
+  }
+  balance = result.front();
   return true;
 }
 
@@ -168,20 +181,6 @@ bool_t BotConnection::createSessionMarker(BotProtocol::Marker& marker)
 bool_t BotConnection::removeSessionMarker(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionMarker, id);
-}
-
-bool_t BotConnection::getSessionBalance(BotProtocol::Balance& balance)
-{
-  List<BotProtocol::Balance> result;
-  if(!sendControlSession(BotProtocol::ControlSession::requestBalance, result))
-    return false;
-  if(result.isEmpty())
-  {
-    error = "Received response without session balance.";
-    return false;
-  }
-  balance = result.front();
-  return true;
 }
 
 bool_t BotConnection::updateSessionBalance(BotProtocol::Balance& balance)

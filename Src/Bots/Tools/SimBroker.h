@@ -3,14 +3,15 @@
 
 #include <nstd/HashMap.h>
 
-#include "Broker.h"
+#include "Tools/Broker.h"
+#include "Tools/TradeHandler.h"
 
 class BotConnection;
 
 class SimBroker : public Broker
 {
 public:
-  SimBroker(BotConnection& botConnection, const BotProtocol::Balance& balance);
+  SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders);
 
 private:
   BotConnection& botConnection;
@@ -21,7 +22,8 @@ private:
   timestamp_t lastSellTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;
-  Bot::Session* botSession;
+  TradeHandler tradeHandler;
+  timestamp_t startTime;
 
 private: // Bot::Broker
   virtual bool_t buy(double price, double amount, timestamp_t timeout);
@@ -50,10 +52,6 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
-  virtual void_t loadTransaction(const BotProtocol::Transaction& transaction);
-  virtual void_t loadItem(const BotProtocol::SessionItem& item);
-  virtual void_t loadOrder(const BotProtocol::Order& order);
-  virtual void_t handleTrade(const DataProtocol::Trade& trade);
-  virtual void_t setBotSession(Bot::Session& session);
+  virtual void_t handleTrade(Bot::Session& session, const DataProtocol::Trade& trade);
 };
 

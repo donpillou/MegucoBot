@@ -1,6 +1,7 @@
 
 #pragma once
 
+#if 0
 #include "DataConnection.h"
 #include "BotConnection.h"
 #include "Broker.h"
@@ -34,3 +35,4 @@ private: // DataConnection::Callback
   virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {};
   virtual void receivedErrorResponse(const String& message) {};
 };
+#endif
