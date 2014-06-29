@@ -29,14 +29,20 @@ SimBroker::SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& 
 
 void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trade& trade)
 {
-  tradeHandler.add(trade, 0LL);
+  static const timestamp_t warmupTime = 60 * 60 * 1000LL; // wait for 60 minutes of trade data to be evaluated
 
   if(startTime == 0)
     startTime = trade.time;
-  if(trade.time - startTime <= 45 * 60 * 1000)
-    return; // wait for 45 minutes of trade data to be evaluated
+  if(trade.time - startTime <= warmupTime)
+  {
+    tradeHandler.add(trade, startTime + warmupTime - trade.time);
+    return; 
+  }
+
   if(trade.flags & DataProtocol::syncFlag)
     warning("sync");
+
+  tradeHandler.add(trade, 0LL);
 
   time = trade.time;
 

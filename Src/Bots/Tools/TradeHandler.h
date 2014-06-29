@@ -14,10 +14,15 @@ public:
 
   void add(const DataProtocol::Trade& trade, timestamp_t tradeAge)
   {
+    static const uint64_t depths[] = {1 * 60, 3 * 60, 5 * 60, 10 * 60, 15 * 60, 20 * 60, 30 * 60, 1 * 60 * 60, 2 * 60 * 60, 4 * 60 * 60, 6 * 60 * 60, 12 * 60 * 60, 24 * 60 * 60};
+
     uint64_t tradeAgeSecs = tradeAge / 1000ULL;
+    if(tradeAgeSecs > depths[sizeof(depths) / sizeof(*depths) - 1] * 3ULL)
+      return;
+
     bool updateValues = tradeAge == 0;
     uint64_t time = trade.time / 1000ULL;
-    uint64_t depths[] = {1 * 60, 3 * 60, 5 * 60, 10 * 60, 15 * 60, 20 * 60, 30 * 60, 1 * 60 * 60, 2 * 60 * 60, 4 * 60 * 60, 6 * 60 * 60, 12 * 60 * 60, 24 * 60 * 60};
+
     for(int i = 0; i < (int)Bot::numOfRegressions; ++i)
     {
       if(tradeAgeSecs <= depths[i])

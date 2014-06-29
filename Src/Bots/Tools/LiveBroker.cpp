@@ -29,11 +29,16 @@ LiveBroker::LiveBroker(BotConnection& botConnection,  const BotProtocol::Balance
 
 void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trade& trade)
 {
-  tradeHandler.add(trade, 0LL);
-
   if(trade.flags & DataProtocol::replayedFlag)
+  {
+    timestamp_t tradeAge = Time::time() - trade.time;
+    if(tradeAge <= 0LL)
+      tradeAge = 1LL;
+    tradeHandler.add(trade, tradeAge);
     return;
+  }
 
+  tradeHandler.add(trade, 0LL);
   time = trade.time;
 
   for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
