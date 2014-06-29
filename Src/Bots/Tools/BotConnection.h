@@ -10,15 +10,12 @@
 class BotConnection
 {
 public:
-  BotConnection() : sessionId(0), marketId(0), simulation(true) {}
+  BotConnection() : sessionId(0), marketId(0) {}
 
   bool_t connect(uint16_t port);
   void_t close() {socket.close();}
   bool_t isOpen() const {return socket.isOpen();}
   const String& getErrorString() const {return error;}
-
-  const String& getMarketAdapterName() const {return marketAdapterName;}
-  bool isSimulation() const {return simulation;}
 
   bool_t getMarketBalance(BotProtocol::Balance& balance);
   bool_t getMarketOrders(List<BotProtocol::Order>& orders);
@@ -48,10 +45,9 @@ private:
   Socket socket;
   String error;
   Buffer recvBuffer;
+
   uint32_t sessionId;
   uint32_t marketId;
-  String marketAdapterName;
-  bool simulation;
 
 private:
   bool_t createEntity(void_t* data, size_t size);

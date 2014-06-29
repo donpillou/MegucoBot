@@ -5,6 +5,7 @@
 //#include <nstd/Error.h>
 
 #include "Tools/BotConnection.h"
+#include "Tools/HandlerConnection.h"
 #include "Tools/DataConnectionHandler.h"
 #include "Tools/SimBroker.h"
 #include "Tools/LiveBroker.h"
@@ -38,13 +39,24 @@ int_t main(int_t argc, char_t* argv[])
   //    break;
   //}
 
-  // create bot server connection
+  // create entity connection with bot server
   BotConnection botConnection;
   if(!botConnection.connect(botPort))
   {
     Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)botConnection.getErrorString());
     return -1;
   }
+
+  // create handler connection with bot server
+  HandlerConnection handlerConnection;
+  if(!handlerConnection.connect(botPort))
+  {
+    Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)handlerConnection.getErrorString());
+    return -1;
+  }
+
+  // load some data
+  // todo: move this to broker implementation?
   BotProtocol::Balance marketBalance;
   if(!botConnection.getMarketBalance(marketBalance))
   {
@@ -82,7 +94,7 @@ int_t main(int_t argc, char_t* argv[])
   sessionBalance.fee = marketBalance.fee;
 
   // create broker
-  Broker* broker = botConnection.isSimulation() ? (Broker*)new SimBroker(botConnection, sessionBalance) :
+  Broker* broker = handlerConnection.isSimulation() ? (Broker*)new SimBroker(botConnection, sessionBalance) :
     (Broker*)new LiveBroker(botConnection, sessionBalance);
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
     broker->loadTransaction(*i);
@@ -100,8 +112,8 @@ int_t main(int_t argc, char_t* argv[])
   broker->setBotSession(*session);
 
   // receive and handle trade data
-  DataConnectionHandler dataConnection(botConnection, *broker, *session, botConnection.isSimulation());
-  String marketAdapterName = botConnection.getMarketAdapterName();
+  DataConnectionHandler dataConnection(botConnection, *broker, *session, handlerConnection.isSimulation());
+  String marketAdapterName = handlerConnection.getMarketAdapterName();
   for(;; Thread::sleep(10 * 1000))
   {
     if(!dataConnection.connect(dataIp, dataPort))

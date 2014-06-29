@@ -17,6 +17,8 @@ public:
     authResponse,
     registerBotRequest,
     registerBotResponse,
+    registerBotHandlerRequest,
+    registerBotHandlerResponse,
     registerMarketRequest,
     registerMarketResponse,
     registerMarketHandlerRequest,
@@ -84,11 +86,20 @@ public:
   {
     uint32_t pid;
   };
-  
+
   struct RegisterBotResponse
   {
     uint32_t sessionId;
     uint32_t marketId;
+  };
+
+  struct RegisterBotHandlerRequest
+  {
+    uint32_t pid;
+  };
+
+  struct RegisterBotHandlerResponse
+  {
     char_t marketAdapterName[33];
     uint8_t simulation;
   };

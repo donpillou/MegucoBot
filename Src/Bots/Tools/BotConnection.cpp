@@ -44,11 +44,9 @@ bool_t BotConnection::connect(uint16_t port)
       error = "Could not receive register bot response.";
       return false;
     }
-    BotProtocol::RegisterBotResponse* response = (BotProtocol::RegisterBotResponse*)data;
-    sessionId = response->sessionId;
-    marketId = response->marketId;
-    marketAdapterName = BotProtocol::getString(response->marketAdapterName);
-    simulation = response->simulation != 0;
+    const BotProtocol::RegisterBotResponse* registerBotResponse = (BotProtocol::RegisterBotResponse*)data;
+    marketId = registerBotResponse->marketId;
+    sessionId = registerBotResponse->sessionId;
   }
 
   return true;

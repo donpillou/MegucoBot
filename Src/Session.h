@@ -20,6 +20,14 @@ class Order;
 class Session
 {
 public:
+  enum ClientType
+  {
+    userType,
+    handlerType,
+    entityType,
+  };
+
+public:
   Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double initialBalanceBase, double initialBalanceComm);
   Session(ServerHandler& serverHandler, User& user, const Variant& variant);
   ~Session();
@@ -31,7 +39,7 @@ public:
   bool_t startLive();
   bool_t stop();
 
-  bool_t registerClient(ClientHandler& client, bool_t bot);
+  bool_t registerClient(ClientHandler& client, ClientType type);
   void_t unregisterClient(ClientHandler& client);
 
   User& getUser() {return user;}
@@ -85,7 +93,8 @@ private:
   BotProtocol::Session::State state;
   Process process;
   uint32_t pid;
-  ClientHandler* botClient;
+  ClientHandler* handlerClient;
+  ClientHandler* entityClient;
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;

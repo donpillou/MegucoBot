@@ -23,7 +23,7 @@ ClientHandler::~ClientHandler()
   if(session)
   {
     session->unregisterClient(*this);
-    if(state == botState)
+    if(state == botHandlerState)
     {
       BotProtocol::Session sessionEntity;
       session->getEntity(sessionEntity);
@@ -97,6 +97,10 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& header, byte_t* d
     case BotProtocol::registerBotRequest:
       if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterBotRequest))
         handleRegisterBot(header.requestId, *(BotProtocol::RegisterBotRequest*)data);
+      break;
+    case BotProtocol::registerBotHandlerRequest:
+      if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterBotHandlerRequest))
+        handleRegisterBotHandler(header.requestId, *(BotProtocol::RegisterBotHandlerRequest*)data);
       break;
     case BotProtocol::registerMarketRequest:
       if(clientAddr == Socket::loopbackAddr && size >= sizeof(BotProtocol::RegisterMarketRequest))
@@ -269,7 +273,7 @@ void_t ClientHandler::handleRegisterBot(uint32_t requestId, BotProtocol::Registe
     sendErrorResponse(BotProtocol::registerBotRequest, requestId, 0, "Unknown session.");
     return;
   }
-  if(!session->registerClient(*this, true))
+  if(!session->registerClient(*this, Session::entityType))
   {
     sendErrorResponse(BotProtocol::registerBotRequest, requestId, 0, "Invalid session.");
     return;
@@ -278,13 +282,39 @@ void_t ClientHandler::handleRegisterBot(uint32_t requestId, BotProtocol::Registe
   BotProtocol::RegisterBotResponse response;
   response.sessionId = session->getId();
   response.marketId = session->getMarket()->getId();
-  BotProtocol::setString(response.marketAdapterName, session->getMarket()->getMarketAdapter()->getName());
-  response.simulation = session->isSimulation();
   sendMessage(BotProtocol::registerBotResponse, requestId, &response, sizeof(response));
 
   this->session = session;
   state = botState;
 
+  BotProtocol::Session sessionEntity;
+  session->getEntity(sessionEntity);
+  session->getUser().sendUpdateEntity(&sessionEntity, sizeof(sessionEntity));
+}
+
+void_t ClientHandler::handleRegisterBotHandler(uint32_t requestId, BotProtocol::RegisterBotHandlerRequest& registerBotHandlerRequest)
+{
+  Session* session = serverHandler.findSessionByPid(registerBotHandlerRequest.pid);
+  if(!session)
+  {
+    sendErrorResponse(BotProtocol::registerBotRequest, requestId, 0, "Unknown session.");
+    return;
+  }
+  if(!session->registerClient(*this, Session::handlerType)) // this changes the state of the session
+  {
+    sendErrorResponse(BotProtocol::registerBotRequest, requestId, 0, "Invalid session.");
+    return;
+  } 
+
+  BotProtocol::RegisterBotHandlerResponse response;
+  BotProtocol::setString(response.marketAdapterName, session->getMarket()->getMarketAdapter()->getName());
+  response.simulation = session->isSimulation();
+  sendMessage(BotProtocol::registerBotHandlerResponse, requestId, &response, sizeof(response));
+
+  this->session = session;
+  state = botHandlerState;
+
+  // send updated session entity to all connected clients
   BotProtocol::Session sessionEntity;
   session->getEntity(sessionEntity);
   session->getUser().sendUpdateEntity(&sessionEntity, sizeof(sessionEntity));
@@ -319,7 +349,7 @@ void_t ClientHandler::handleRegisterMarketHandler(uint32_t requestId, BotProtoco
     sendErrorResponse(BotProtocol::registerMarketHandlerRequest, requestId, 0, "Unknown market.");
     return;
   }
-  if(!market->registerClient(*this, Market::handlerType))
+  if(!market->registerClient(*this, Market::handlerType)) // this changes the state of the market
   {
     sendErrorResponse(BotProtocol::registerMarketHandlerRequest, requestId, 0, "Invalid market.");
     return;
@@ -334,11 +364,12 @@ void_t ClientHandler::handleRegisterMarketHandler(uint32_t requestId, BotProtoco
   this->market = market;
   state = marketHandlerState;
 
+  // send updated market entity to all connected clients
   BotProtocol::Market marketEntity;
   market->getEntity(marketEntity);
   market->getUser().sendUpdateEntity(&marketEntity, sizeof(marketEntity));
 
-  // request balance
+  // request market balance
   BotProtocol::ControlMarket controlMarket;
   controlMarket.entityType = BotProtocol::market;
   controlMarket.entityId = market->getId();
@@ -829,7 +860,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
   case BotProtocol::ControlSession::select:
     if(this->session)
       this->session->unregisterClient(*this);
-    session->registerClient(*this, false);
+    session->registerClient(*this, Session::userType);
     this->session = session;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     sendRemoveAllEntities(BotProtocol::sessionBalance);

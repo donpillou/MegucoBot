@@ -106,7 +106,7 @@ void_t Market::unregisterClient(ClientHandler& client)
   if(&client == handlerClient)
   {
     handlerClient = 0;
-    state = BotProtocol::Market::stopped;
+    stop();
   }
   else if(&client == entityClient)
     entityClient = 0;

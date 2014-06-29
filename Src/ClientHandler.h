@@ -30,6 +30,7 @@ private:
     loginState,
     userState,
     botState,
+    botHandlerState,
     marketState,
     marketHandlerState,
   };
@@ -50,6 +51,7 @@ private:
   void_t handleLogin(uint32_t requestId, BotProtocol::LoginRequest& loginRequest);
   void_t handleAuth(uint32_t requestId, BotProtocol::AuthRequest& authRequest);
   void_t handleRegisterBot(uint32_t requestId, BotProtocol::RegisterBotRequest& registerBotRequest);
+  void_t handleRegisterBotHandler(uint32_t requestId, BotProtocol::RegisterBotHandlerRequest& registerBotHandlerRequest);
   void_t handleRegisterMarket(uint32_t requestId, BotProtocol::RegisterMarketRequest& registerMarketRequest);
   void_t handleRegisterMarketHandler(uint32_t requestId, BotProtocol::RegisterMarketHandlerRequest& registerMarketHandlerRequest);
 

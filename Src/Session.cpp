@@ -13,7 +13,7 @@ Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const St
   serverHandler(serverHandler), user(user),
   __id(id), name(name), engine(&engine), market(&market),
   simulation(true), initialBalanceBase(initialBalanceBase), initialBalanceComm(initialBalanceComm),
-  state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1)
+  state(BotProtocol::Session::stopped), pid(0), handlerClient(0), entityClient(0), nextEntityId(1)
 {
   balance.entityType = BotProtocol::sessionBalance;
   balance.entityId = 0;
@@ -26,7 +26,7 @@ Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const St
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
-  state(BotProtocol::Session::stopped), pid(0), botClient(0), nextEntityId(1)
+  state(BotProtocol::Session::stopped), pid(0), handlerClient(0), entityClient(0), nextEntityId(1)
 {
   const HashMap<String, Variant>& data = variant.toMap();
   __id = data.find("id")->toUInt();
@@ -123,8 +123,10 @@ Session::~Session()
   if(pid != 0)
     serverHandler.unregisterSession(pid);
   process.kill();
-  if(botClient)
-    botClient->deselectSession();
+  if(handlerClient)
+    handlerClient->deselectSession();
+  if(entityClient)
+    entityClient->deselectSession();
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->deselectSession();
   //if(market)
@@ -276,27 +278,37 @@ bool_t Session::stop()
   return true;
 }
 
-bool_t Session::registerClient(ClientHandler& client, bool_t bot)
+bool_t Session::registerClient(ClientHandler& client, ClientType type)
 {
-  if(bot)
+  switch(type)
   {
-    if(botClient)
+  case handlerType:
+    if(handlerClient)
       return false;
-    botClient = &client;
+    handlerClient = &client;
     state = simulation ? BotProtocol::Session::simulating : BotProtocol::Session::running;
-  }
-  else
+    break;
+  case entityType:
+    if(entityClient)
+      return false;
+    entityClient = &client;
+    break;
+  case userType:
     clients.append(&client);
+    break;
+  }
   return true;
 }
 
 void_t Session::unregisterClient(ClientHandler& client)
 {
-  if(&client == botClient)
+  if(&client == handlerClient)
   {
-    botClient = 0;
+    handlerClient = 0;
     stop();
   }
+  else if(&client == entityClient)
+    entityClient = 0;
   else
     clients.remove(&client);
 }
