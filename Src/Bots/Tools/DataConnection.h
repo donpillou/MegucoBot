@@ -9,14 +9,6 @@
 class DataConnection
 {
 public:
-  class Trade
-  {
-  public:
-    double amount;
-    uint64_t time;
-    double price;
-  };
-
   class Callback
   {
   public:
@@ -28,7 +20,10 @@ public:
     virtual void receivedErrorResponse(const String& message) = 0;
   };
 
+public:
   bool connect(uint32_t ip, uint16_t port);
+  const String& getLastError() {return error;}
+
   bool process(Callback& callback);
 
   bool loadChannelList();
@@ -36,9 +31,7 @@ public:
   bool subscribe(const String& channel, uint64_t lastReceivedTradeId);
   bool unsubscribe(const String& channel);
 
-  bool readTrade(uint64_t& channelId, DataProtocol::Trade& trade);
-
-  const String& getLastError() {return error;}
+  //bool readTrade(uint64_t& channelId, DataProtocol::Trade& trade);
 
 private:
   Socket socket;
@@ -47,5 +40,6 @@ private:
   Callback* callback;
   timestamp_t serverTimeToLocalTime;
 
+private:
   void handleMessage(DataProtocol::MessageType messageType, char* data, unsigned int dataSize);
 };

@@ -45,7 +45,7 @@ bool DataConnection::connect(uint32_t ip, uint16_t port)
     }
     if(header->messageType != DataProtocol::timeResponse)
     {
-      error = "Could not request server time.";
+      error = "Could not retrieve server time.";
       return false;
     }
     serverTimeToLocalTime = (localResponseTime - localRequestTime) / 2 + localRequestTime - timeResponse2->time;
@@ -229,33 +229,33 @@ bool DataConnection::unsubscribe(const String& channel)
   return true;
 }
 
-bool DataConnection::readTrade(uint64_t& channelId, DataProtocol::Trade& trade)
-{
-  struct ReadTradeCallback : public Callback
-  {
-    uint64_t& channelId;
-    DataProtocol::Trade& trade;
-    bool finished;
-
-    ReadTradeCallback(uint64_t& channelId, DataProtocol::Trade& trade) : channelId(channelId), trade(trade), finished(false) {}
-
-    virtual void receivedChannelInfo(const String& channelName) {}
-    virtual void receivedSubscribeResponse(const String& channelName, uint64_t channelId) {}
-    virtual void receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) {}
-    virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {}
-    virtual void receivedErrorResponse(const String& message) {}
-
-    virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade)
-    {
-      this->channelId = channelId;
-      this->trade = trade;
-      finished = true;
-    }
-  } callback(channelId, trade);
-  do
-  {
-    if(!process(callback))
-      return false;
-  } while(!callback.finished);
-  return true;
-}
+//bool DataConnection::readTrade(uint64_t& channelId, DataProtocol::Trade& trade)
+//{
+//  struct ReadTradeCallback : public Callback
+//  {
+//    uint64_t& channelId;
+//    DataProtocol::Trade& trade;
+//    bool finished;
+//
+//    ReadTradeCallback(uint64_t& channelId, DataProtocol::Trade& trade) : channelId(channelId), trade(trade), finished(false) {}
+//
+//    virtual void receivedChannelInfo(const String& channelName) {}
+//    virtual void receivedSubscribeResponse(const String& channelName, uint64_t channelId) {}
+//    virtual void receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) {}
+//    virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {}
+//    virtual void receivedErrorResponse(const String& message) {}
+//
+//    virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade)
+//    {
+//      this->channelId = channelId;
+//      this->trade = trade;
+//      finished = true;
+//    }
+//  } callback(channelId, trade);
+//  do
+//  {
+//    if(!process(callback))
+//      return false;
+//  } while(!callback.finished);
+//  return true;
+//}
