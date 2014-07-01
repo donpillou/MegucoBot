@@ -8,7 +8,7 @@
 
 LiveBroker::LiveBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders) :
   botConnection(botConnection), balance(balance),
-  time(0), lastBuyTime(0), lastSellTime(0)
+  time(0), lastBuyTime(0), lastSellTime(0), lastOrderRefreshTime(0)
 {
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
@@ -47,9 +47,20 @@ void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Tra
     if (Math::abs(order.price - trade.price) <= 0.01)
     {
       refreshOrders(botSession);
-      break;
+      lastOrderRefreshTime = Time::time();
+      goto doneRefreshing;
     }
   }
+  if(!openOrders.isEmpty())
+  {
+    timestamp_t now = Time::time();
+    if(now - lastOrderRefreshTime >= 120 * 1000)
+    {
+      lastOrderRefreshTime = now;
+      refreshOrders(botSession);
+    }
+  }
+doneRefreshing:
 
   cancelTimedOutOrders(botSession);
 
@@ -166,6 +177,7 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)
   order.amount = amount;
   if(!botConnection.createMarketOrder(order))
     return false;
+  lastOrderRefreshTime = Time::time();
   order.timeout = time + timeout;
   double charge = order.price * order.amount + order.fee;
 
@@ -214,6 +226,7 @@ bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
   order.amount = amount;
   if(!botConnection.createMarketOrder(order))
     return false;
+  lastOrderRefreshTime = Time::time();
   order.timeout = time + timeout;
 
 #ifdef BOT_TESTBOT

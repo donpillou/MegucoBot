@@ -20,6 +20,7 @@ private:
   timestamp_t time;
   timestamp_t lastBuyTime;
   timestamp_t lastSellTime;
+  timestamp_t lastOrderRefreshTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;
   TradeHandler tradeHandler;
