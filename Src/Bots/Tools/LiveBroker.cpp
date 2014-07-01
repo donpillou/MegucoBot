@@ -216,9 +216,6 @@ testok:
 
 bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
 {
-  if(amount > balance.availableBtc)
-    return false;
-
   BotProtocol::Order order;
   order.entityType = BotProtocol::marketOrder;
   order.type = BotProtocol::Order::sell;
