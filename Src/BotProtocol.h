@@ -241,8 +241,16 @@ public:
       sell
     };
 
-    uint8_t initialType;
-    uint8_t currentType;
+    enum State
+    {
+      waitBuy,
+      buying,
+      waitSell,
+      selling,
+    };
+
+    uint8_t type;
+    uint8_t state;
     int64_t date;
     double price;
     double amount;

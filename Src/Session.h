@@ -50,6 +50,7 @@ public:
   BotProtocol::Session::State getState() const {return state;}
   bool isSimulation() const {return simulation;}
   const BotProtocol::Balance& getBalance() const {return balance;}
+  ClientHandler* getHandlerClient() const {return handlerClient;}
 
   BotProtocol::Transaction* createTransaction(const BotProtocol::Transaction& transaction);
   BotProtocol::Transaction* updateTransaction(const BotProtocol::Transaction& transaction);

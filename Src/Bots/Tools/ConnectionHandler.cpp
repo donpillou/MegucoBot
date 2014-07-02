@@ -152,7 +152,52 @@ void ConnectionHandler::receivedTrade(uint64_t channelId, const DataProtocol::Tr
   broker->handleTrade(*botSession, trade);
 }
 
-void_t ConnectionHandler::receivedControlEntity(BotProtocol::Entity& entity, size_t size)
+void_t ConnectionHandler::handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size)
 {
-  // do something
+  switch((BotProtocol::MessageType)header.messageType)
+  {
+  case BotProtocol::createEntity:
+    if(size >= sizeof(BotProtocol::Entity))
+      handleCreateEntity(header.requestId, *(BotProtocol::Entity*)data, size);
+    break;
+  case BotProtocol::controlEntity:
+    if(size >= sizeof(BotProtocol::Entity)) 
+      handleControlEntity(header.requestId, *(BotProtocol::Entity*)data, size);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t ConnectionHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size)
+{
+  switch((BotProtocol::EntityType)entity.entityType)
+  {
+  case BotProtocol::sessionItem:
+    if(size >= sizeof(BotProtocol::SessionItem))
+      handleCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t ConnectionHandler::handleControlEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size)
+{
+  //switch((BotProtocol::EntityType)entity.entityType)
+  //{
+  //  // do something
+  //default:
+  //  break;
+  //}
+}
+
+void_t ConnectionHandler::handleCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem)
+{
+  sessionItem.state = sessionItem.type == BotProtocol::SessionItem::Type::buy ? BotProtocol::SessionItem::State::waitBuy : BotProtocol::SessionItem::State::waitSell;
+
+  if(!broker->createItem(sessionItem))
+    handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItem, broker->getLastError());
+  else
+    handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &sessionItem, sizeof(sessionItem));
 }

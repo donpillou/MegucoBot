@@ -164,6 +164,7 @@ void_t ClientHandler::handleMessage(const BotProtocol::Header& header, byte_t* d
       break;
     }
   case marketHandlerState:
+  case botHandlerState:
     switch((BotProtocol::MessageType)header.messageType)
     {
     case BotProtocol::createEntityResponse:
@@ -407,6 +408,10 @@ void_t ClientHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Order))
         handleUserCreateMarketOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
+    case BotProtocol::sessionItem:
+      if(size >= sizeof(BotProtocol::SessionItem))
+        handleUserCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+      break;
     default:
       break;
     }
@@ -609,6 +614,7 @@ void_t ClientHandler::handleResponse(BotProtocol::MessageType messageType, uint3
   switch(state)
   {
   case marketHandlerState:
+  case botHandlerState:
     if(requestId != 0)
     {
       uint32_t requesterRequestId;
@@ -1292,6 +1298,24 @@ void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t requestId, const BotP
 
   uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
   handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
+}
+
+void_t ClientHandler::handleUserCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItemArgs)
+{
+  if(!session)
+  {
+    sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "Invalid session.");
+    return;
+  }
+  ClientHandler* handlerClient = session->getHandlerClient();
+  if(!handlerClient)
+  {
+    sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "No session handler.");
+    return;
+  }
+
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &sessionItemArgs, sizeof(sessionItemArgs));
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)

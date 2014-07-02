@@ -16,12 +16,14 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
 
     BotProtocol::SessionItem item;
     item.entityType = BotProtocol::sessionItem;
-    item.initialType = BotProtocol::Transaction::buy;
-    item.currentType = BotProtocol::Transaction::sell;
+    item.type = BotProtocol::SessionItem::buy;
+    item.state = BotProtocol::SessionItem::waitSell;
     item.date = 89;
     item.price = 300;
     item.amount = 0.02;
     item.price = 320;
+    item.profitablePrice = 330;
+    item.flipPrice = 340;
     if(!broker.createItem(item))
       broker.warning("createItem returned false.");
 
@@ -40,7 +42,7 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
         broker.warning("transactions size is 0.");
       else
       {
-        BotProtocol::Transaction& transaction = transactions.front();
+        BotProtocol::Transaction transaction = transactions.front();
         double newAmount = transaction.amount / 2.;
         transaction.amount /= newAmount;
         broker.updateTransaction(transaction);
@@ -66,7 +68,7 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
         broker.warning("items size is 0.");
       else
       {
-        BotProtocol::SessionItem& item = items.front();
+        BotProtocol::SessionItem item = items.front();
         double newAmount = item.amount / 2.;
         item.amount /= newAmount;
         broker.updateItem(item);

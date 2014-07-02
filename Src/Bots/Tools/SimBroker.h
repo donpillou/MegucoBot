@@ -15,6 +15,7 @@ public:
 
 private:
   BotConnection& botConnection;
+  String error;
   List<BotProtocol::Order> openOrders;
   BotProtocol::Balance balance;
   timestamp_t time;
@@ -52,6 +53,7 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
+  virtual const String& getLastError() const {return error;}
   virtual void_t handleTrade(Bot::Session& session, const DataProtocol::Trade& trade);
 };
 

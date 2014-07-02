@@ -127,7 +127,10 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
   // todo: fee = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100. - amount * price; ???
   double charge = amount * price + fee;
   if(charge > balance.availableUsd)
+  {
+    error = "Insufficient balance.";
     return false;
+  }
 
   BotProtocol::Order order;
   order.entityType = BotProtocol::sessionOrder;
@@ -157,7 +160,10 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
 bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
 {
   if(amount > balance.availableBtc)
+  {
+    error = "Insufficient balance.";
     return false;
+  }
 
   BotProtocol::Order order;
   order.entityType = BotProtocol::sessionOrder;
@@ -274,7 +280,7 @@ void_t SimBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.currentType == BotProtocol::SessionItem::buy)
+    if(item.state == BotProtocol::SessionItem::waitBuy)
       items.append(item);
   }
 }
@@ -284,7 +290,7 @@ void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.currentType == BotProtocol::SessionItem::sell)
+    if(item.state == BotProtocol::SessionItem::waitSell)
       items.append(item);
   }
 }
@@ -292,7 +298,10 @@ void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
 bool_t SimBroker::createItem(BotProtocol::SessionItem& item)
 {
   if(!botConnection.createSessionItem(item))
+  {
+    error = botConnection.getErrorString();
     return false;
+  }
   items.append(item.entityId, item);
   return true;
 }

@@ -58,15 +58,7 @@ bool_t HandlerConnection::process(Callback& callback)
   size_t size;
   if(!receiveMessage(header, data, size))
     return false;
-  switch((BotProtocol::MessageType)header.messageType)
-  {
-  case BotProtocol::controlEntity:
-    if(size >= sizeof(BotProtocol::Entity)) 
-      callback.receivedControlEntity(*(BotProtocol::Entity*)data, size);
-    break;
-  default:
-    break;
-  }
+  callback.handleMessage(header, data, size);
   return true;
 }
 

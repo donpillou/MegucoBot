@@ -70,8 +70,8 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
     {
       const HashMap<String, Variant>& itemVar = i->toMap();
       item.entityId = itemVar.find("id")->toUInt();
-      item.initialType = itemVar.find("initialType")->toUInt();
-      item.currentType = itemVar.find("currentType")->toUInt();
+      item.type = itemVar.find("type")->toUInt();
+      item.state = itemVar.find("state")->toUInt();
       item.date = itemVar.find("date")->toInt64();
       item.price = itemVar.find("price")->toDouble();
       item.amount = itemVar.find("amount")->toDouble();
@@ -168,8 +168,8 @@ void_t Session::toVariant(Variant& variant)
       const BotProtocol::SessionItem& item = *i;
       HashMap<String, Variant>& transactionVar = itemsVar.append(Variant()).toMap();
       transactionVar.append("id", item.entityId);
-      transactionVar.append("initialType", (uint32_t)item.initialType);
-      transactionVar.append("currentType", (uint32_t)item.currentType);
+      transactionVar.append("type", (uint32_t)item.type);
+      transactionVar.append("state", (uint32_t)item.state);
       transactionVar.append("date", item.date);
       transactionVar.append("price", item.price);
       transactionVar.append("amount", item.amount);

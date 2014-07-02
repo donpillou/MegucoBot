@@ -106,6 +106,8 @@ private:
   void_t handleUserUpdateMarketOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleUserRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity);
 
+  void_t handleUserCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
+
   void_t sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize);
   void_t sendMessageData(const void_t* data, size_t size);
   void_t sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity* entity, const String& errorMessage);

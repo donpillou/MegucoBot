@@ -14,7 +14,7 @@ public:
   class Callback
   {
   public:
-    virtual void_t receivedControlEntity(BotProtocol::Entity& entity, size_t size) = 0;
+    virtual void_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size) = 0;
   };
 
 public:

@@ -176,7 +176,10 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout)
   order.price = price;
   order.amount = amount;
   if(!botConnection.createMarketOrder(order))
+  {
+    error = botConnection.getErrorString();
     return false;
+  }
   lastOrderRefreshTime = Time::time();
   order.timeout = time + timeout;
   double charge = order.price * order.amount + order.fee;
@@ -222,7 +225,10 @@ bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout)
   order.price = price;
   order.amount = amount;
   if(!botConnection.createMarketOrder(order))
+  {
+    error = botConnection.getErrorString();
     return false;
+  }
   lastOrderRefreshTime = Time::time();
   order.timeout = time + timeout;
 
@@ -348,7 +354,7 @@ void_t LiveBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.currentType == BotProtocol::SessionItem::buy)
+    if(item.state == BotProtocol::SessionItem::waitBuy)
       items.append(item);
   }
 }
@@ -358,7 +364,7 @@ void_t LiveBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.currentType == BotProtocol::SessionItem::sell)
+    if(item.state == BotProtocol::SessionItem::waitSell)
       items.append(item);
   }
 }
@@ -366,7 +372,10 @@ void_t LiveBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
 bool_t LiveBroker::createItem(BotProtocol::SessionItem& item)
 {
   if(!botConnection.createSessionItem(item))
+  {
+    error = botConnection.getErrorString();
     return false;
+  }
   items.append(item.entityId, item);
   return true;
 }

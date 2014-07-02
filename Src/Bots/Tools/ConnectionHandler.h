@@ -31,14 +31,19 @@ private:
 
   uint64_t lastReceivedTradeId;
 
+private:
+  void_t handleCreateEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
+  void_t handleControlEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
+  void_t handleCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
+
 private: // HandlerConnection::Callback
-  virtual void_t receivedControlEntity(BotProtocol::Entity& entity, size_t size);
+  virtual void_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size);
 
 private: // DataConnection::Callback
-  virtual void receivedChannelInfo(const String& channelName) {}
-  virtual void receivedSubscribeResponse(const String& channelName, uint64_t channelId) {}
-  virtual void receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) {}
-  virtual void receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade);
-  virtual void receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {}
-  virtual void receivedErrorResponse(const String& message) {}
+  virtual void_t receivedChannelInfo(const String& channelName) {}
+  virtual void_t receivedSubscribeResponse(const String& channelName, uint64_t channelId) {}
+  virtual void_t receivedUnsubscribeResponse(const String& channelName, uint64_t channelId) {}
+  virtual void_t receivedTrade(uint64_t channelId, const DataProtocol::Trade& trade);
+  virtual void_t receivedTicker(uint64_t channelId, const DataProtocol::Ticker& ticker) {}
+  virtual void_t receivedErrorResponse(const String& message) {}
 };

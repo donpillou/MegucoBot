@@ -61,7 +61,7 @@ void ItemBot::Session::handleBuy(const BotProtocol::Transaction& transaction2)
     {
       if(item.amount > amount)
       {
-        if(item.initialType == BotProtocol::SessionItem::buy)
+        if(item.type == BotProtocol::SessionItem::buy)
           initialBuyFlipAmount += amount;
         else
           initialSellFlipAmount += amount;
@@ -73,7 +73,7 @@ void ItemBot::Session::handleBuy(const BotProtocol::Transaction& transaction2)
       }
       else
       {
-        if(item.initialType == BotProtocol::SessionItem::buy)
+        if(item.type == BotProtocol::SessionItem::buy)
           initialBuyFlipAmount += item.amount;
         else
           initialSellFlipAmount += item.amount;
@@ -90,8 +90,8 @@ void ItemBot::Session::handleBuy(const BotProtocol::Transaction& transaction2)
   {
     BotProtocol::SessionItem item;
     item.entityType = BotProtocol::sessionItem;
-    item.initialType = BotProtocol::SessionItem::buy;
-    item.currentType = BotProtocol::SessionItem::buy;
+    item.type = BotProtocol::SessionItem::buy;
+    item.state = BotProtocol::SessionItem::waitBuy;
     item.price = transaction2.price;
     item.amount = initialBuyFlipAmount;
     double fee = broker.getFee();
@@ -102,8 +102,8 @@ void ItemBot::Session::handleBuy(const BotProtocol::Transaction& transaction2)
   {
     BotProtocol::SessionItem item;
     item.entityType = BotProtocol::sessionItem;
-    item.initialType = BotProtocol::SessionItem::sell;
-    item.currentType = BotProtocol::SessionItem::buy;
+    item.type = BotProtocol::SessionItem::sell;
+    item.state = BotProtocol::SessionItem::waitBuy;
     item.price = transaction2.price;
     item.amount = initialSellFlipAmount;
     double fee = broker.getFee();
@@ -145,7 +145,7 @@ void ItemBot::Session::handleSell(const BotProtocol::Transaction& transaction2)
       {
         if(item.amount > amount)
         {
-          if(item.initialType == BotProtocol::SessionItem::buy)
+          if(item.type == BotProtocol::SessionItem::buy)
             initialBuyFlipAmount += amount;
           else
             initialSellFlipAmount += amount;
@@ -157,7 +157,7 @@ void ItemBot::Session::handleSell(const BotProtocol::Transaction& transaction2)
         }
         else
         {
-          if(item.initialType == BotProtocol::SessionItem::buy)
+          if(item.type == BotProtocol::SessionItem::buy)
             initialBuyFlipAmount += item.amount;
           else
             initialSellFlipAmount += item.amount;
@@ -177,8 +177,8 @@ void ItemBot::Session::handleSell(const BotProtocol::Transaction& transaction2)
   {
     BotProtocol::SessionItem item;
     item.entityType = BotProtocol::sessionItem;
-    item.initialType = BotProtocol::SessionItem::buy;
-    item.currentType = BotProtocol::SessionItem::sell;
+    item.type = BotProtocol::SessionItem::buy;
+    item.state = BotProtocol::SessionItem::waitSell;
     item.price = transaction2.price;
     item.amount = initialBuyFlipAmount;
     double fee = broker.getFee();
@@ -189,8 +189,8 @@ void ItemBot::Session::handleSell(const BotProtocol::Transaction& transaction2)
   {
     BotProtocol::SessionItem item;
     item.entityType = BotProtocol::sessionItem;
-    item.initialType = BotProtocol::SessionItem::sell;
-    item.currentType = BotProtocol::SessionItem::sell;
+    item.type = BotProtocol::SessionItem::sell;
+    item.state = BotProtocol::SessionItem::waitSell;
     item.price = transaction2.price;
     item.amount = initialBuyFlipAmount;
     double fee = broker.getFee();
