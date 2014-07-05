@@ -33,10 +33,12 @@ private:
 
 private:
   void_t handleCreateEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
+  void_t handleUpdateEntity(uint32_t requestId, const BotProtocol::Entity& entity, size_t size);
   void_t handleRemoveEntity(uint32_t requestId, const BotProtocol::Entity& entity);
   void_t handleControlEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
 
   void_t handleCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
+  void_t handleUpdateSessionItem(uint32_t requestId, const BotProtocol::SessionItem& sessionItem);
   void_t handleRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
 
 private: // HandlerConnection::Callback

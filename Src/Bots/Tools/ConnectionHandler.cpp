@@ -160,6 +160,10 @@ void_t ConnectionHandler::handleMessage(const BotProtocol::Header& header, byte_
     if(size >= sizeof(BotProtocol::Entity))
       handleCreateEntity(header.requestId, *(BotProtocol::Entity*)data, size);
     break;
+  case BotProtocol::updateEntity:
+    if(size >= sizeof(BotProtocol::Entity))
+      handleUpdateEntity(header.requestId, *(BotProtocol::Entity*)data, size);
+    break;
   case BotProtocol::removeEntity:
     if(size >= sizeof(BotProtocol::Entity))
       handleRemoveEntity(header.requestId, *(const BotProtocol::Entity*)data);
@@ -181,6 +185,18 @@ void_t ConnectionHandler::handleCreateEntity(uint32_t requestId, BotProtocol::En
     if(size >= sizeof(BotProtocol::SessionItem))
       handleCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
     break;
+  default:
+    break;
+  }
+}
+
+void_t ConnectionHandler::handleUpdateEntity(uint32_t requestId, const BotProtocol::Entity& entity, size_t size)
+{
+  switch((BotProtocol::EntityType)entity.entityType)
+  {
+  case BotProtocol::sessionItem:
+    if(size >= sizeof(BotProtocol::SessionItem))
+      handleUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
   default:
     break;
   }
@@ -216,6 +232,31 @@ void_t ConnectionHandler::handleCreateSessionItem(uint32_t requestId, BotProtoco
     handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItem, broker->getLastError());
   else
     handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &sessionItem, sizeof(sessionItem));
+}
+
+void_t ConnectionHandler::handleUpdateSessionItem(uint32_t requestId, const BotProtocol::SessionItem& sessionItem)
+{
+  const BotProtocol::SessionItem* item = broker->getItem(sessionItem.entityId);
+  if(!item)
+    handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionItem, "Could not find session item.");
+  else
+  {
+    switch((BotProtocol::SessionItem::State)item->state)
+    {
+    case BotProtocol::SessionItem::State::waitBuy:
+    case BotProtocol::SessionItem::State::waitSell:
+      {
+        BotProtocol::SessionItem updatedItem = *item;
+        updatedItem.flipPrice = sessionItem.flipPrice;
+        broker->updateItem(updatedItem);
+        handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &sessionItem, sizeof(BotProtocol::Entity));
+        break;
+      }
+    default:
+      handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionItem, "Session item is not in wait state.");
+      break;
+    }
+  }
 }
 
 void_t ConnectionHandler::handleRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
