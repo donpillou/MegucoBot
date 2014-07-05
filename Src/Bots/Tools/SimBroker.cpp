@@ -295,6 +295,14 @@ void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
   }
 }
 
+const BotProtocol::SessionItem* SimBroker::getItem(uint32_t id) const
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
+  if(it == items.end())
+    return 0;
+  return &*it;
+}
+
 bool_t SimBroker::createItem(BotProtocol::SessionItem& item)
 {
   if(!botConnection.createSessionItem(item))

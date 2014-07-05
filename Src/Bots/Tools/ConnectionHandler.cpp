@@ -160,6 +160,10 @@ void_t ConnectionHandler::handleMessage(const BotProtocol::Header& header, byte_
     if(size >= sizeof(BotProtocol::Entity))
       handleCreateEntity(header.requestId, *(BotProtocol::Entity*)data, size);
     break;
+  case BotProtocol::removeEntity:
+    if(size >= sizeof(BotProtocol::Entity))
+      handleRemoveEntity(header.requestId, *(const BotProtocol::Entity*)data);
+    break;
   case BotProtocol::controlEntity:
     if(size >= sizeof(BotProtocol::Entity)) 
       handleControlEntity(header.requestId, *(BotProtocol::Entity*)data, size);
@@ -176,6 +180,18 @@ void_t ConnectionHandler::handleCreateEntity(uint32_t requestId, BotProtocol::En
   case BotProtocol::sessionItem:
     if(size >= sizeof(BotProtocol::SessionItem))
       handleCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    break;
+  default:
+    break;
+  }
+}
+
+void_t ConnectionHandler::handleRemoveEntity(uint32_t requestId, const BotProtocol::Entity& entity)
+{
+  switch((BotProtocol::EntityType)entity.entityType)
+  {
+  case BotProtocol::sessionItem:
+    handleRemoveSessionItem(requestId, entity);
     break;
   default:
     break;
@@ -200,4 +216,25 @@ void_t ConnectionHandler::handleCreateSessionItem(uint32_t requestId, BotProtoco
     handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItem, broker->getLastError());
   else
     handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &sessionItem, sizeof(sessionItem));
+}
+
+void_t ConnectionHandler::handleRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
+{
+  const BotProtocol::SessionItem* item = broker->getItem(entity.entityId);
+  if(!item)
+    handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Could not find session item.");
+  else
+  {
+    switch((BotProtocol::SessionItem::State)item->state)
+    {
+    case BotProtocol::SessionItem::State::waitBuy:
+    case BotProtocol::SessionItem::State::waitSell:
+      broker->removeItem(entity.entityId);
+      handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
+      break;
+    default:
+      handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Session item is not in wait state.");
+      break;
+    }
+  }
 }

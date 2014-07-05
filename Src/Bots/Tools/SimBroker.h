@@ -46,6 +46,7 @@ private: // Bot::Broker
   virtual void_t getItems(List<BotProtocol::SessionItem>& items) const;
   virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const;
   virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const;
+  virtual const BotProtocol::SessionItem* getItem(uint32_t id) const;
   virtual bool_t createItem(BotProtocol::SessionItem& item);
   virtual void_t removeItem(uint32_t id);
   virtual void_t updateItem(const BotProtocol::SessionItem& item);

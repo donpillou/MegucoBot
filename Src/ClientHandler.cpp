@@ -467,6 +467,9 @@ void_t ClientHandler::handleRemoveEntity(uint32_t requestId, const BotProtocol::
     case BotProtocol::marketOrder:
       handleUserRemoveMarketOrder(requestId, entity);
       break;
+    case BotProtocol::sessionItem:
+      handleUserRemoveSessionItem(requestId, entity);
+      break;
     default:
       break;
     }
@@ -1316,6 +1319,24 @@ void_t ClientHandler::handleUserCreateSessionItem(uint32_t requestId, BotProtoco
 
   uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
   handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &sessionItemArgs, sizeof(sessionItemArgs));
+}
+
+void_t ClientHandler::handleUserRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
+{
+  if(!session)
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Invalid session.");
+    return;
+  }
+  ClientHandler* handlerClient = session->getHandlerClient();
+  if(!handlerClient)
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "No session handler.");
+    return;
+  }
+
+  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+  handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::sessionItem, entity.entityId);
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)
