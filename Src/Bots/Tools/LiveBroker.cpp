@@ -422,5 +422,5 @@ void_t LiveBroker::updateItem(const BotProtocol::SessionItem& item)
 
 void_t LiveBroker::warning(const String& message)
 {
-  botConnection.addLogMessage(message);
+  botConnection.addLogMessage(Time::time(), message);
 }

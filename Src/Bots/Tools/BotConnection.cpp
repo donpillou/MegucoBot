@@ -83,12 +83,12 @@ bool_t BotConnection::removeMarketOrder(uint32_t id)
   return removeEntity(BotProtocol::marketOrder, id);
 }
 
-bool_t BotConnection::addLogMessage(const String& message)
+bool_t BotConnection::addLogMessage(timestamp_t time, const String& message)
 {
   BotProtocol::SessionLogMessage logMessage;
   logMessage.entityType = BotProtocol::sessionLogMessage;
   logMessage.entityId = 0;
-  logMessage.date = Time::time();
+  logMessage.date = time;
   BotProtocol::setString(logMessage.message, message);
   return createEntity(&logMessage, sizeof(logMessage));
 }

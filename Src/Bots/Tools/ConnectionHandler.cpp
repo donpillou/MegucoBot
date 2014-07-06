@@ -1,5 +1,6 @@
 
 #include <nstd/Thread.h>
+#include <nstd/Time.h>
 
 #include "Tools/ConnectionHandler.h"
 #include "Tools/SimBroker.h"
@@ -56,7 +57,7 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
   BotProtocol::Transaction transaction;
   transaction.entityType = BotProtocol::sessionTransaction;
   transaction.type = BotProtocol::Transaction::buy;
-  transaction.date = 89;
+  transaction.date = Time::time();
   transaction.price = 300;
   transaction.amount = 0.02;
   transaction.fee = 0.05;

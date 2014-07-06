@@ -323,7 +323,6 @@ BotProtocol::Transaction* Session::createTransaction(const BotProtocol::Transact
   uint32_t entityId = nextEntityId++;
   BotProtocol::Transaction& result = transactions.append(entityId, transaction);
   result.entityId = entityId;
-  result.date = Time::time();
   return &result;
 }
 

@@ -23,7 +23,7 @@ public:
   bool_t createMarketOrder(BotProtocol::Order& order);
   bool_t removeMarketOrder(uint32_t id);
 
-  bool_t addLogMessage(const String& message);
+  bool_t addLogMessage(timestamp_t time, const String& message);
 
   bool_t getSessionTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getSessionItems(List<BotProtocol::SessionItem>& items);

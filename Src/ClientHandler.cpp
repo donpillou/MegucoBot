@@ -815,7 +815,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     }
     // todo: update balance?
     session->sendRemoveAllEntities(BotProtocol::sessionTransaction);
-    session->sendRemoveAllEntities(BotProtocol::sessionItem);
+    //session->sendRemoveAllEntities(BotProtocol::sessionItem);
     session->sendRemoveAllEntities(BotProtocol::sessionOrder);
     session->sendRemoveAllEntities(BotProtocol::sessionLogMessage);
     session->sendRemoveAllEntities(BotProtocol::sessionMarker);

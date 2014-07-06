@@ -83,7 +83,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       BotProtocol::Transaction transaction;
       transaction.entityType = BotProtocol::sessionTransaction;
       transaction.type = order.type == BotProtocol::Order::buy ? BotProtocol::Transaction::buy : BotProtocol::Transaction::sell;
-      transaction.date = Time::time();
+      transaction.date = time;
       transaction.price = order.price;
       transaction.amount = order.amount;
       transaction.fee = order.fee;
@@ -356,5 +356,5 @@ void_t SimBroker::updateItem(const BotProtocol::SessionItem& item)
 
 void_t SimBroker::warning(const String& message)
 {
-  botConnection.addLogMessage(message);
+  botConnection.addLogMessage(time, message);
 }
