@@ -62,28 +62,25 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
       }
     }
     {
-      List<BotProtocol::SessionItem> items;
-      broker.getItems(items);
+      const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
       if(items.size() == 0)
         broker.warning("items size is 0.");
       else
       {
-        BotProtocol::SessionItem item = items.front();
+        BotProtocol::SessionItem item = *items.begin();
         double newAmount = item.amount / 2.;
         item.amount /= newAmount;
         broker.updateItem(item);
         size_t itemCount = items.size();
-        items.clear();
-        broker.getItems(items);
+        const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
         if(items.size() != itemCount)
           broker.warning("item count changed after update.");
-        BotProtocol::SessionItem& item2 = items.front();
+        BotProtocol::SessionItem& item2 = *items.find(item.entityId);
         if(item.amount != item2.amount)
           broker.warning("item update failed.");
         broker.removeItem(item2.entityId);
-        items.clear();
-        broker.getItems(items);
-        if(items.size() != itemCount - 1)
+        const HashMap<uint32_t, BotProtocol::SessionItem>& items2 = broker.getItems();
+        if(items2.size() != itemCount - 1)
           broker.warning("item remove failed.");
       }
     }
@@ -91,10 +88,10 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
   }
 }
 
-void TestBot::Session::handleBuy(const BotProtocol::Transaction& transaction)
+void TestBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
 {
 }
 
-void TestBot::Session::handleSell(const BotProtocol::Transaction& transaction)
+void TestBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction)
 {
 }

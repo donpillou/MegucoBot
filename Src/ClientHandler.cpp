@@ -1314,15 +1314,33 @@ void_t ClientHandler::handleUserCreateSessionItem(uint32_t requestId, BotProtoco
     sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "Invalid session.");
     return;
   }
-  ClientHandler* handlerClient = session->getHandlerClient();
-  if(!handlerClient)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "No session handler.");
-    return;
-  }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
-  handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &sessionItemArgs, sizeof(sessionItemArgs));
+  sessionItemArgs.state = sessionItemArgs.type == BotProtocol::SessionItem::Type::buy ? BotProtocol::SessionItem::State::waitBuy : BotProtocol::SessionItem::State::waitSell;
+  sessionItemArgs.price = 0.;
+  sessionItemArgs.profitablePrice = 0.;
+  sessionItemArgs.orderId = 0;
+
+  ClientHandler* handlerClient = session->getHandlerClient();
+  if(handlerClient)
+  {
+    uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+    handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &sessionItemArgs, sizeof(sessionItemArgs));
+  }
+  else
+  {
+
+    BotProtocol::SessionItem* item = session->createItem(sessionItemArgs);
+    if(!item)
+    {
+      sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "Could not create session item.");
+      return;
+    }
+
+    sendMessage(BotProtocol::createEntityResponse, requestId, item, sizeof(*item));
+
+    session->sendUpdateEntity(item, sizeof(*item));
+    session->saveData();
+  }
 }
 
 void_t ClientHandler::handleUserUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem)
@@ -1332,15 +1350,32 @@ void_t ClientHandler::handleUserUpdateSessionItem(uint32_t requestId, BotProtoco
     sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionItem, "Invalid session.");
     return;
   }
-  ClientHandler* handlerClient = session->getHandlerClient();
-  if(!handlerClient)
+
+  const BotProtocol::SessionItem* item = session->getItem(sessionItem.entityId);
+  if(!item)
   {
-    sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionItem, "No session handler.");
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &sessionItem, "Could not find session item.");
     return;
   }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
-  handlerClient->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &sessionItem, sizeof(sessionItem));
+  BotProtocol::SessionItem updatedItem = *item;
+  updatedItem.flipPrice = sessionItem.flipPrice;
+
+  ClientHandler* handlerClient = session->getHandlerClient();
+  if(handlerClient)
+  {
+    uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+    handlerClient->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &updatedItem, sizeof(updatedItem));
+  }
+  else
+  {
+    session->updateItem(updatedItem);
+
+    sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedItem, sizeof(BotProtocol::Entity));
+
+    session->sendUpdateEntity(&updatedItem, sizeof(updatedItem));
+    session->saveData();
+  }
 }
 
 void_t ClientHandler::handleUserRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
@@ -1351,14 +1386,24 @@ void_t ClientHandler::handleUserRemoveSessionItem(uint32_t requestId, const BotP
     return;
   }
   ClientHandler* handlerClient = session->getHandlerClient();
-  if(!handlerClient)
+  if(handlerClient)
   {
-    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "No session handler.");
-    return;
+    uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+    handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::sessionItem, entity.entityId);
   }
+  else
+  {
+    if(!session->deleteItem(entity.entityId))
+    {
+      sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown session item.");
+      return;
+    }
 
-  uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
-  handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::sessionItem, entity.entityId);
+    sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
+
+    session->sendRemoveEntity(BotProtocol::sessionItem, entity.entityId);
+    session->saveData();
+  }
 }
 
 void_t ClientHandler::sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size)

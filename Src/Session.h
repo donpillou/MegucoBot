@@ -57,6 +57,7 @@ public:
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
+  const BotProtocol::SessionItem* getItem(uint32_t id) const;
   BotProtocol::SessionItem* createItem(const BotProtocol::SessionItem& item);
   BotProtocol::SessionItem* updateItem(const BotProtocol::SessionItem& item);
   const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}

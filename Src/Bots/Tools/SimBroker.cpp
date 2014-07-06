@@ -67,8 +67,14 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       }
 
       botConnection.removeSessionOrder(order.entityId);
-      openOrders.remove(i);
       botConnection.updateSessionBalance(balance);
+
+      if(order.type == BotProtocol::Order::buy)
+        botSession.handleBuyTimeout(order.entityId);
+      else
+        botSession.handleSellTimeout(order.entityId);
+
+      openOrders.remove(i);
       continue;
     }
     else if((order.type == BotProtocol::Order::buy && trade.price < order.price) ||
@@ -98,7 +104,6 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       }
 
       botConnection.removeSessionOrder(order.entityId);
-      openOrders.remove(i);
       botConnection.updateSessionBalance(balance);
 
       BotProtocol::Marker marker;
@@ -107,21 +112,22 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       if(order.type == BotProtocol::Order::buy)
       {
         marker.type = BotProtocol::Marker::buy;
-        botSession.handleBuy(transaction);
+        botSession.handleBuy(order.entityId, transaction);
       }
       else
       {
         marker.type = BotProtocol::Marker::sell;
-        botSession.handleSell(transaction);
+        botSession.handleSell(order.entityId, transaction);
       }
       botConnection.createSessionMarker(marker);
+      openOrders.remove(i);
     }
   }
 
   botSession.handle(trade, tradeHandler.values);
 }
 
-bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
+bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t* id)
 {
   double fee = Math::ceil(amount * price * balance.fee * 100.) / 100.;
   // todo: fee = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100. - amount * price; ???
@@ -141,8 +147,14 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
   order.fee = fee;
   timestamp_t orderTimeout = time + timeout;;
   order.timeout = orderTimeout;
-  botConnection.createSessionOrder(order);
+  if(!botConnection.createSessionOrder(order))
+  {
+    error = botConnection.getErrorString();
+    return false;
+  }
   ASSERT(order.timeout == orderTimeout);
+  if(id)
+    *id = order.entityId;
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;
@@ -157,7 +169,7 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout)
   return true;
 }
 
-bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
+bool_t SimBroker::sell(double price, double amount, timestamp_t timeout, uint32_t* id)
 {
   if(amount > balance.availableBtc)
   {
@@ -175,8 +187,14 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout)
   // todo: think about fee computation
   timestamp_t orderTimeout = time + timeout;
   order.timeout = orderTimeout;
-  botConnection.createSessionOrder(order);
+  if(!botConnection.createSessionOrder(order))
+  {
+    error = botConnection.getErrorString();
+    return false;
+  }
   ASSERT(order.timeout == orderTimeout);
+  if(id)
+    *id = order.entityId;
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;
@@ -266,34 +284,34 @@ void_t SimBroker::updateTransaction(const BotProtocol::Transaction& transaction)
   botConnection.updateSessionTransaction(destTransaction);
 }
 
-void_t SimBroker::getItems(List<BotProtocol::SessionItem>& items) const
-{
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-  {
-    const BotProtocol::SessionItem& item = *i;
-    items.append(item);
-  }
-}
-
-void_t SimBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
-{
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-  {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitBuy)
-      items.append(item);
-  }
-}
-
-void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
-{
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-  {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitSell)
-      items.append(item);
-  }
-}
+//void_t SimBroker::getItems(List<BotProtocol::SessionItem>& items) const
+//{
+//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+//  {
+//    const BotProtocol::SessionItem& item = *i;
+//    items.append(item);
+//  }
+//}
+//
+//void_t SimBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
+//{
+//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+//  {
+//    const BotProtocol::SessionItem& item = *i;
+//    if(item.state == BotProtocol::SessionItem::waitBuy)
+//      items.append(item);
+//  }
+//}
+//
+//void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
+//{
+//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
+//  {
+//    const BotProtocol::SessionItem& item = *i;
+//    if(item.state == BotProtocol::SessionItem::waitSell)
+//      items.append(item);
+//  }
+//}
 
 const BotProtocol::SessionItem* SimBroker::getItem(uint32_t id) const
 {

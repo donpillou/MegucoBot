@@ -76,6 +76,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       item.price = itemVar.find("price")->toDouble();
       item.amount = itemVar.find("amount")->toDouble();
       item.flipPrice = itemVar.find("flipPrice")->toDouble();
+      item.orderId = itemVar.find("orderId")->toUInt();
       if(items.find(item.entityId) != items.end())
         continue;
       items.append(item.entityId, item);
@@ -174,6 +175,7 @@ void_t Session::toVariant(Variant& variant)
       transactionVar.append("price", item.price);
       transactionVar.append("amount", item.amount);
       transactionVar.append("flipPrice", item.flipPrice);
+      transactionVar.append("orderId", item.orderId);
     }
   }
   {
@@ -232,6 +234,9 @@ bool_t Session::startSimulation()
   backupOrders.swap(orders);
   backupMarkers.swap(markers);
   backupLogMessages.swap(logMessages);
+
+  // but, keep items
+  items = backupItems;
 
   return true;
 }
@@ -325,6 +330,14 @@ BotProtocol::Transaction* Session::createTransaction(const BotProtocol::Transact
 BotProtocol::Transaction* Session::updateTransaction(const BotProtocol::Transaction& transaction)
 {
   return &transactions.append(transaction.entityId, transaction);
+}
+
+const BotProtocol::SessionItem* Session::getItem(uint32_t id) const
+{
+  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
+  if(it == items.end())
+    return 0;
+  return &*it;
 }
 
 BotProtocol::SessionItem* Session::createItem(const BotProtocol::SessionItem& item)

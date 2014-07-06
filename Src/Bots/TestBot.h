@@ -21,15 +21,16 @@ private:
     virtual ~Session() {}
 
   private: // Bot::Session
-    virtual void setParameters(double* parameters);
+    virtual void_t setParameters(double* parameters);
 
-    virtual void handle(const DataProtocol::Trade& trade, const Values& values);
-    virtual void handleBuy(const BotProtocol::Transaction& transaction);
-    virtual void handleSell(const BotProtocol::Transaction& transaction);
-
+    virtual void_t handle(const DataProtocol::Trade& trade, const Values& values);
+    virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction);
+    virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
+    virtual void_t handleBuyTimeout(uint32_t orderId) {}
+    virtual void_t handleSellTimeout(uint32_t orderId) {}
   };
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
-  virtual unsigned int getParameterCount() const {return 0;}
+  virtual uint_t getParameterCount() const {return 0;}
 };

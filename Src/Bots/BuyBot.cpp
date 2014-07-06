@@ -62,7 +62,7 @@ void BuyBot::Session::handle(const DataProtocol::Trade& trade, const Values& val
   checkSell(trade, values);
 }
 
-void BuyBot::Session::handleBuy(const BotProtocol::Transaction& transaction)
+void BuyBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
 {
   double price = transaction.price;
   double amount = transaction.amount;
@@ -118,7 +118,7 @@ void BuyBot::Session::handleBuy(const BotProtocol::Transaction& transaction)
   updateBalance();
 }
 
-void BuyBot::Session::handleSell(const BotProtocol::Transaction& transaction)
+void BuyBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction)
 {
   double price = transaction.price;
   double amount = transaction.amount;

@@ -3,6 +3,7 @@
 
 #include <nstd/String.h>
 #include <nstd/List.h>
+#include <nstd/HashMap.h>
 
 #include "DataProtocol.h"
 #include "BotProtocol.h"
@@ -58,8 +59,8 @@ public:
   {
   public:
     virtual ~Broker() {}
-    virtual bool_t buy(double price, double amount, timestamp_t timeout) = 0;
-    virtual bool_t sell(double price, double amount, timestamp_t timeout) = 0;
+    virtual bool_t buy(double price, double amount, timestamp_t timeout, uint32_t* id = 0) = 0;
+    virtual bool_t sell(double price, double amount, timestamp_t timeout, uint32_t* id = 0) = 0;
     virtual double getBalanceBase() const = 0;
     virtual double getBalanceComm() const = 0;
     virtual double getFee() const = 0;
@@ -75,9 +76,10 @@ public:
     virtual void_t removeTransaction(uint32_t id) = 0;
     virtual void_t updateTransaction(const BotProtocol::Transaction& transaction) = 0;
 
-    virtual void_t getItems(List<BotProtocol::SessionItem>& items) const = 0;
-    virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const = 0;
-    virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const = 0;
+    virtual const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const = 0;
+    //virtual void_t getItems(List<BotProtocol::SessionItem>& items) const = 0;
+    //virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const = 0;
+    //virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const = 0;
     virtual const BotProtocol::SessionItem* getItem(uint32_t id) const = 0;
     virtual bool_t createItem(BotProtocol::SessionItem& item) = 0;
     virtual void_t removeItem(uint32_t id) = 0;
@@ -92,11 +94,13 @@ public:
     virtual ~Session() {};
     virtual void_t setParameters(double* parameters) = 0;
     virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0;
-    virtual void_t handleBuy(const BotProtocol::Transaction& transaction) = 0;
-    virtual void_t handleSell(const BotProtocol::Transaction& transaction) = 0;
+    virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
+    virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
+    virtual void_t handleBuyTimeout(uint32_t orderId) = 0;
+    virtual void_t handleSellTimeout(uint32_t orderId) = 0;
   };
   
   virtual ~Bot() {}
   virtual Session* createSession(Broker& broker) = 0;
-  virtual unsigned int getParameterCount() const = 0;
+  virtual uint_t getParameterCount() const = 0;
 };

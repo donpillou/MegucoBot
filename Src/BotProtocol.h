@@ -256,6 +256,7 @@ public:
     double amount;
     double profitablePrice;
     double flipPrice;
+    uint32_t orderId;
   };
 
   struct ControlSession : public Entity

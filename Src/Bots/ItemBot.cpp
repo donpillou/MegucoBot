@@ -30,172 +30,91 @@ void ItemBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
   checkSell(trade, values);
 }
 
-void ItemBot::Session::handleBuy(const BotProtocol::Transaction& transaction2)
+void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction2)
 {
   String message;
   message.printf("Bought %.08f @ %.02f", transaction2.amount, transaction2.price);
   broker.warning(message);
 
-  double price = transaction2.price;
-  double amount = transaction2.amount;
-
-  // get sell transaction list
-  List<BotProtocol::SessionItem> items;
-  broker.getSellItems(items);
-
-  // sort sell transaction list by price
-  Map<double, BotProtocol::SessionItem> sortedItems;
-  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    sortedItems.insert(item.profitablePrice, item);
-  }
-
-  // iterate over sorted transaction list (ascending)
-  double initialBuyFlipAmount = 0.;
-  double initialSellFlipAmount = 0.;
-  for(Map<double, BotProtocol::SessionItem>::Iterator i = sortedItems.begin(), end = sortedItems.end(); i != end; ++i)
-  {
-    BotProtocol::SessionItem& item = *i;
-    if(item.profitablePrice >= price)
+    if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
     {
-      if(item.amount > amount)
-      {
-        if(item.type == BotProtocol::SessionItem::buy)
-          initialBuyFlipAmount += amount;
-        else
-          initialSellFlipAmount += amount;
+      BotProtocol::SessionItem updatedItem = item;
+      updatedItem.state = BotProtocol::SessionItem::waitSell;
+      updatedItem.orderId = 0;
+      updatedItem.price = transaction2.price;
+      updatedItem.amount = transaction2.amount;
+      double fee = broker.getFee();
+      updatedItem.profitablePrice = transaction2.price * (1. + fee * 2.);
+      updatedItem.flipPrice = transaction2.price * (1. + fee * (1. + parameters.sellProfitGain) * 2.);
 
-        item.amount -= amount;
-        broker.updateItem(item);
-        amount = 0.;
-        break;
-      }
-      else
-      {
-        if(item.type == BotProtocol::SessionItem::buy)
-          initialBuyFlipAmount += item.amount;
-        else
-          initialSellFlipAmount += item.amount;
-
-        broker.removeItem(item.entityId);
-        amount -= item.amount;
-        if(amount == 0.)
-          break;
-      }
+      broker.updateItem(updatedItem);
+      break;
     }
-  }
-
-  if(initialBuyFlipAmount != 0.)
-  {
-    BotProtocol::SessionItem item;
-    item.entityType = BotProtocol::sessionItem;
-    item.type = BotProtocol::SessionItem::buy;
-    item.state = BotProtocol::SessionItem::waitBuy;
-    item.price = transaction2.price;
-    item.amount = initialBuyFlipAmount;
-    double fee = broker.getFee();
-    item.profitablePrice = price * (1. + fee * 2.);
-    item.flipPrice = price * (1. + fee * (1. + parameters.sellProfitGain) * 2.);;
-  }
-  if(initialSellFlipAmount != 0.)
-  {
-    BotProtocol::SessionItem item;
-    item.entityType = BotProtocol::sessionItem;
-    item.type = BotProtocol::SessionItem::sell;
-    item.state = BotProtocol::SessionItem::waitBuy;
-    item.price = transaction2.price;
-    item.amount = initialSellFlipAmount;
-    double fee = broker.getFee();
-    item.profitablePrice = price * (1. + fee * 2.);
-    item.flipPrice = price * (1. + fee * (1. + parameters.sellProfitGain) * 2.);;
   }
 }
 
-void ItemBot::Session::handleSell(const BotProtocol::Transaction& transaction2)
+void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction2)
 {
   String message;
   message.printf("Sold %.08f @ %.02f", transaction2.amount, transaction2.price);
   broker.warning(message);
 
-  double price = transaction2.price;
-  double amount = transaction2.amount;
-
-  // get buy transaction list
-  List<BotProtocol::SessionItem> items;
-  broker.getBuyItems(items);
-
-  // sort buy transaction list by price
-  Map<double, BotProtocol::SessionItem> sortedItems;
-  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    sortedItems.insert(item.profitablePrice, item);
-  }
-
-  // iterate over sorted transaction list (descending)
-  double initialBuyFlipAmount = 0.;
-  double initialSellFlipAmount = 0.;
-  if(!sortedItems.isEmpty())
-  {
-    for(Map<double, BotProtocol::SessionItem>::Iterator i = --sortedItems.end(), begin = sortedItems.begin(); ; --i)
+    if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
     {
-      BotProtocol::SessionItem& item = *i;
-      if(item.profitablePrice <= price)
-      {
-        if(item.amount > amount)
-        {
-          if(item.type == BotProtocol::SessionItem::buy)
-            initialBuyFlipAmount += amount;
-          else
-            initialSellFlipAmount += amount;
+      BotProtocol::SessionItem updatedItem = item;
+      updatedItem.state = BotProtocol::SessionItem::waitSell;
+      updatedItem.orderId = 0;
+      updatedItem.price = transaction2.price;
+      updatedItem.amount = transaction2.amount;
+      double fee = broker.getFee();
+      updatedItem.profitablePrice = transaction2.price / (1. + fee * 2.);
+      updatedItem.flipPrice = transaction2.price / (1. + fee * (1. + parameters.buyProfitGain) * 2.);
 
-          item.amount -= amount;
-          broker.updateItem(item);
-          amount = 0.;
-          break;
-        }
-        else
-        {
-          if(item.type == BotProtocol::SessionItem::buy)
-            initialBuyFlipAmount += item.amount;
-          else
-            initialSellFlipAmount += item.amount;
-
-          broker.removeItem(item.entityId);
-          amount -= item.amount;
-          if(amount == 0.)
-            break;
-        }
-      }
-      if(i == begin)
-        break;
+      broker.updateItem(updatedItem);
+      break;
     }
   }
+}
 
-  if(initialBuyFlipAmount != 0.)
+void_t ItemBot::Session::handleBuyTimeout(uint32_t orderId)
+{
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
-    BotProtocol::SessionItem item;
-    item.entityType = BotProtocol::sessionItem;
-    item.type = BotProtocol::SessionItem::buy;
-    item.state = BotProtocol::SessionItem::waitSell;
-    item.price = transaction2.price;
-    item.amount = initialBuyFlipAmount;
-    double fee = broker.getFee();
-    item.profitablePrice = price / (1. + fee * 2.);
-    item.flipPrice = price / (1. + fee * (1. + parameters.buyProfitGain) * 2.);
+    const BotProtocol::SessionItem& item = *i;
+    if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
+    {
+      BotProtocol::SessionItem updatedItem = item;
+      updatedItem.state = BotProtocol::SessionItem::waitBuy;
+      updatedItem.orderId = 0;
+      broker.updateItem(updatedItem);
+      break;
+    }
   }
-  if(initialSellFlipAmount != 0.)
+}
+
+void_t ItemBot::Session::handleSellTimeout(uint32_t orderId)
+{
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
-    BotProtocol::SessionItem item;
-    item.entityType = BotProtocol::sessionItem;
-    item.type = BotProtocol::SessionItem::sell;
-    item.state = BotProtocol::SessionItem::waitSell;
-    item.price = transaction2.price;
-    item.amount = initialBuyFlipAmount;
-    double fee = broker.getFee();
-    item.profitablePrice = price / (1. + fee * 2.);
-    item.flipPrice = price / (1. + fee * (1. + parameters.buyProfitGain) * 2.);
+    const BotProtocol::SessionItem& item = *i;
+    if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
+    {
+      BotProtocol::SessionItem updatedItem = item;
+      updatedItem.state = BotProtocol::SessionItem::waitSell;
+      updatedItem.orderId = 0;
+      broker.updateItem(updatedItem);
+      break;
+    }
   }
 }
 
@@ -207,20 +126,34 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
     return; // do not buy too often
 
   double tradePrice = trade.price;
-  double profitableAmount = 0.;
-  List<BotProtocol::SessionItem> items;
-  broker.getSellItems(items);
-  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.flipPrice < tradePrice)
-      profitableAmount += item.amount;
-  }
-  if(profitableAmount >= 0.01)
-  {
-    if(broker.buy(trade.price, Math::max(Math::min(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60 * 1000))
-      return;
-    return;
+    if(item.state == BotProtocol::SessionItem::waitBuy && item.flipPrice < tradePrice)
+    {
+      BotProtocol::SessionItem updatedItem = item;
+      updatedItem.state = BotProtocol::SessionItem::buying;
+      broker.updateItem(updatedItem);
+
+      double amount = item.amount;
+      if(item.price != 0)
+      {
+        double newPrice = tradePrice;
+        double oldPrice = item.price;
+        double oldPayedFee = Math::ceil(oldPrice * item.amount * broker.getFee() * 100.) / 100.;
+        double oldTotal = oldPrice * item.amount - oldPayedFee;
+        amount = oldTotal / tradePrice;
+      }
+
+      if(broker.buy(tradePrice, amount, 60 * 60 * 1000, &updatedItem.orderId))
+        broker.updateItem(updatedItem);
+      else
+      {
+        updatedItem.state = BotProtocol::SessionItem::waitBuy;
+        broker.updateItem(updatedItem);
+      }
+    }
   }
 }
 
@@ -232,19 +165,22 @@ void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
     return; // do not sell too often
 
   double tradePrice = trade.price;
-  double profitableAmount = 0.;
-  List<BotProtocol::SessionItem> items;
-  broker.getBuyItems(items);
-  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(tradePrice > item.flipPrice)
-      profitableAmount += item.amount;
-  }
-  if(profitableAmount >= 0.01)
-  {
-    if(broker.sell(trade.price, Math::max(Math::min(0.02, profitableAmount), profitableAmount * 0.5), 60 * 60 * 1000))
-      return;
-    return;
+    if(item.state == BotProtocol::SessionItem::waitSell && tradePrice > item.flipPrice)
+    {
+      BotProtocol::SessionItem updatedItem = item;
+      updatedItem.state = BotProtocol::SessionItem::selling;
+      broker.updateItem(updatedItem);
+      if(broker.sell(tradePrice, item.amount, 60 * 60 * 1000, &updatedItem.orderId))
+        broker.updateItem(updatedItem);
+      else
+      {
+        updatedItem.state = BotProtocol::SessionItem::waitSell;
+        broker.updateItem(updatedItem);
+      }
+    }
   }
 }
