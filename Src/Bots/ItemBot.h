@@ -26,8 +26,8 @@ private:
 
     Parameters parameters;
 
-    double minBuyInPrice;
-    double maxSellInPrice;
+    //double minBuyInPrice;
+    //double maxSellInPrice;
 
     virtual ~Session() {}
 

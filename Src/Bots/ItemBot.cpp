@@ -4,7 +4,7 @@
 
 #include "ItemBot.h"
 
-ItemBot::Session::Session(Broker& broker) : broker(broker), minBuyInPrice(0.), maxSellInPrice(0.)
+ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
 {
   Memory::fill(&parameters, 0, sizeof(Session::Parameters));
 
