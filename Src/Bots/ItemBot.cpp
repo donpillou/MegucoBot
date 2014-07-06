@@ -167,6 +167,7 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
         updatedItem.state = BotProtocol::SessionItem::waitBuy;
         broker.updateItem(updatedItem);
       }
+      break;
     }
   }
 }
@@ -195,6 +196,7 @@ void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
         updatedItem.state = BotProtocol::SessionItem::waitSell;
         broker.updateItem(updatedItem);
       }
+      break;
     }
   }
 }
