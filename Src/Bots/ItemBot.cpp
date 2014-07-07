@@ -148,8 +148,8 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
         double newFeeToPay = oldPayedFee;
       reccomputeAmount:
         double oldTotal = oldPrice * item.amount - oldPayedFee - newFeeToPay;
-        amount = oldTotal / tradePrice;
-        double newNewFeeToPay = Math::ceil(tradePrice * amount * broker.getFee() * 100.) / 100.;
+        amount = oldTotal / newPrice;
+        double newNewFeeToPay = Math::ceil(newPrice * amount * broker.getFee() * 100.) / 100.;
         if(newNewFeeToPay < newFeeToPay)
         {
           newFeeToPay = newNewFeeToPay;
@@ -159,7 +159,7 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
         {
           newFeeToPay = newNewFeeToPay;
           oldTotal = oldPrice * item.amount - oldPayedFee - newFeeToPay;
-          amount = oldTotal / tradePrice;
+          amount = oldTotal / newPrice;
         }
       }
 

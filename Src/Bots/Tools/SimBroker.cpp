@@ -33,7 +33,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
 
   if(startTime == 0)
     startTime = trade.time;
-  if(trade.time - startTime <= warmupTime)
+  if((timestamp_t)(trade.time - startTime) <= warmupTime)
   {
     tradeHandler.add(trade, startTime + warmupTime - trade.time);
     return; 
