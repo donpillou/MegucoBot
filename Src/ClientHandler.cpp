@@ -1315,7 +1315,7 @@ void_t ClientHandler::handleUserCreateSessionItem(uint32_t requestId, BotProtoco
     return;
   }
 
-  sessionItemArgs.state = sessionItemArgs.type == BotProtocol::SessionItem::Type::buy ? BotProtocol::SessionItem::State::waitBuy : BotProtocol::SessionItem::State::waitSell;
+  sessionItemArgs.state = sessionItemArgs.type == BotProtocol::SessionItem::buy ? BotProtocol::SessionItem::waitBuy : BotProtocol::SessionItem::waitSell;
   sessionItemArgs.price = 0.;
   sessionItemArgs.profitablePrice = 0.;
   sessionItemArgs.orderId = 0;

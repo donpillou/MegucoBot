@@ -184,7 +184,7 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout, uint32_
   order.amount = amount;
   order.price = price;
   order.fee = Math::ceil(amount * price * balance.fee * 100.) / 100.;
-  // todo: think about fee computation
+  // todo: fee = price * amount - Math::floor(price * amount * (1 - fee) * 100.) / 100. ???
   timestamp_t orderTimeout = time + timeout;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))

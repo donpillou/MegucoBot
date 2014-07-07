@@ -69,6 +69,9 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
     const BotProtocol::SessionItem& item = *i;
     if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
     {
+      //double invest = Math::ceil(item.price * item.amount * (1. + fee) / 100.) * 100.;
+      //double investReturn = transaction2.price * transaction2.amount - transaction2.fee;
+
       BotProtocol::SessionItem updatedItem = item;
       updatedItem.state = BotProtocol::SessionItem::waitBuy;
       updatedItem.orderId = 0;
