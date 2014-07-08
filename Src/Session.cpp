@@ -75,6 +75,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       item.date = itemVar.find("date")->toInt64();
       item.price = itemVar.find("price")->toDouble();
       item.amount = itemVar.find("amount")->toDouble();
+      item.profitablePrice = itemVar.find("profitablePrice")->toDouble();
       item.flipPrice = itemVar.find("flipPrice")->toDouble();
       item.orderId = itemVar.find("orderId")->toUInt();
       if(items.find(item.entityId) != items.end())
@@ -167,15 +168,16 @@ void_t Session::toVariant(Variant& variant)
     for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
     {
       const BotProtocol::SessionItem& item = *i;
-      HashMap<String, Variant>& transactionVar = itemsVar.append(Variant()).toMap();
-      transactionVar.append("id", item.entityId);
-      transactionVar.append("type", (uint32_t)item.type);
-      transactionVar.append("state", (uint32_t)item.state);
-      transactionVar.append("date", item.date);
-      transactionVar.append("price", item.price);
-      transactionVar.append("amount", item.amount);
-      transactionVar.append("flipPrice", item.flipPrice);
-      transactionVar.append("orderId", item.orderId);
+      HashMap<String, Variant>& itemVar = itemsVar.append(Variant()).toMap();
+      itemVar.append("id", item.entityId);
+      itemVar.append("type", (uint32_t)item.type);
+      itemVar.append("state", (uint32_t)item.state);
+      itemVar.append("date", item.date);
+      itemVar.append("price", item.price);
+      itemVar.append("amount", item.amount);
+      itemVar.append("profitablePrice", item.profitablePrice);
+      itemVar.append("flipPrice", item.flipPrice);
+      itemVar.append("orderId", item.orderId);
     }
   }
   {
