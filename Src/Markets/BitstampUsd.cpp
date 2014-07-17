@@ -248,7 +248,6 @@ bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transact
     double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
     transaction.type = buy ? BotProtocol::Transaction::buy : BotProtocol::Transaction::sell;
-    //transaction.total = buy ? -(Math::abs(value) + transaction.fee) : (fabs(value) - transaction.fee);
     transaction.amount = Math::abs(transactionData.find("btc")->toDouble());
     transaction.price = Math::abs(value) / Math::abs(transaction.amount);
 
@@ -277,10 +276,25 @@ double BitstampMarket::getMaxBuyAmout(double price) const
 
 double BitstampMarket::getOrderCharge(double amount, double price) const
 {
-  if(amount < 0.) // sell order
-    return Math::floor(-amount * price / (1. + balance.fee) * 100.) / 100.;
-  else // buy order
-    return Math::floor(amount * price * (1. + balance.fee) * -100.) / 100.;
+  //if(amount < 0.) // sell order
+  //  return Math::floor(-amount * price / (1. + balance.fee) * 100.) / 100.;
+  //else // buy order
+  //  return Math::floor(amount * price * (1. + balance.fee) * -100.) / 100.;
+
+  if(amount >= 0.) // buy order
+  {
+    double result = amount * price;
+    result = result * balance.fee + result;
+    result = Math::ceil(result * 100.) / 100.;
+    return result;
+  }
+  else // sell order
+  {
+    double result = -amount * price;
+    result = result - result * balance.fee;
+    result = Math::ceil(result * 100.) / 100.;
+    return result;
+  }
 }
 
 bool_t BitstampMarket::request(const String& url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result)
