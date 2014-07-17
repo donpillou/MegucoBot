@@ -13,7 +13,7 @@ ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.),
   
   //parameters.sellProfitGain = 0.2;
   parameters.sellProfitGain = 0.4;
-  parameters.buyProfitGain = 0.2;
+  parameters.buyProfitGain = 0.4; //0.2;
 
   //parameters.sellProfitGain = 0.;
   //parameters.buyProfitGain = 0.127171;
@@ -47,7 +47,8 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
       updatedItem.orderId = 0;
       updatedItem.price = transaction2.price;
       updatedItem.amount = transaction2.amount;
-      double fee = broker.getFee();
+      //double fee = broker.getFee();
+      double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price * (1. + fee * 2.);
       updatedItem.flipPrice = transaction2.price * (1. + fee * (1. + parameters.sellProfitGain) * 2.);
 
@@ -77,7 +78,8 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
       updatedItem.orderId = 0;
       updatedItem.price = transaction2.price;
       updatedItem.amount = transaction2.amount;
-      double fee = broker.getFee();
+      //double fee = broker.getFee();
+      double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price / (1. + fee * 2.);
       updatedItem.flipPrice = transaction2.price / (1. + fee * (1. + parameters.buyProfitGain) * 2.);
 
