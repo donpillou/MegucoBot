@@ -135,11 +135,13 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitBuy && tradePrice <= item.flipPrice)
+    if(item.state == BotProtocol::SessionItem::waitBuy && tradePrice < item.flipPrice)
     {
       BotProtocol::SessionItem updatedItem = item;
       updatedItem.state = BotProtocol::SessionItem::buying;
       broker.updateItem(updatedItem);
+
+      tradePrice += 0.01;
 
       double amount = item.amount;
       if(item.price != 0)
@@ -189,11 +191,14 @@ void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
   {
     const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitSell && tradePrice >= item.flipPrice)
+    if(item.state == BotProtocol::SessionItem::waitSell && tradePrice > item.flipPrice)
     {
       BotProtocol::SessionItem updatedItem = item;
       updatedItem.state = BotProtocol::SessionItem::selling;
       broker.updateItem(updatedItem);
+
+      tradePrice -= 0.01;
+
       if(broker.sell(tradePrice, item.amount, 60 * 60 * 1000, &updatedItem.orderId))
         broker.updateItem(updatedItem);
       else
