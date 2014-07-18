@@ -350,35 +350,6 @@ void_t LiveBroker::updateTransaction(const BotProtocol::Transaction& transaction
   botConnection.updateSessionTransaction(destTransaction);
 }
 
-//void_t LiveBroker::getItems(List<BotProtocol::SessionItem>& items) const
-//{
-//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-//  {
-//    const BotProtocol::SessionItem& item = *i;
-//    items.append(item);
-//  }
-//}
-//
-//void_t LiveBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
-//{
-//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-//  {
-//    const BotProtocol::SessionItem& item = *i;
-//    if(item.state == BotProtocol::SessionItem::waitBuy)
-//      items.append(item);
-//  }
-//}
-//
-//void_t LiveBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
-//{
-//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-//  {
-//    const BotProtocol::SessionItem& item = *i;
-//    if(item.state == BotProtocol::SessionItem::waitSell)
-//      items.append(item);
-//  }
-//}
-
 const BotProtocol::SessionItem* LiveBroker::getItem(uint32_t id) const
 {
   HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);

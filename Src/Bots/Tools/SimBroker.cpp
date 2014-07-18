@@ -284,35 +284,6 @@ void_t SimBroker::updateTransaction(const BotProtocol::Transaction& transaction)
   botConnection.updateSessionTransaction(destTransaction);
 }
 
-//void_t SimBroker::getItems(List<BotProtocol::SessionItem>& items) const
-//{
-//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-//  {
-//    const BotProtocol::SessionItem& item = *i;
-//    items.append(item);
-//  }
-//}
-//
-//void_t SimBroker::getBuyItems(List<BotProtocol::SessionItem>& items) const
-//{
-//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-//  {
-//    const BotProtocol::SessionItem& item = *i;
-//    if(item.state == BotProtocol::SessionItem::waitBuy)
-//      items.append(item);
-//  }
-//}
-//
-//void_t SimBroker::getSellItems(List<BotProtocol::SessionItem>& items) const
-//{
-//  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = this->items.begin(), end = this->items.end(); i != end; ++i)
-//  {
-//    const BotProtocol::SessionItem& item = *i;
-//    if(item.state == BotProtocol::SessionItem::waitSell)
-//      items.append(item);
-//  }
-//}
-
 const BotProtocol::SessionItem* SimBroker::getItem(uint32_t id) const
 {
   HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);

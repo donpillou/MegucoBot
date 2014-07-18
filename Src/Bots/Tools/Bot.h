@@ -77,9 +77,6 @@ public:
     virtual void_t updateTransaction(const BotProtocol::Transaction& transaction) = 0;
 
     virtual const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const = 0;
-    //virtual void_t getItems(List<BotProtocol::SessionItem>& items) const = 0;
-    //virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const = 0;
-    //virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const = 0;
     virtual const BotProtocol::SessionItem* getItem(uint32_t id) const = 0;
     virtual bool_t createItem(BotProtocol::SessionItem& item) = 0;
     virtual void_t removeItem(uint32_t id) = 0;

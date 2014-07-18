@@ -44,9 +44,6 @@ private: // Bot::Broker
   virtual void_t updateTransaction(const BotProtocol::Transaction& transaction);
 
   virtual const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
-  //virtual void_t getItems(List<BotProtocol::SessionItem>& items) const;
-  //virtual void_t getBuyItems(List<BotProtocol::SessionItem>& items) const;
-  //virtual void_t getSellItems(List<BotProtocol::SessionItem>& items) const;
   virtual const BotProtocol::SessionItem* getItem(uint32_t id) const;
   virtual bool_t createItem(BotProtocol::SessionItem& item);
   virtual void_t removeItem(uint32_t id);
