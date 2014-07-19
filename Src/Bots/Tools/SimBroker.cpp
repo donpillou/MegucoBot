@@ -238,57 +238,6 @@ uint_t SimBroker::getOpenSellOrderCount() const
   return openSellOrders;
 }
 
-void_t SimBroker::getTransactions(List<BotProtocol::Transaction>& transactions) const
-{
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    transactions.append(transaction);
-  }
-}
-
-void_t SimBroker::getBuyTransactions(List<BotProtocol::Transaction>& transactions) const
-{
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    if(transaction.type == BotProtocol::Transaction::buy)
-      transactions.append(transaction);
-  }
-}
-
-void_t SimBroker::getSellTransactions(List<BotProtocol::Transaction>& transactions) const
-{
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    if(transaction.type == BotProtocol::Transaction::sell)
-      transactions.append(transaction);
-  }
-}
-
-void_t SimBroker::removeTransaction(uint32_t id)
-{
-  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
-  if(it == transactions.end())
-    return;
-  const BotProtocol::Transaction& transaction = *it;
-  botConnection.removeSessionTransaction(transaction.entityId);
-  transactions.remove(it);
-}
-
-void_t SimBroker::updateTransaction(const BotProtocol::Transaction& transaction)
-{
-  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(transaction.entityId);
-  if(it == transactions.end())
-    return;
-  BotProtocol::Transaction& destTransaction = *it;
-  destTransaction = transaction;
-  destTransaction.entityType = BotProtocol::sessionTransaction;
-  destTransaction.entityId = transaction.entityId;
-  botConnection.updateSessionTransaction(destTransaction);
-}
-
 const BotProtocol::SessionItem* SimBroker::getItem(uint32_t id) const
 {
   HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);

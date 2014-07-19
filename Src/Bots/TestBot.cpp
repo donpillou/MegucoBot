@@ -36,32 +36,6 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     if(broker.getOpenSellOrderCount() != 1)
       broker.warning("sell order count is not 1.");
     {
-      List<BotProtocol::Transaction> transactions;
-      broker.getTransactions(transactions);
-      if(transactions.size() == 0)
-        broker.warning("transactions size is 0.");
-      else
-      {
-        BotProtocol::Transaction transaction = transactions.front();
-        double newAmount = transaction.amount / 2.;
-        transaction.amount /= newAmount;
-        broker.updateTransaction(transaction);
-        size_t transactionCount = transactions.size();
-        transactions.clear();
-        broker.getTransactions(transactions);
-        if(transactions.size() != transactionCount)
-          broker.warning("transaction count changed after update.");
-        BotProtocol::Transaction& transaction2 = transactions.front();
-        if(transaction.amount != transaction2.amount)
-          broker.warning("transaction update failed.");
-        broker.removeTransaction(transaction2.entityId);
-        transactions.clear();
-        broker.getTransactions(transactions);
-        if(transactions.size() != transactionCount - 1)
-          broker.warning("transaction remove failed.");
-      }
-    }
-    {
       const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
       if(items.size() == 0)
         broker.warning("items size is 0.");

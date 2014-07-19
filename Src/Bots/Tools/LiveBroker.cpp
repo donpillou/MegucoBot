@@ -304,57 +304,6 @@ uint_t LiveBroker::getOpenSellOrderCount() const
   return openSellOrders;
 }
 
-void_t LiveBroker::getTransactions(List<BotProtocol::Transaction>& transactions) const
-{
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    transactions.append(transaction);
-  }
-}
-
-void_t LiveBroker::getBuyTransactions(List<BotProtocol::Transaction>& transactions) const
-{
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    if(transaction.type == BotProtocol::Transaction::buy)
-      transactions.append(transaction);
-  }
-}
-
-void_t LiveBroker::getSellTransactions(List<BotProtocol::Transaction>& transactions) const
-{
-  for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = this->transactions.begin(), end = this->transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    if(transaction.type == BotProtocol::Transaction::sell)
-      transactions.append(transaction);
-  }
-}
-
-void_t LiveBroker::removeTransaction(uint32_t id)
-{
-  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
-  if(it == transactions.end())
-    return;
-  const BotProtocol::Transaction& transaction = *it;
-  botConnection.removeSessionTransaction(transaction.entityId);
-  transactions.remove(it);
-}
-
-void_t LiveBroker::updateTransaction(const BotProtocol::Transaction& transaction)
-{
-  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(transaction.entityId);
-  if(it == transactions.end())
-    return;
-  BotProtocol::Transaction& destTransaction = *it;
-  destTransaction = transaction;
-  destTransaction.entityType = BotProtocol::sessionTransaction;
-  destTransaction.entityId = transaction.entityId;
-  botConnection.updateSessionTransaction(destTransaction);
-}
-
 const BotProtocol::SessionItem* LiveBroker::getItem(uint32_t id) const
 {
   HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);

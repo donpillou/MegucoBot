@@ -42,12 +42,6 @@ private: // Bot::Broker
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}
   virtual timestamp_t getTimeSinceLastSell() const {return time - lastSellTime;}
 
-  virtual void_t getTransactions(List<BotProtocol::Transaction>& transactions) const;
-  virtual void_t getBuyTransactions(List<BotProtocol::Transaction>& transactions) const;
-  virtual void_t getSellTransactions(List<BotProtocol::Transaction>& transactions) const;
-  virtual void_t removeTransaction(uint32_t id);
-  virtual void_t updateTransaction(const BotProtocol::Transaction& transaction);
-
   virtual const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
   virtual const BotProtocol::SessionItem* getItem(uint32_t id) const;
   virtual bool_t createItem(BotProtocol::SessionItem& item);
