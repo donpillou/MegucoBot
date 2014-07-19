@@ -6,11 +6,6 @@
 #include "Tools/SimBroker.h"
 #include "Tools/LiveBroker.h"
 
-#ifdef BOT_BUYBOT
-#include "Bots/BuyBot.h"
-typedef BuyBot BotFactory;
-const char* botName = "BuyBot";
-#endif
 #ifdef BOT_ITEMBOT
 #include "Bots/ItemBot.h"
 typedef ItemBot BotFactory;
