@@ -14,6 +14,17 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     message.printf("balance is: base=%f, comm=%f, fee=%f", broker.getBalanceBase(), broker.getBalanceComm(), broker.getFee());
     broker.warning(message);
 
+    // test buy and sell
+    if(!broker.buy(300, 0.02, 30 * 1000))
+      broker.warning("buy returned false.");
+    if(!broker.sell(1000, 0.01, 25 * 1000))
+      broker.warning("sell returned false.");
+    if(broker.getOpenBuyOrderCount() != 1)
+      broker.warning("buy order count is not 1.");
+    if(broker.getOpenSellOrderCount() != 1)
+      broker.warning("sell order count is not 1.");
+
+    // test item creating, updating and removing
     BotProtocol::SessionItem item;
     item.entityType = BotProtocol::sessionItem;
     item.type = BotProtocol::SessionItem::buy;
@@ -26,15 +37,6 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     item.flipPrice = 340;
     if(!broker.createItem(item))
       broker.warning("createItem returned false.");
-
-    if(!broker.buy(300, 0.02, 30 * 1000))
-      broker.warning("buy returned false.");
-    if(!broker.sell(1000, 0.01, 25 * 1000))
-      broker.warning("sell returned false.");
-    if(broker.getOpenBuyOrderCount() != 1)
-      broker.warning("buy order count is not 1.");
-    if(broker.getOpenSellOrderCount() != 1)
-      broker.warning("sell order count is not 1.");
     {
       const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
       if(items.size() == 0)
@@ -58,6 +60,30 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
           broker.warning("item remove failed.");
       }
     }
+
+    // test properties
+    broker.removeProperty("prop1");
+    broker.removeProperty("prop2");
+    broker.removeProperty("prop3");
+    int propCount = broker.getProperties().size();
+    broker.setProperty("prop1", 42., 0, "leet");
+    broker.setProperty("prop2", "sda", 0, "teel");
+    if(broker.getProperties().size() != propCount + 2)
+      broker.warning("property creating did not increate property count.");
+    if(broker.getProperty("prop1", 23.) != 42.)
+      broker.warning("property has incorrect value.");
+    broker.setProperty("prop1", 43.);
+    if(broker.getProperty("prop1", 23.) != 43.)
+      broker.warning("property has incorrect value.");
+    if(broker.getProperty("prop2", "hallo") != "sda")
+      broker.warning("property has incorrect value.");
+    if(broker.getProperty("prop3", 123.) != 123.)
+      broker.warning("property has incorrect value.");
+    propCount = broker.getProperties().size();
+    broker.removeProperty("prop2");
+    if(broker.getProperties().size() != propCount - 1)
+      broker.warning("property remove failed.");
+
     broker.warning("finished test.");
   }
 }

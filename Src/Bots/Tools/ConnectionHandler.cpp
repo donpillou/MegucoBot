@@ -47,18 +47,6 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
   }
   sessionHandlerSocket = &handlerConnection.getSocket();
 
-  // some testing 
-#ifdef BOT_TESTBOT
-  BotProtocol::Transaction transaction;
-  transaction.entityType = BotProtocol::sessionTransaction;
-  transaction.type = BotProtocol::Transaction::buy;
-  transaction.date = Time::time();
-  transaction.price = 300;
-  transaction.amount = 0.02;
-  transaction.fee = 0.05;
-  botConnection.createSessionTransaction(transaction);
-#endif
-
   // load session data
   List<BotProtocol::Transaction> sessionTransactions;
   List<BotProtocol::SessionItem> sessionItems;
