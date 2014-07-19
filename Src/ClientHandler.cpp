@@ -860,6 +860,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     // todo: update balance?
     session->sendRemoveAllEntities(BotProtocol::sessionTransaction);
     session->sendRemoveAllEntities(BotProtocol::sessionItem);
+    session->sendRemoveAllEntities(BotProtocol::sessionProperty);
     session->sendRemoveAllEntities(BotProtocol::sessionOrder);
     session->sendRemoveAllEntities(BotProtocol::sessionLogMessage);
     session->sendRemoveAllEntities(BotProtocol::sessionMarker);
@@ -870,6 +871,9 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       const HashMap<uint32_t, BotProtocol::SessionItem>& items = session->getItems();
       for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionItem));
+      const HashMap<uint32_t, BotProtocol::SessionProperty>& properties = session->getProperties();
+      for(HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+        sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionProperty));
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::Order));
@@ -890,6 +894,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     sendRemoveAllEntities(BotProtocol::sessionBalance);
     sendRemoveAllEntities(BotProtocol::sessionTransaction);
     sendRemoveAllEntities(BotProtocol::sessionItem);
+    sendRemoveAllEntities(BotProtocol::sessionProperty);
     sendRemoveAllEntities(BotProtocol::sessionOrder);
     sendRemoveAllEntities(BotProtocol::sessionLogMessage);
     sendRemoveAllEntities(BotProtocol::sessionMarker);
@@ -901,6 +906,9 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       const HashMap<uint32_t, BotProtocol::SessionItem>& items = session->getItems();
       for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionItem));
+      const HashMap<uint32_t, BotProtocol::SessionProperty>& properties = session->getProperties();
+      for(HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+        sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionProperty));
       const HashMap<uint32_t, BotProtocol::Order>& orders = session->getOrders();
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::Order));
@@ -1141,7 +1149,7 @@ void_t ClientHandler::handleBotRemoveSessionProperty(uint32_t requestId, const B
 
   sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
-  session->sendRemoveEntity(BotProtocol::sessionItem, entity.entityId);
+  session->sendRemoveEntity(BotProtocol::sessionProperty, entity.entityId);
   session->saveData();
 }
 

@@ -65,14 +65,16 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     broker.removeProperty("prop1");
     broker.removeProperty("prop2");
     broker.removeProperty("prop3");
+    broker.removeProperty("prop4ro");
     int propCount = broker.getProperties().size();
-    broker.setProperty("prop1", 42., 0, "leet");
-    broker.setProperty("prop2", "sda", 0, "teel");
+    broker.setProperty("prop1", 42., BotProtocol::SessionProperty::readOnly, "leet");
+    broker.setProperty("prop2", "sda", BotProtocol::SessionProperty::readOnly, "teel");
+    broker.setProperty("prop4ro", "edit me", BotProtocol::SessionProperty::none, "teel");
     if(broker.getProperties().size() != propCount + 2)
       broker.warning("property creating did not increate property count.");
     if(broker.getProperty("prop1", 23.) != 42.)
       broker.warning("property has incorrect value.");
-    broker.setProperty("prop1", 43.);
+    broker.setProperty("prop1", 43., BotProtocol::SessionProperty::readOnly, "leet2");
     if(broker.getProperty("prop1", 23.) != 43.)
       broker.warning("property has incorrect value.");
     if(broker.getProperty("prop2", "hallo") != "sda")

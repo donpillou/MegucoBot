@@ -88,7 +88,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   {
     const List<Variant>& propertiesVar = data.find("properties")->toList();
     BotProtocol::SessionProperty property;
-    property.entityType = BotProtocol::sessionItem;
+    property.entityType = BotProtocol::sessionProperty;
     for(List<Variant>::Iterator i = propertiesVar.begin(), end = propertiesVar.end(); i != end; ++i)
     {
       const HashMap<String, Variant>& propertyVar = i->toMap();
