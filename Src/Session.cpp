@@ -86,6 +86,26 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
     }
   }
   {
+    const List<Variant>& propertiesVar = data.find("properties")->toList();
+    BotProtocol::SessionProperty property;
+    property.entityType = BotProtocol::sessionItem;
+    for(List<Variant>::Iterator i = propertiesVar.begin(), end = propertiesVar.end(); i != end; ++i)
+    {
+      const HashMap<String, Variant>& propertyVar = i->toMap();
+      property.entityId = propertyVar.find("id")->toUInt();
+      property.type = propertyVar.find("type")->toUInt();
+      property.flags = propertyVar.find("flags")->toUInt();
+      BotProtocol::setString(property.name, propertyVar.find("name")->toString());
+      BotProtocol::setString(property.value, propertyVar.find("value")->toString());
+      BotProtocol::setString(property.unit, propertyVar.find("unit")->toString());
+      if(properties.find(property.entityId) != properties.end())
+        continue;
+      properties.append(property.entityId, property);
+      if(property.entityId >= nextEntityId)
+        nextEntityId = property.entityId + 1;
+    }
+  }
+  {
     const List<Variant>& ordersVar = data.find("orders")->toList();
     BotProtocol::Order order;
     order.entityType = BotProtocol::sessionOrder;
@@ -181,6 +201,20 @@ void_t Session::toVariant(Variant& variant)
     }
   }
   {
+    List<Variant>& propertiesVar = data.append("properties", Variant()).toList();
+    for(HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+    {
+      BotProtocol::SessionProperty& property = *i;
+      HashMap<String, Variant>& propertyVar = propertiesVar.append(Variant()).toMap();
+      propertyVar.append("id", property.entityId);
+      propertyVar.append("type", (uint32_t)property.type);
+      propertyVar.append("flags", (uint32_t)property.flags);
+      propertyVar.append("name", BotProtocol::getString(property.name));
+      propertyVar.append("value", BotProtocol::getString(property.value));
+      propertyVar.append("unit", BotProtocol::getString(property.unit));
+    }
+  }
+  {
     List<Variant>& ordersVar = data.append("orders", Variant()).toList();
     for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
     {
@@ -233,12 +267,14 @@ bool_t Session::startSimulation()
   balance.fee = 0.;
   backupTransactions.swap(transactions);
   backupItems.swap(items);
+  backupProperties.swap(properties);
   backupOrders.swap(orders);
   backupMarkers.swap(markers);
   backupLogMessages.swap(logMessages);
 
-  // but, keep items
+  // but, keep items and properties
   items = backupItems;
+  properties = backupProperties;
 
   return true;
 }
@@ -271,12 +307,14 @@ bool_t Session::stop()
     balance = backupBalance;
     backupTransactions.swap(transactions);
     backupItems.swap(items);
+    backupProperties.swap(properties);
     backupOrders.swap(orders);
     backupMarkers.swap(markers);
     backupLogMessages.swap(logMessages);
 
     backupTransactions.clear();
     backupItems.clear();
+    backupProperties.clear();
     backupOrders.clear();
     backupMarkers.clear();
     backupLogMessages.clear();
@@ -328,9 +366,13 @@ BotProtocol::Transaction* Session::createTransaction(const BotProtocol::Transact
   return &result;
 }
 
-BotProtocol::Transaction* Session::updateTransaction(const BotProtocol::Transaction& transaction)
+bool_t Session::deleteTransaction(uint32_t id)
 {
-  return &transactions.append(transaction.entityId, transaction);
+  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
+  if(it == transactions.end())
+    return false;
+  transactions.remove(it);
+  return true;
 }
 
 const BotProtocol::SessionItem* Session::getItem(uint32_t id) const
@@ -350,26 +392,37 @@ BotProtocol::SessionItem* Session::createItem(const BotProtocol::SessionItem& it
   return &result;
 }
 
-BotProtocol::SessionItem* Session::updateItem(const BotProtocol::SessionItem& item)
-{
-  return &items.append(item.entityId, item);
-}
-
-bool_t Session::deleteTransaction(uint32_t id)
-{
-  HashMap<uint32_t, BotProtocol::Transaction>::Iterator it = transactions.find(id);
-  if(it == transactions.end())
-    return false;
-  transactions.remove(it);
-  return true;
-}
-
 bool_t Session::deleteItem(uint32_t id)
 {
   HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
   if(it == items.end())
     return false;
   items.remove(it);
+  return true;
+}
+
+const BotProtocol::SessionProperty* Session::getProperty(uint32_t id) const
+{
+  HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator it = properties.find(id);
+  if(it == properties.end())
+    return 0;
+  return &*it;
+}
+
+BotProtocol::SessionProperty* Session::createProperty(const BotProtocol::SessionProperty& property)
+{
+  uint32_t entityId = nextEntityId++;
+  BotProtocol::SessionProperty& result = properties.append(entityId, property);
+  result.entityId = entityId;
+  return &result;
+}
+
+bool_t Session::deleteProperty(uint32_t id)
+{
+  HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator it = properties.find(id);
+  if(it == properties.end())
+    return false;
+  properties.remove(it);
   return true;
 }
 

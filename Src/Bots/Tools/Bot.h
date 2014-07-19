@@ -82,6 +82,13 @@ public:
     virtual void_t removeItem(uint32_t id) = 0;
     virtual void_t updateItem(const BotProtocol::SessionItem& item) = 0;
 
+    virtual const HashMap<String, BotProtocol::SessionProperty>& getProperties() const = 0;
+    virtual double getProperty(const String& name, double defaultValue) const = 0;
+    virtual String getProperty(const String& name, const String& defaultValue) const = 0;
+    virtual void setProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
+    virtual void setProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
+    virtual void removeProperty(const String& name) = 0;
+
     virtual void_t warning(const String& message) = 0;
   };
 

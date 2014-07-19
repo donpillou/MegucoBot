@@ -50,6 +50,7 @@ public:
     marketOrder,
     marketBalance,
     sessionItem,
+    sessionProperty,
   };
 
 #pragma pack(push, 4)
@@ -259,6 +260,26 @@ public:
     uint32_t orderId;
   };
 
+  struct SessionProperty : public Entity
+  {
+    enum Type
+    {
+      number,
+      string,
+    };
+    enum Flag
+    {
+      none = 0x00,
+      readOnly = 0x01,
+    };
+
+    uint8_t type;
+    uint32_t flags;
+    char name[33];
+    char value[33];
+    char unit[17];
+  };
+
   struct ControlSession : public Entity
   {
     enum Command
@@ -271,6 +292,7 @@ public:
       requestOrders,
       requestBalance,
       requestItems,
+      requestProperties,
     };
 
     uint8_t cmd;

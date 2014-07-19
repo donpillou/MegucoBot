@@ -53,15 +53,21 @@ public:
   ClientHandler* getHandlerClient() const {return handlerClient;}
 
   BotProtocol::Transaction* createTransaction(const BotProtocol::Transaction& transaction);
-  BotProtocol::Transaction* updateTransaction(const BotProtocol::Transaction& transaction);
+  BotProtocol::Transaction* updateTransaction(const BotProtocol::Transaction& transaction) {return &transactions.append(transaction.entityId, transaction);}
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
   const BotProtocol::SessionItem* getItem(uint32_t id) const;
   BotProtocol::SessionItem* createItem(const BotProtocol::SessionItem& item);
-  BotProtocol::SessionItem* updateItem(const BotProtocol::SessionItem& item);
+  BotProtocol::SessionItem* updateItem(const BotProtocol::SessionItem& item) {return &items.append(item.entityId, item);}
   const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
   bool_t deleteItem(uint32_t id);
+
+  const BotProtocol::SessionProperty* getProperty(uint32_t id) const;
+  BotProtocol::SessionProperty* createProperty(const BotProtocol::SessionProperty& property);
+  BotProtocol::SessionProperty* updateProperty(const BotProtocol::SessionProperty& property) {return &properties.append(property.entityId, property);}
+  const HashMap<uint32_t, BotProtocol::SessionProperty>& getProperties() const {return properties;}
+  bool_t deleteProperty(uint32_t id);
 
   BotProtocol::Order* createOrder(const BotProtocol::Order& order);
   void_t updateOrder(const BotProtocol::Order& order) {orders.append(order.entityId, order);}
@@ -100,12 +106,14 @@ private:
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;
+  HashMap<uint32_t, BotProtocol::SessionProperty> properties;
   HashMap<uint32_t, BotProtocol::Order> orders;
   HashMap<uint32_t, BotProtocol::Marker> markers;
   List<BotProtocol::SessionLogMessage> logMessages;
   BotProtocol::Balance backupBalance;
   HashMap<uint32_t, BotProtocol::Transaction> backupTransactions;
   HashMap<uint32_t, BotProtocol::SessionItem> backupItems;
+  HashMap<uint32_t, BotProtocol::SessionProperty> backupProperties;
   HashMap<uint32_t, BotProtocol::Order> backupOrders;
   HashMap<uint32_t, BotProtocol::Marker> backupMarkers;
   List<BotProtocol::SessionLogMessage> backupLogMessages;

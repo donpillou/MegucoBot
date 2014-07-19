@@ -6,7 +6,7 @@
 #include "SimBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders) :
+SimBroker::SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
   botConnection(botConnection), balance(balance), 
   time(0), lastBuyTime(0), lastSellTime(0), startTime(0)
 {
@@ -24,6 +24,11 @@ SimBroker::SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& 
   {
     const BotProtocol::Order& order = *i;
     this->openOrders.append(order);
+  }
+  for(List<BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+  {
+    BotProtocol::SessionProperty& property = *i;
+    this->properties.append(BotProtocol::getString(property.name), property);
   }
 }
 
@@ -323,6 +328,81 @@ void_t SimBroker::updateItem(const BotProtocol::SessionItem& item)
   destItem.entityType = BotProtocol::sessionItem;
   destItem.entityId = item.entityId;
   botConnection.updateSessionItem(destItem);
+}
+
+double SimBroker::getProperty(const String& name, double defaultValue) const
+{
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+    return defaultValue;
+  BotProtocol::SessionProperty& property = *it;
+  return BotProtocol::getString(property.value).toDouble();
+}
+
+String SimBroker::getProperty(const String& name, const String& defaultValue) const
+{
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+    return defaultValue;
+  BotProtocol::SessionProperty& property = *it;
+  return BotProtocol::getString(property.value);
+}
+
+void SimBroker::setProperty(const String& name, double value, uint32_t flags, const String& unit)
+{
+  BotProtocol::SessionProperty property;
+  property.entityType = BotProtocol::sessionProperty;
+  property.type = BotProtocol::SessionProperty::number;
+  property.flags = flags;
+  BotProtocol::setString(property.name, name);
+  BotProtocol::setString(property.value, String::fromDouble(value));
+  BotProtocol::setString(property.unit, unit);
+
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+  {
+    botConnection.createSessionProperty(property);
+    properties.append(name, property);
+  }
+  else
+  {
+    property.entityId = it->entityId;
+    botConnection.updateSessionProperty(property);
+    *it = property;
+  }
+}
+
+void SimBroker::setProperty(const String& name, const String& value, uint32_t flags, const String& unit)
+{
+  BotProtocol::SessionProperty property;
+  property.entityType = BotProtocol::sessionProperty;
+  property.type = BotProtocol::SessionProperty::string;
+  property.flags = flags;
+  BotProtocol::setString(property.name, name);
+  BotProtocol::setString(property.value, value);
+  BotProtocol::setString(property.unit, unit);
+
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+  {
+    botConnection.createSessionProperty(property);
+    properties.append(name, property);
+  }
+  else
+  {
+    property.entityId = it->entityId;
+    botConnection.updateSessionProperty(property);
+    *it = property;
+  }
+}
+
+void SimBroker::removeProperty(const String& name)
+{
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+    return;
+  botConnection.removeSessionProperty(it->entityId);
+  properties.remove(it);
 }
 
 void_t SimBroker::warning(const String& message)

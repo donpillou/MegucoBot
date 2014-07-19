@@ -11,7 +11,7 @@ class BotConnection;
 class LiveBroker : public Broker
 {
 public:
-  LiveBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders);
+  LiveBroker(BotConnection& botConnection, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties);
 
 private:
   BotConnection& botConnection;
@@ -24,6 +24,7 @@ private:
   timestamp_t lastOrderRefreshTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;
+  HashMap<String, BotProtocol::SessionProperty> properties;
   TradeHandler tradeHandler;
 
 private:
@@ -52,6 +53,13 @@ private: // Bot::Broker
   virtual bool_t createItem(BotProtocol::SessionItem& item);
   virtual void_t removeItem(uint32_t id);
   virtual void_t updateItem(const BotProtocol::SessionItem& item);
+
+  virtual const HashMap<String, BotProtocol::SessionProperty>& getProperties() const {return properties;}
+  virtual double getProperty(const String& name, double defaultValue) const;
+  virtual String getProperty(const String& name, const String& defaultValue) const;
+  virtual void setProperty(const String& name, double value, uint32_t flags, const String& unit);
+  virtual void setProperty(const String& name, const String& value, uint32_t flags, const String& unit);
+  virtual void removeProperty(const String& name);
 
   virtual void_t warning(const String& message);
 

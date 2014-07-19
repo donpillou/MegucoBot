@@ -128,6 +128,13 @@ bool_t BotConnection::getSessionBalance(BotProtocol::Balance& balance)
   return true;
 }
 
+bool_t BotConnection::getSessionProperties(List<BotProtocol::SessionProperty>& properties)
+{
+  if(!sendControlSession(BotProtocol::ControlSession::requestProperties, properties))
+    return false;
+  return true;
+}
+
 bool_t BotConnection::createSessionTransaction(BotProtocol::Transaction& transaction)
 {
   return createEntity(&transaction, sizeof(transaction));

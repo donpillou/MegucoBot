@@ -69,10 +69,12 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
   List<BotProtocol::SessionItem> sessionItems;
   List<BotProtocol::Order> sessionOrders;
   BotProtocol::Balance sessionBalance;
+  List<BotProtocol::SessionProperty> sessionProperties;
   if(!botConnection.getSessionTransactions(sessionTransactions) ||
      !botConnection.getSessionItems(sessionItems) ||
      !botConnection.getSessionOrders(sessionOrders) ||
-     !botConnection.getSessionBalance(sessionBalance))
+     !botConnection.getSessionBalance(sessionBalance) ||
+     !botConnection.getSessionProperties(sessionProperties))
   {
     error = botConnection.getErrorString();
     return false;
@@ -97,9 +99,9 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
 
   // create broker
   if(handlerConnection.isSimulation())
-    broker = new SimBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders);
+    broker = new SimBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
   else
-    broker = new LiveBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders);
+    broker = new LiveBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
 
   // instantiate bot implementation
   BotFactory botFactory;
