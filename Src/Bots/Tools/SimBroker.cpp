@@ -131,14 +131,19 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
   botSession.handle(trade, tradeHandler.values);
 }
 
-bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t* id)
+bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
 {
-  double total = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100.;
+  if(amount != 0.)
+    total = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100.;
+
   if(total > balance.availableUsd)
   {
     error = "Insufficient balance.";
     return false;
   }
+
+  amount = total / (price * (1. + balance.fee));
+  amount = Math::floor(amount * 100000000.) / 100000000.;
 
   BotProtocol::Order order;
   order.entityType = BotProtocol::sessionOrder;
@@ -157,6 +162,8 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t
   ASSERT(order.timeout == orderTimeout);
   if(id)
     *id = order.entityId;
+  if(orderedAmount)
+    *orderedAmount = order.amount;
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;
@@ -171,8 +178,14 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t
   return true;
 }
 
-bool_t SimBroker::sell(double price, double amount, timestamp_t timeout, uint32_t* id)
+bool_t SimBroker::sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
 {
+  if(amount != 0.)
+    total = Math::floor(amount * price * (1. - balance.fee) * 100.) / 100.;
+
+  amount = total / (price * (1. - balance.fee));
+  amount = Math::ceil(amount * 100000000.) / 100000000.;
+
   if(amount > balance.availableBtc)
   {
     error = "Insufficient balance.";
@@ -196,6 +209,8 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout, uint32_
   ASSERT(order.timeout == orderTimeout);
   if(id)
     *id = order.entityId;
+  if(orderedAmount)
+    *orderedAmount = order.amount;
 
   BotProtocol::Marker marker;
   marker.entityType = BotProtocol::sessionMarker;

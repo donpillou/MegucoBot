@@ -15,9 +15,9 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     broker.warning(message);
 
     // test buy and sell
-    if(!broker.buy(300, 0.02, 30 * 1000))
+    if(!broker.buy(300, 0.02, 0., 30 * 1000))
       broker.warning("buy returned false.");
-    if(!broker.sell(1000, 0.01, 25 * 1000))
+    if(!broker.sell(1000, 0.01, 0., 25 * 1000))
       broker.warning("sell returned false.");
     if(broker.getOpenBuyOrderCount() != 1)
       broker.warning("buy order count is not 1.");
@@ -70,8 +70,8 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     broker.setProperty("prop1", 42., BotProtocol::SessionProperty::readOnly, "leet");
     broker.setProperty("prop2", "sda", BotProtocol::SessionProperty::readOnly, "teel");
     broker.setProperty("prop4ro", "edit me", BotProtocol::SessionProperty::none, "teel");
-    if(broker.getProperties().size() != propCount + 2)
-      broker.warning("property creating did not increate property count.");
+    if(broker.getProperties().size() != propCount + 3)
+      broker.warning("property creating did not increase property count.");
     if(broker.getProperty("prop1", 23.) != 42.)
       broker.warning("property has incorrect value.");
     broker.setProperty("prop1", 43., BotProtocol::SessionProperty::readOnly, "leet2");

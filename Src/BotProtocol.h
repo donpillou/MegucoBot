@@ -255,6 +255,7 @@ public:
     int64_t date;
     double price;
     double amount;
+    double total;
     double profitablePrice;
     double flipPrice;
     uint32_t orderId;

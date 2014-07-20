@@ -57,7 +57,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       transaction.amount = transactionVar.find("amount")->toDouble();
       transaction.total = transactionVar.find("total")->toDouble();
 
-      double fee = transactionVar.find("fee")->toDouble(); // some code for backward compatibility 
+      double fee = transactionVar.find("fee")->toDouble(); // todo: this is code for backward compatibility; remove this
       if(fee != 0)
         transaction.total = transaction.type == BotProtocol::Transaction::buy ? (Math::abs(transaction.price * transaction.amount) + fee) : (Math::abs(transaction.price * transaction.amount) - fee);
 
@@ -81,6 +81,27 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       item.date = itemVar.find("date")->toInt64();
       item.price = itemVar.find("price")->toDouble();
       item.amount = itemVar.find("amount")->toDouble();
+      item.total = itemVar.find("total")->toDouble();
+
+      if(item.total == 0. && item.price != 0.) // todo: this is code for backward compatibility; remove this
+      {
+        BotProtocol::SessionItem::Type type = (BotProtocol::SessionItem::Type)item.type;
+        switch(item.state)
+        {
+        case BotProtocol::SessionItem::waitBuy:
+        case BotProtocol::SessionItem::buying:
+          type = BotProtocol::SessionItem::buy;
+          break;
+        case BotProtocol::SessionItem::waitSell:
+        case BotProtocol::SessionItem::selling:
+          type = BotProtocol::SessionItem::sell;
+          break;
+        default:
+          break;
+        }
+        item.total = type == BotProtocol::SessionItem::buy ? Math::ceil(item.price * item.amount * (1. + .005)) : Math::floor(item.price * item.amount * (1. - .005));
+      }
+
       item.profitablePrice = itemVar.find("profitablePrice")->toDouble();
       item.flipPrice = itemVar.find("flipPrice")->toDouble();
       item.orderId = itemVar.find("orderId")->toUInt();
@@ -125,7 +146,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       order.amount = orderVar.find("amount")->toDouble();
       order.total = orderVar.find("total")->toDouble();
 
-      double fee = orderVar.find("fee")->toDouble(); // some code for backward compatibility 
+      double fee = orderVar.find("fee")->toDouble(); // todo: this is code for backward compatibility; remove this
       if(fee != 0)
         order.total = order.type == BotProtocol::Order::buy ? (Math::abs(order.price * order.amount) + fee) : (Math::abs(order.price * order.amount) - fee);
 

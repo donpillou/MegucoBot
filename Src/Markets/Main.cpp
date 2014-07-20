@@ -161,7 +161,7 @@ private:
   bool_t handleCreateOrder(uint32_t requestId, BotProtocol::Order& createOrderArgs)
   {
     BotProtocol::Order order;
-    if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, order))
+    if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
       return handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, market->getLastError());
     order.timeout = createOrderArgs.timeout;
 
@@ -179,7 +179,7 @@ private:
 
     // step #2 create new order with same id
     BotProtocol::Order order;
-    if(!market->createOrder(updateOrderArgs.entityId, (BotProtocol::Order::Type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, order))
+    if(!market->createOrder(updateOrderArgs.entityId, (BotProtocol::Order::Type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
     {
       if(!handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError()))
         return false;

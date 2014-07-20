@@ -59,8 +59,8 @@ public:
   {
   public:
     virtual ~Broker() {}
-    virtual bool_t buy(double price, double amount, timestamp_t timeout, uint32_t* id = 0) = 0;
-    virtual bool_t sell(double price, double amount, timestamp_t timeout, uint32_t* id = 0) = 0;
+    virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
+    virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
     virtual double getBalanceBase() const = 0;
     virtual double getBalanceComm() const = 0;
     virtual double getFee() const = 0;

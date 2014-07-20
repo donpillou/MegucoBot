@@ -178,13 +178,14 @@ void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
   }
 }
 
-bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout, uint32_t* id)
+bool_t LiveBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
 {
   BotProtocol::Order order;
   order.entityType = BotProtocol::marketOrder;
   order.type = BotProtocol::Order::buy;
   order.price = price;
   order.amount = amount;
+  order.total = total;
   if(!botConnection.createMarketOrder(order))
   {
     error = botConnection.getErrorString();
@@ -194,6 +195,8 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout, uint32_
   order.timeout = time + timeout;
   if(id)
     *id = order.entityId;
+  if(orderedAmount)
+    *orderedAmount = order.amount;
 
 #ifdef BOT_TESTBOT
   List<BotProtocol::Order> marketOrders;
@@ -228,13 +231,14 @@ testok:
   return true;
 }
 
-bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout, uint32_t* id)
+bool_t LiveBroker::sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
 {
   BotProtocol::Order order;
   order.entityType = BotProtocol::marketOrder;
   order.type = BotProtocol::Order::sell;
   order.price = price;
   order.amount = amount;
+  order.total = total;
   if(!botConnection.createMarketOrder(order))
   {
     error = botConnection.getErrorString();
@@ -244,6 +248,8 @@ bool_t LiveBroker::sell(double price, double amount, timestamp_t timeout, uint32
   order.timeout = time + timeout;
   if(id)
     *id = order.entityId;
+  if(orderedAmount)
+    *orderedAmount = order.amount;
 
 #ifdef BOT_TESTBOT
   List<BotProtocol::Order> marketOrders;

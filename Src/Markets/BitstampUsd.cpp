@@ -23,12 +23,52 @@ bool_t BitstampMarket::loadBalanceAndFee()
   return true;
 }
 
-bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type type, double price, double amount, BotProtocol::Order& order)
+bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type type, double price, double amount, double total, BotProtocol::Order& order)
 {
   if(!loadBalanceAndFee())
     return false;
 
   bool buy = type == BotProtocol::Order::buy;
+
+  if(amount == 0.)
+  { // compute amount based on total
+    if(buy)
+    {
+      //total = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100.;
+      //total * 100. = Math::ceil(amount * price * (1. + balance.fee) * 100.);
+      //total * 100. = amount * price * (1. + balance.fee) * 100.; // maximize amount
+      //total = amount * price * (1. + balance.fee);
+      //total / (price * (1. + balance.fee)) = amount;
+      amount = total / (price * (1. + balance.fee));
+      amount = Math::floor(amount * 100000000.) / 100000000.;
+    }
+    else
+    {
+      //total = Math::floor(amount * price * (1. - balance.fee) * 100.) / 100.;
+      //total * 100. = Math::floor(amount * price * (1. - balance.fee) * 100.);
+      //total * 100. = amount * price * (1. - balance.fee) * 100.; // minimize amount
+      //total = amount * price * (1. - balance.fee);
+      //total / (price * (1. - balance.fee)) = amount;
+      amount = total / (price * (1. - balance.fee));
+      amount = Math::ceil(amount * 100000000.) / 100000000.;
+    }
+  }
+  else
+  {
+    if(buy)
+    { // maximize buy amount
+      total = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100.;
+      amount = total / (price * (1. + balance.fee));
+      amount = Math::floor(amount * 100000000.) / 100000000.;
+    }
+    else
+    { // minimize sell amount
+      total = Math::floor(amount * price * (1. - balance.fee) * 100.) / 100.;
+      amount = total / (price * (1. - balance.fee));
+      amount = Math::ceil(amount * 100000000.) / 100000000.;
+    }
+  }
+
   double maxAmount = Math::abs(buy ? getMaxBuyAmout(price) : getMaxSellAmout());
   if(Math::abs(amount) > maxAmount)
     amount = maxAmount;

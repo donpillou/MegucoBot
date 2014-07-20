@@ -32,8 +32,8 @@ private:
   void_t cancelTimedOutOrders(Bot::Session& botSession);
 
 private: // Bot::Broker
-  virtual bool_t buy(double price, double amount, timestamp_t timeout, uint32_t* id);
-  virtual bool_t sell(double price, double amount, timestamp_t timeout, uint32_t* id);
+  virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
+  virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual double getBalanceBase() const {return balance.availableUsd;}
   virtual double getBalanceComm() const {return balance.availableBtc;}
   virtual double getFee() const {return balance.fee;}
