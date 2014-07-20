@@ -11,16 +11,16 @@ class BotConnection;
 class SimBroker : public Broker
 {
 public:
-  SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties);
+  SimBroker(BotConnection& botConnection, double tradeFree, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties);
 
 private:
   BotConnection& botConnection;
   String error;
   List<BotProtocol::Order> openOrders;
-  BotProtocol::Balance balance;
   timestamp_t time;
   timestamp_t lastBuyTime;
   timestamp_t lastSellTime;
+  double tradeFee;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionItem> items;
   HashMap<String, BotProtocol::SessionProperty> properties;
@@ -30,9 +30,6 @@ private:
 private: // Bot::Broker
   virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
-  virtual double getBalanceBase() const {return balance.availableUsd;}
-  virtual double getBalanceComm() const {return balance.availableBtc;}
-  virtual double getFee() const {return balance.fee;}
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}

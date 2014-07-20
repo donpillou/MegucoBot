@@ -44,7 +44,6 @@ public:
     sessionOrder,
     sessionMarker,
     sessionLogMessage,
-    sessionBalance,
     market,
     marketTransaction,
     marketOrder,
@@ -142,8 +141,6 @@ public:
     uint32_t botEngineId;
     uint32_t marketId;
     uint8_t state;
-    double balanceBase;
-    double balanceComm;
   }; 
 
   struct BotEngine : public Entity
@@ -291,7 +288,6 @@ public:
       select,
       requestTransactions,
       requestOrders,
-      requestBalance,
       requestItems,
       requestProperties,
     };

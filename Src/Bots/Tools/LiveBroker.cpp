@@ -7,7 +7,7 @@
 #include "BotConnection.h"
 
 LiveBroker::LiveBroker(BotConnection& botConnection, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
-  botConnection(botConnection), balance(balance),
+  botConnection(botConnection),
   time(0), lastBuyTime(0), lastSellTime(0), lastOrderRefreshTime(0)
 {
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
@@ -102,19 +102,11 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
       transactions.append(transaction.entityId, transaction);
 
       if(order.type == BotProtocol::Order::buy)
-      {
         lastBuyTime = time;
-        balance.reservedUsd -= order.total;
-        balance.availableBtc += order.amount;
-      }
       else
-      {
         lastSellTime = time;
-        balance.reservedBtc -= order.amount;
-        balance.availableUsd += order.total;
-      }
+
       botConnection.removeSessionOrder(order.entityId);
-      botConnection.updateSessionBalance(balance);
 
       BotProtocol::Marker marker;
       marker.entityType = BotProtocol::sessionMarker;
@@ -147,19 +139,7 @@ void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
     {
       if(botConnection.removeMarketOrder(order.entityId))
       {
-        if(order.type == BotProtocol::Order::buy)
-        {
-          balance.availableUsd += order.total;
-          balance.reservedUsd -= order.total;
-        }
-        else
-        {
-          balance.availableBtc += order.amount;
-          balance.reservedBtc -= order.amount;
-        }
-
         botConnection.removeSessionOrder(order.entityId);
-        botConnection.updateSessionBalance(balance);
 
         if(order.type == BotProtocol::Order::buy)
           botSession.handleBuyTimeout(order.entityId);
@@ -225,9 +205,6 @@ testok:
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balance.availableUsd -= order.total;
-  balance.reservedUsd += order.total;
-  botConnection.updateSessionBalance(balance);
   return true;
 }
 
@@ -278,9 +255,6 @@ testok:
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balance.availableBtc -= amount;
-  balance.reservedBtc += amount;
-  botConnection.updateSessionBalance(balance);
   return true;
 }
 

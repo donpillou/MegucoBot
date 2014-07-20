@@ -10,9 +10,6 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
   if(updateCount++ == 0)
   {
     broker.warning("Executing bot test...");
-    String message;
-    message.printf("balance is: base=%f, comm=%f, fee=%f", broker.getBalanceBase(), broker.getBalanceComm(), broker.getFee());
-    broker.warning(message);
 
     // test buy and sell
     if(!broker.buy(300, 0.02, 0., 30 * 1000))

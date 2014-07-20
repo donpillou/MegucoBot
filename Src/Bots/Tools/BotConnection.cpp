@@ -114,20 +114,6 @@ bool_t BotConnection::getSessionOrders(List<BotProtocol::Order>& orders)
   return true;
 }
 
-bool_t BotConnection::getSessionBalance(BotProtocol::Balance& balance)
-{
-  List<BotProtocol::Balance> result;
-  if(!sendControlSession(BotProtocol::ControlSession::requestBalance, result))
-    return false;
-  if(result.isEmpty())
-  {
-    error = "Received response without session balance.";
-    return false;
-  }
-  balance = result.front();
-  return true;
-}
-
 bool_t BotConnection::getSessionProperties(List<BotProtocol::SessionProperty>& properties)
 {
   if(!sendControlSession(BotProtocol::ControlSession::requestProperties, properties))
@@ -188,11 +174,6 @@ bool_t BotConnection::createSessionMarker(BotProtocol::Marker& marker)
 bool_t BotConnection::removeSessionMarker(uint32_t id)
 {
   return removeEntity(BotProtocol::sessionMarker, id);
-}
-
-bool_t BotConnection::updateSessionBalance(BotProtocol::Balance& balance)
-{
-  return updateEntity(&balance, sizeof(balance));
 }
 
 bool_t BotConnection::createEntity(void_t* entityData, size_t entitySize)

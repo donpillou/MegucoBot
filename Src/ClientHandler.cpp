@@ -614,10 +614,6 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Order))
         handleBotUpdateSessionOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
-    case BotProtocol::sessionBalance:
-      if(size >= sizeof(BotProtocol::Balance))
-        handleBotUpdateSessionBalance(requestId, *(BotProtocol::Balance*)&entity);
-      break;
     default:
       break;
     }
@@ -767,7 +763,7 @@ void_t ClientHandler::handleUserCreateSession(uint32_t requestId, BotProtocol::S
     return;
   }
 
-  Session* session = user->createSession(name, *botEngine, *market, createSessionArgs.balanceBase, createSessionArgs.balanceComm);
+  Session* session = user->createSession(name, *botEngine, *market);
   if(!session)
   {
     sendErrorResponse(BotProtocol::createEntity, requestId, &createSessionArgs, "Could not create session.");
@@ -891,7 +887,6 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     session->registerClient(*this, Session::userType);
     this->session = session;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
-    sendRemoveAllEntities(BotProtocol::sessionBalance);
     sendRemoveAllEntities(BotProtocol::sessionTransaction);
     sendRemoveAllEntities(BotProtocol::sessionItem);
     sendRemoveAllEntities(BotProtocol::sessionProperty);
@@ -899,7 +894,6 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     sendRemoveAllEntities(BotProtocol::sessionLogMessage);
     sendRemoveAllEntities(BotProtocol::sessionMarker);
     {
-      sendUpdateEntity(0, &session->getBalance(), sizeof(BotProtocol::Balance));
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::Transaction));
@@ -978,15 +972,6 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
       sendMessageData(&response, sizeof(response));
       for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         sendMessageData(&*i, sizeof(BotProtocol::Order));
-    }
-    break;
-  case BotProtocol::ControlSession::requestBalance:
-    {
-      const BotProtocol::Balance& balance = session->getBalance();
-      size_t dataSize = sizeof(response) + sizeof(BotProtocol::Balance);
-      sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
-      sendMessageData(&response, sizeof(response));
-      sendMessageData(&balance, sizeof(balance));
     }
     break;
   default:
@@ -1219,16 +1204,6 @@ void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotPr
   sendMessage(BotProtocol::createEntityResponse, requestId, logMessage, sizeof(*logMessage));
 
   session->sendUpdateEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
-  session->saveData();
-}
-
-void_t ClientHandler::handleBotUpdateSessionBalance(uint32_t requestId, BotProtocol::Balance& balance)
-{
-  session->updateBalance(balance);
-
-  sendMessage(BotProtocol::updateEntityResponse, requestId, &balance, sizeof(BotProtocol::Entity));
-
-  session->sendUpdateEntity(&balance, sizeof(balance));
   session->saveData();
 }
 

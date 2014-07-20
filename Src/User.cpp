@@ -24,10 +24,10 @@ User::~User()
     delete *i;
 }
 
-Session* User::createSession(const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm)
+Session* User::createSession(const String& name, BotEngine& engine, Market& market)
 {
   uint32_t id = nextEntityId++;
-  Session* session = new Session(serverHandler, *this, id, name, engine, market, balanceBase, balanceComm);
+  Session* session = new Session(serverHandler, *this, id, name, engine, market);
   sessions.append(id, session);
   return session;
 }

@@ -23,7 +23,7 @@ public:
   void_t registerClient(ClientHandler& client) {clients.append(&client);}
   void_t unregisterClient(ClientHandler& client) {clients.remove(&client);}
 
-  Session* createSession(const String& name, BotEngine& engine, Market& market, double balanceBase, double balanceComm);
+  Session* createSession(const String& name, BotEngine& engine, Market& market);
   bool_t deleteSession(uint32_t id);
   Session* findSession(uint32_t id) {return *sessions.find(id);}
 

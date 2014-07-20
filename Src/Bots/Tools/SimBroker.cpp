@@ -6,9 +6,9 @@
 #include "SimBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection,  const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
-  botConnection(botConnection), balance(balance), 
-  time(0), lastBuyTime(0), lastSellTime(0), startTime(0)
+SimBroker::SimBroker(BotConnection& botConnection, double tradeFee, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
+  botConnection(botConnection),
+  time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0)
 {
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
@@ -59,19 +59,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
     const BotProtocol::Order& order = *i;
     if(time >= order.timeout)
     {
-      if(order.type == BotProtocol::Order::buy)
-      {
-        balance.availableUsd += order.total;
-        balance.reservedUsd -= order.total;
-      }
-      else
-      {
-        balance.availableBtc += order.amount;
-        balance.reservedBtc -= order.amount;
-      }
-
       botConnection.removeSessionOrder(order.entityId);
-      botConnection.updateSessionBalance(balance);
 
       if(order.type == BotProtocol::Order::buy)
         botSession.handleBuyTimeout(order.entityId);
@@ -95,20 +83,11 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       transactions.append(transaction.entityId, transaction);
 
       if(order.type == BotProtocol::Order::buy)
-      {
         lastBuyTime = time;
-        balance.reservedUsd -= order.total;
-        balance.availableBtc += order.amount;
-      }
       else
-      {
         lastSellTime = time;
-        balance.reservedBtc -= order.amount;
-        balance.availableUsd += order.total;
-      }
 
       botConnection.removeSessionOrder(order.entityId);
-      botConnection.updateSessionBalance(balance);
 
       BotProtocol::Marker marker;
       marker.entityType = BotProtocol::sessionMarker;
@@ -134,15 +113,15 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
 bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
 {
   if(amount != 0.)
-    total = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100.;
+    total = Math::ceil(amount * price * (1. + tradeFee) * 100.) / 100.;
 
-  if(total > balance.availableUsd)
-  {
-    error = "Insufficient balance.";
-    return false;
-  }
+  //if(total > balance.availableUsd)
+  //{
+  //  error = "Insufficient balance.";
+  //  return false;
+  //}
 
-  amount = total / (price * (1. + balance.fee));
+  amount = total / (price * (1. + tradeFee));
   amount = Math::floor(amount * 100000000.) / 100000000.;
 
   BotProtocol::Order order;
@@ -172,25 +151,22 @@ bool_t SimBroker::buy(double price, double amount, double total, timestamp_t tim
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balance.availableUsd -= total;
-  balance.reservedUsd += total;
-  botConnection.updateSessionBalance(balance);
   return true;
 }
 
 bool_t SimBroker::sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
 {
   if(amount != 0.)
-    total = Math::floor(amount * price * (1. - balance.fee) * 100.) / 100.;
+    total = Math::floor(amount * price * (1. - tradeFee) * 100.) / 100.;
 
-  amount = total / (price * (1. - balance.fee));
+  amount = total / (price * (1. - tradeFee));
   amount = Math::ceil(amount * 100000000.) / 100000000.;
 
-  if(amount > balance.availableBtc)
-  {
-    error = "Insufficient balance.";
-    return false;
-  }
+  //if(amount > balance.availableBtc)
+  //{
+  //  error = "Insufficient balance.";
+  //  return false;
+  //}
 
   BotProtocol::Order order;
   order.entityType = BotProtocol::sessionOrder;
@@ -198,7 +174,7 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   order.date = time;
   order.amount = amount;
   order.price = price;
-  order.total = Math::floor(price * amount * (1 - balance.fee) * 100.) / 100.;
+  order.total = Math::floor(price * amount * (1 - tradeFee) * 100.) / 100.;
   timestamp_t orderTimeout = time + timeout;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))
@@ -219,9 +195,6 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balance.availableBtc -= amount;
-  balance.reservedBtc += amount;
-  botConnection.updateSessionBalance(balance);
   return true;
 }
 

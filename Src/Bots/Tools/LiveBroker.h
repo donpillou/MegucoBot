@@ -17,7 +17,6 @@ private:
   BotConnection& botConnection;
   String error;
   List<BotProtocol::Order> openOrders;
-  BotProtocol::Balance balance;
   timestamp_t time;
   timestamp_t lastBuyTime;
   timestamp_t lastSellTime;
@@ -34,9 +33,6 @@ private:
 private: // Bot::Broker
   virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
-  virtual double getBalanceBase() const {return balance.availableUsd;}
-  virtual double getBalanceComm() const {return balance.availableBtc;}
-  virtual double getFee() const {return balance.fee;}
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}

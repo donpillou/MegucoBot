@@ -28,7 +28,6 @@ public:
   bool_t getSessionTransactions(List<BotProtocol::Transaction>& transactions);
   bool_t getSessionItems(List<BotProtocol::SessionItem>& items);
   bool_t getSessionOrders(List<BotProtocol::Order>& orders);
-  bool_t getSessionBalance(BotProtocol::Balance& balance);
   bool_t getSessionProperties(List<BotProtocol::SessionProperty>& properties);
 
   bool_t createSessionTransaction(BotProtocol::Transaction& transaction);
@@ -42,7 +41,6 @@ public:
   bool_t removeSessionOrder(uint32_t id);
   bool_t createSessionMarker(BotProtocol::Marker& marker);
   bool_t removeSessionMarker(uint32_t id);
-  bool_t updateSessionBalance(BotProtocol::Balance& balance);
   bool_t createSessionProperty(BotProtocol::SessionProperty& property) {return createEntity(&property, sizeof(property));}
   bool_t updateSessionProperty(const BotProtocol::SessionProperty& property) {return updateEntity(&property, sizeof(property));}
   bool_t removeSessionProperty(uint32_t id) {return removeEntity(BotProtocol::sessionProperty, id);}

@@ -28,7 +28,7 @@ public:
   };
 
 public:
-  Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market, double initialBalanceBase, double initialBalanceComm);
+  Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market);
   Session(ServerHandler& serverHandler, User& user, const Variant& variant);
   ~Session();
   void_t toVariant(Variant& variant);
@@ -49,7 +49,6 @@ public:
   Market* getMarket() const {return market;}
   BotProtocol::Session::State getState() const {return state;}
   bool isSimulation() const {return simulation;}
-  const BotProtocol::Balance& getBalance() const {return balance;}
   ClientHandler* getHandlerClient() const {return handlerClient;}
 
   BotProtocol::Transaction* createTransaction(const BotProtocol::Transaction& transaction);
@@ -80,8 +79,6 @@ public:
   BotProtocol::SessionLogMessage* addLogMessage(const BotProtocol::SessionLogMessage& logMessage);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
 
-  void_t updateBalance(const BotProtocol::Balance& balance) {this->balance = balance;}
-
   void_t getEntity(BotProtocol::Session& session) const;
   void_t sendUpdateEntity(const void_t* data, size_t size);
   void_t sendRemoveEntity(BotProtocol::EntityType type, uint32_t id);
@@ -95,9 +92,6 @@ private:
   BotEngine* engine;
   Market* market;
   bool simulation;
-  double initialBalanceBase;
-  double initialBalanceComm;
-  BotProtocol::Balance balance;
   BotProtocol::Session::State state;
   Process process;
   uint32_t pid;
@@ -110,7 +104,6 @@ private:
   HashMap<uint32_t, BotProtocol::Order> orders;
   HashMap<uint32_t, BotProtocol::Marker> markers;
   List<BotProtocol::SessionLogMessage> logMessages;
-  BotProtocol::Balance backupBalance;
   HashMap<uint32_t, BotProtocol::Transaction> backupTransactions;
   HashMap<uint32_t, BotProtocol::SessionItem> backupItems;
   HashMap<uint32_t, BotProtocol::SessionProperty> backupProperties;

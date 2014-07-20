@@ -56,33 +56,26 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
   if(!botConnection.getSessionTransactions(sessionTransactions) ||
      !botConnection.getSessionItems(sessionItems) ||
      !botConnection.getSessionOrders(sessionOrders) ||
-     !botConnection.getSessionBalance(sessionBalance) ||
      !botConnection.getSessionProperties(sessionProperties))
   {
     error = botConnection.getErrorString();
     return false;
   }
 
-  // update session fee
-  BotProtocol::Balance marketBalance;
-  if(!botConnection.getMarketBalance(marketBalance))
+  // create broker
+  if(handlerConnection.isSimulation())
   {
-    error = botConnection.getErrorString();
-    return false;
-  }
-  if(sessionBalance.fee != marketBalance.fee)
-  {
-    sessionBalance.fee = marketBalance.fee;
-    if(!botConnection.updateSessionBalance(sessionBalance))
+    // get market fee
+    BotProtocol::Balance marketBalance;
+    if(!botConnection.getMarketBalance(marketBalance))
     {
       error = botConnection.getErrorString();
       return false;
     }
-  }
 
-  // create broker
-  if(handlerConnection.isSimulation())
-    broker = new SimBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
+    //
+    broker = new SimBroker(botConnection, marketBalance.fee, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
+  }
   else
     broker = new LiveBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
 
