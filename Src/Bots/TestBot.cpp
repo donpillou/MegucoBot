@@ -66,7 +66,7 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     broker.removeProperty("prop2");
     broker.removeProperty("prop3");
     broker.removeProperty("prop4ro");
-    int propCount = broker.getProperties().size();
+    size_t propCount = broker.getProperties().size();
     broker.setProperty("prop1", 42., BotProtocol::SessionProperty::readOnly, "leet");
     broker.setProperty("prop2", "sda", BotProtocol::SessionProperty::readOnly, "teel");
     broker.setProperty("prop4ro", "edit me", BotProtocol::SessionProperty::none, "teel");
