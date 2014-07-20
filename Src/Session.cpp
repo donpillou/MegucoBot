@@ -99,7 +99,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
         default:
           break;
         }
-        item.total = type == BotProtocol::SessionItem::buy ? Math::ceil(item.price * item.amount * (1. + .005)) : Math::floor(item.price * item.amount * (1. - .005));
+        item.total = type == BotProtocol::SessionItem::buy ? Math::ceil(item.price * item.amount * (1. + .005) * 100.) / 100. : Math::floor(item.price * item.amount * (1. - .005) * 100.) / 100.;
       }
 
       item.profitablePrice = itemVar.find("profitablePrice")->toDouble();
