@@ -170,7 +170,7 @@ public:
     int64_t date;
     double price;
     double amount;
-    double fee;
+    double total;
   };
 
   struct Order : public Entity
@@ -185,7 +185,7 @@ public:
     int64_t date;
     double price;
     double amount;
-    double fee;
+    double total;
     int64_t timeout;
   };
 

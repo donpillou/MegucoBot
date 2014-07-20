@@ -61,9 +61,8 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
     {
       if(order.type == BotProtocol::Order::buy)
       {
-        double charge = order.amount * order.price + order.fee;
-        balance.availableUsd += charge;
-        balance.reservedUsd -= charge;
+        balance.availableUsd += order.total;
+        balance.reservedUsd -= order.total;
       }
       else
       {
@@ -91,21 +90,21 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       transaction.date = time;
       transaction.price = order.price;
       transaction.amount = order.amount;
-      transaction.fee = order.fee;
+      transaction.total = order.total;
       botConnection.createSessionTransaction(transaction);
       transactions.append(transaction.entityId, transaction);
 
       if(order.type == BotProtocol::Order::buy)
       {
         lastBuyTime = time;
-        balance.reservedUsd -= order.amount * order.price + order.fee;
+        balance.reservedUsd -= order.total;
         balance.availableBtc += order.amount;
       }
       else
       {
         lastSellTime = time;
         balance.reservedBtc -= order.amount;
-        balance.availableUsd += order.amount * order.price - order.fee;
+        balance.availableUsd += order.total;
       }
 
       botConnection.removeSessionOrder(order.entityId);
@@ -134,10 +133,8 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
 
 bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t* id)
 {
-  double fee = Math::ceil(amount * price * balance.fee * 100.) / 100.;
-  // todo: fee = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100. - amount * price; ???
-  double charge = amount * price + fee;
-  if(charge > balance.availableUsd)
+  double total = Math::ceil(amount * price * (1. + balance.fee) * 100.) / 100.;
+  if(total > balance.availableUsd)
   {
     error = "Insufficient balance.";
     return false;
@@ -149,7 +146,7 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t
   order.date = time;
   order.amount = amount;
   order.price = price;
-  order.fee = fee;
+  order.total = total;
   timestamp_t orderTimeout = time + timeout;;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))
@@ -168,8 +165,8 @@ bool_t SimBroker::buy(double price, double amount, timestamp_t timeout, uint32_t
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balance.availableUsd -= charge;
-  balance.reservedUsd += charge;
+  balance.availableUsd -= total;
+  balance.reservedUsd += total;
   botConnection.updateSessionBalance(balance);
   return true;
 }
@@ -188,8 +185,7 @@ bool_t SimBroker::sell(double price, double amount, timestamp_t timeout, uint32_
   order.date = time;
   order.amount = amount;
   order.price = price;
-  order.fee = Math::ceil(amount * price * balance.fee * 100.) / 100.;
-  // todo: fee = price * amount - Math::floor(price * amount * (1 - fee) * 100.) / 100. ???
+  order.total = Math::floor(price * amount * (1 - balance.fee) * 100.) / 100.;
   timestamp_t orderTimeout = time + timeout;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))

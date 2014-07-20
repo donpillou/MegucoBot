@@ -1,5 +1,6 @@
 
 #include <nstd/Time.h>
+#include <nstd/Math.h>
 
 #include "Session.h"
 #include "ServerHandler.h"
@@ -54,7 +55,12 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       transaction.date = transactionVar.find("date")->toInt64();
       transaction.price = transactionVar.find("price")->toDouble();
       transaction.amount = transactionVar.find("amount")->toDouble();
-      transaction.fee = transactionVar.find("fee")->toDouble();
+      transaction.total = transactionVar.find("total")->toDouble();
+
+      double fee = transactionVar.find("fee")->toDouble(); // some code for backward compatibility 
+      if(fee != 0)
+        transaction.total = transaction.type == BotProtocol::Transaction::buy ? (Math::abs(transaction.price * transaction.amount) + fee) : (Math::abs(transaction.price * transaction.amount) - fee);
+
       if(transactions.find(transaction.entityId) != transactions.end())
         continue;
       transactions.append(transaction.entityId, transaction);
@@ -117,7 +123,12 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       order.date = orderVar.find("date")->toInt64();
       order.price = orderVar.find("price")->toDouble();
       order.amount = orderVar.find("amount")->toDouble();
-      order.fee = orderVar.find("fee")->toDouble();
+      order.total = orderVar.find("total")->toDouble();
+
+      double fee = orderVar.find("fee")->toDouble(); // some code for backward compatibility 
+      if(fee != 0)
+        order.total = order.type == BotProtocol::Order::buy ? (Math::abs(order.price * order.amount) + fee) : (Math::abs(order.price * order.amount) - fee);
+
       if(orders.find(order.entityId) != orders.end())
         continue;
       orders.append(order.entityId, order);
@@ -180,7 +191,7 @@ void_t Session::toVariant(Variant& variant)
       transactionVar.append("date", transaction.date);
       transactionVar.append("price", transaction.price);
       transactionVar.append("amount", transaction.amount);
-      transactionVar.append("fee", transaction.fee);
+      transactionVar.append("total", transaction.total);
     }
   }
   {
@@ -225,7 +236,7 @@ void_t Session::toVariant(Variant& variant)
       orderVar.append("date", order.date);
       orderVar.append("price", order.price);
       orderVar.append("amount", order.amount);
-      orderVar.append("fee", order.fee);
+      orderVar.append("total", order.total);
     }
   }
   {

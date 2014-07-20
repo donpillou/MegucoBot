@@ -81,15 +81,14 @@ bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type t
 
   order.price = orderData.find("price")->toDouble();
   order.amount = Math::abs(orderData.find("amount")->toDouble());
-  double total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
-  order.fee = Math::abs(total - Math::abs(order.price * order.amount));
+  order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
   this->orders.append(order.entityId, order);
 
   // update balance
   if(order.amount > 0) // buy order
   {
-    balance.availableUsd -= total;
-    balance.reservedUsd += total;
+    balance.availableUsd -= order.total;
+    balance.reservedUsd += order.total;
   }
   else // sell order
   {
@@ -188,8 +187,7 @@ bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
 
     order.price = orderData.find("price")->toDouble();
     order.amount = Math::abs(orderData.find("amount")->toDouble());
-    double total = getOrderCharge(buy ? order.amount : -order.amount, order.price);
-    order.fee = Math::abs(Math::abs(total) - order.price * order.amount);
+    order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
 
     this->orders.append(order.entityId, order);
     orders.append(order);
@@ -243,12 +241,13 @@ bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transact
       continue;
     transaction.date = time.toTimestamp();
 
-    transaction.fee = Math::abs(transactionData.find("fee")->toDouble());
+    double fee = Math::abs(transactionData.find("fee")->toDouble());
 
     double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
     transaction.type = buy ? BotProtocol::Transaction::buy : BotProtocol::Transaction::sell;
     transaction.amount = Math::abs(transactionData.find("btc")->toDouble());
+    transaction.total = buy ? (Math::abs(value) + fee) : (Math::abs(value) - fee);
     transaction.price = Math::abs(value) / Math::abs(transaction.amount);
 
     transactions.append(transaction);
@@ -292,7 +291,8 @@ double BitstampMarket::getOrderCharge(double amount, double price) const
   {
     double result = -amount * price;
     result = result - result * balance.fee;
-    result = Math::ceil(result * 100.) / 100.;
+    //result = Math::ceil(result * 100.) / 100.; // bitstamp's website computes the total of a sell order this way, but its probably incorrect
+    result = Math::floor(result * 100.) / 100.;
     return result;
   }
 }

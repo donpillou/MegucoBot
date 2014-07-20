@@ -97,21 +97,21 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
       transaction.date = Time::time();
       transaction.price = order.price;
       transaction.amount = order.amount;
-      transaction.fee = order.fee;
+      transaction.total = order.total;
       botConnection.createSessionTransaction(transaction);
       transactions.append(transaction.entityId, transaction);
 
       if(order.type == BotProtocol::Order::buy)
       {
         lastBuyTime = time;
-        balance.reservedUsd -= order.amount * order.price + order.fee;
+        balance.reservedUsd -= order.total;
         balance.availableBtc += order.amount;
       }
       else
       {
         lastSellTime = time;
         balance.reservedBtc -= order.amount;
-        balance.availableUsd += order.amount * order.price - order.fee;
+        balance.availableUsd += order.total;
       }
       botConnection.removeSessionOrder(order.entityId);
       botConnection.updateSessionBalance(balance);
@@ -149,9 +149,8 @@ void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
       {
         if(order.type == BotProtocol::Order::buy)
         {
-          double charge = order.amount * order.price + order.fee;
-          balance.availableUsd += charge;
-          balance.reservedUsd -= charge;
+          balance.availableUsd += order.total;
+          balance.reservedUsd -= order.total;
         }
         else
         {
@@ -193,7 +192,6 @@ bool_t LiveBroker::buy(double price, double amount, timestamp_t timeout, uint32_
   }
   lastOrderRefreshTime = Time::time();
   order.timeout = time + timeout;
-  double charge = order.price * order.amount + order.fee;
   if(id)
     *id = order.entityId;
 
@@ -224,8 +222,8 @@ testok:
   botConnection.createSessionMarker(marker);
 
   openOrders.append(order);
-  balance.availableUsd -= charge;
-  balance.reservedUsd += charge;
+  balance.availableUsd -= order.total;
+  balance.reservedUsd += order.total;
   botConnection.updateSessionBalance(balance);
   return true;
 }
