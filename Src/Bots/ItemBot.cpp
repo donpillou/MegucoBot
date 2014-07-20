@@ -55,6 +55,7 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
       double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price * (1. + fee * 2.);
       updatedItem.flipPrice = transaction2.price * (1. + fee * (1. + parameters.sellProfitGain) * 2.);
+      updatedItem.date = transaction2.date;
 
       broker.updateItem(updatedItem);
       break;
@@ -87,6 +88,7 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
       double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price / (1. + fee * 2.);
       updatedItem.flipPrice = transaction2.price / (1. + fee * (1. + parameters.buyProfitGain) * 2.);
+      updatedItem.date = transaction2.date;
 
       broker.updateItem(updatedItem);
       break;
