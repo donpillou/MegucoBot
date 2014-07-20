@@ -251,8 +251,8 @@ public:
     uint8_t state;
     int64_t date;
     double price;
-    double amount;
-    double total;
+    double balanceComm;
+    double balanceBase;
     double profitablePrice;
     double flipPrice;
     uint32_t orderId;

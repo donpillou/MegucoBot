@@ -28,7 +28,8 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
     item.state = BotProtocol::SessionItem::waitSell;
     item.date = 89;
     item.price = 300;
-    item.amount = 0.02;
+    item.balanceComm = 0.;
+    item.balanceBase = 12.;
     item.price = 320;
     item.profitablePrice = 330;
     item.flipPrice = 340;
@@ -41,15 +42,15 @@ void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& va
       else
       {
         BotProtocol::SessionItem item = *items.begin();
-        double newAmount = item.amount / 2.;
-        item.amount /= newAmount;
+        double newBalanceBase = item.balanceBase / 2.;
+        item.balanceBase = newBalanceBase;
         broker.updateItem(item);
         size_t itemCount = items.size();
         const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
         if(items.size() != itemCount)
           broker.warning("item count changed after update.");
         BotProtocol::SessionItem& item2 = *items.find(item.entityId);
-        if(item.amount != item2.amount)
+        if(item.balanceBase != item2.balanceBase)
           broker.warning("item update failed.");
         broker.removeItem(item2.entityId);
         const HashMap<uint32_t, BotProtocol::SessionItem>& items2 = broker.getItems();

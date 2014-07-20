@@ -49,8 +49,8 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
       updatedItem.state = BotProtocol::SessionItem::waitSell;
       updatedItem.orderId = 0;
       updatedItem.price = transaction2.price;
-      updatedItem.amount = transaction2.amount;
-      updatedItem.total = transaction2.total;
+      updatedItem.balanceComm += transaction2.amount;
+      updatedItem.balanceBase -= transaction2.total;
       //double fee = broker.getFee();
       double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price * (1. + fee * 2.);
@@ -82,8 +82,8 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
       updatedItem.state = BotProtocol::SessionItem::waitBuy;
       updatedItem.orderId = 0;
       updatedItem.price = transaction2.price;
-      updatedItem.amount = transaction2.amount;
-      updatedItem.total = transaction2.total;
+      updatedItem.balanceComm -= transaction2.amount;
+      updatedItem.balanceBase += transaction2.total;
       //double fee = broker.getFee();
       double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price / (1. + fee * 2.);
@@ -148,14 +148,7 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
       updatedItem.state = BotProtocol::SessionItem::buying;
       broker.updateItem(updatedItem);
 
-      double amount = item.amount;
-      double total = item.total;
-      if(total != 0.)
-        amount = 0.;
-
-      //tradePrice = item.flipPrice; // todo: this is for debugging, remove this
-
-      if(broker.buy(tradePrice, amount, total, 60 * 60 * 1000, &updatedItem.orderId, &updatedItem.amount))
+      if(broker.buy(tradePrice, 0., item.balanceBase, 60 * 60 * 1000, &updatedItem.orderId, 0))
         broker.updateItem(updatedItem);
       else
       {
@@ -187,7 +180,7 @@ void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
 
       //tradePrice = item.flipPrice; // todo: this is for debugging, remove this
 
-      if(broker.sell(tradePrice, item.amount, 0., 60 * 60 * 1000, &updatedItem.orderId, &updatedItem.amount))
+      if(broker.sell(tradePrice, item.balanceComm, 0., 60 * 60 * 1000, &updatedItem.orderId, 0))
         broker.updateItem(updatedItem);
       else
       {

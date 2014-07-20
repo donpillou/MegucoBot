@@ -61,10 +61,15 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       item.state = itemVar.find("state")->toUInt();
       item.date = itemVar.find("date")->toInt64();
       item.price = itemVar.find("price")->toDouble();
-      item.amount = itemVar.find("amount")->toDouble();
-      item.total = itemVar.find("total")->toDouble();
+      double amount = itemVar.find("amount")->toDouble();
+      double total = itemVar.find("total")->toDouble();
+      item.balanceBase = itemVar.find("balanceBase")->toDouble();
+      item.balanceComm = itemVar.find("balanceComm")->toDouble();
+      item.profitablePrice = itemVar.find("profitablePrice")->toDouble();
+      item.flipPrice = itemVar.find("flipPrice")->toDouble();
+      item.orderId = itemVar.find("orderId")->toUInt();
 
-      if(item.total == 0. && item.price != 0.) // todo: this is code for backward compatibility; remove this
+      if(total == 0. && item.price != 0. && amount != 0.) // todo: this is code for backward compatibility; remove this
       {
         BotProtocol::SessionItem::Type type = (BotProtocol::SessionItem::Type)item.type;
         switch(item.state)
@@ -80,12 +85,31 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
         default:
           break;
         }
-        item.total = type == BotProtocol::SessionItem::buy ? Math::ceil(item.price * item.amount * (1. + .005) * 100.) / 100. : Math::floor(item.price * item.amount * (1. - .005) * 100.) / 100.;
+        total = type == BotProtocol::SessionItem::buy ? Math::ceil(item.price * amount * (1. + .005) * 100.) / 100. : Math::floor(item.price * amount * (1. - .005) * 100.) / 100.;
       }
 
-      item.profitablePrice = itemVar.find("profitablePrice")->toDouble();
-      item.flipPrice = itemVar.find("flipPrice")->toDouble();
-      item.orderId = itemVar.find("orderId")->toUInt();
+      if(item.balanceBase == 0. && item.balanceComm == 0.) // todo: this is code for backward compatibility; remove this
+      {
+        BotProtocol::SessionItem::Type type = (BotProtocol::SessionItem::Type)item.type;
+        switch(item.state)
+        {
+        case BotProtocol::SessionItem::waitBuy:
+        case BotProtocol::SessionItem::buying:
+          type = BotProtocol::SessionItem::buy;
+          break;
+        case BotProtocol::SessionItem::waitSell:
+        case BotProtocol::SessionItem::selling:
+          type = BotProtocol::SessionItem::sell;
+          break;
+        default:
+          break;
+        }
+        if(item.type == BotProtocol::SessionItem::buy)
+          item.balanceBase = total != 0. ? total : Math::ceil(item.flipPrice * amount * (1. + .005) * 100.) / 100.;
+        else
+          item.balanceComm = amount;
+      }
+
       if(items.find(item.entityId) != items.end())
         continue;
       items.append(item.entityId, item);
@@ -200,7 +224,8 @@ void_t Session::toVariant(Variant& variant)
       itemVar.append("state", (uint32_t)item.state);
       itemVar.append("date", item.date);
       itemVar.append("price", item.price);
-      itemVar.append("amount", item.amount);
+      itemVar.append("balanceComm", item.balanceComm);
+      itemVar.append("balanceBase", item.balanceBase);
       itemVar.append("profitablePrice", item.profitablePrice);
       itemVar.append("flipPrice", item.flipPrice);
       itemVar.append("orderId", item.orderId);
