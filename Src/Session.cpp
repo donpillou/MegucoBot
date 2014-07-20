@@ -104,7 +104,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
         default:
           break;
         }
-        if(item.type == BotProtocol::SessionItem::buy)
+        if(type == BotProtocol::SessionItem::buy)
           item.balanceBase = total != 0. ? total : Math::ceil(item.flipPrice * amount * (1. + .005) * 100.) / 100.;
         else
           item.balanceComm = amount;
