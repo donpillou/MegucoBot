@@ -31,6 +31,12 @@ private:
 
     virtual ~Session() {}
 
+    void_t updateBalance();
+
+    void_t checkBuy(const DataProtocol::Trade& trade, const Values& values);
+    void_t checkSell(const DataProtocol::Trade& trade, const Values& values);
+
+  private: // Bot::Session
     virtual void_t setParameters(double* parameters);
 
     virtual void_t handle(const DataProtocol::Trade& trade, const Values& values);
@@ -38,9 +44,6 @@ private:
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleBuyTimeout(uint32_t orderId);
     virtual void_t handleSellTimeout(uint32_t orderId);
-
-    void_t checkBuy(const DataProtocol::Trade& trade, const Values& values);
-    void_t checkSell(const DataProtocol::Trade& trade, const Values& values);
   };
 
 public: // Bot

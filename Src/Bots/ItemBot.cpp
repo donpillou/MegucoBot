@@ -17,6 +17,23 @@ ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.),
 
   //parameters.sellProfitGain = 0.;
   //parameters.buyProfitGain = 0.127171;
+
+  updateBalance();
+}
+
+void_t ItemBot::Session::updateBalance()
+{
+  double balanceBase = 0.;
+  double balanceComm = 0.;
+  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  {
+    const BotProtocol::SessionItem& item = *i;
+    balanceComm += item.balanceComm;
+    balanceBase += item.balanceBase;
+  }
+  broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase, BotProtocol::SessionProperty::readOnly, broker.getCurrencyBase());
+  broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
 }
 
 void ItemBot::Session::setParameters(double* parameters)
@@ -58,6 +75,7 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
       updatedItem.date = transaction2.date;
 
       broker.updateItem(updatedItem);
+      updateBalance();
       break;
     }
   }
@@ -91,6 +109,7 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
       updatedItem.date = transaction2.date;
 
       broker.updateItem(updatedItem);
+      updateBalance();
       break;
     }
   }

@@ -101,6 +101,8 @@ public:
   struct RegisterBotHandlerResponse
   {
     char_t marketAdapterName[33];
+    char_t currencyBase[33];
+    char_t currencyComm[33];
     uint8_t simulation;
   };
 

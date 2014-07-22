@@ -308,7 +308,10 @@ void_t ClientHandler::handleRegisterBotHandler(uint32_t requestId, BotProtocol::
   } 
 
   BotProtocol::RegisterBotHandlerResponse response;
+  MarketAdapter* marketAdapater = session->getMarket()->getMarketAdapter();
   BotProtocol::setString(response.marketAdapterName, session->getMarket()->getMarketAdapter()->getName());
+  BotProtocol::setString(response.currencyBase, marketAdapater->getCurrencyBase());
+  BotProtocol::setString(response.currencyComm, marketAdapater->getCurrencyComm());
   response.simulation = session->isSimulation();
   sendMessage(BotProtocol::registerBotHandlerResponse, requestId, &response, sizeof(response));
 
@@ -1004,6 +1007,20 @@ void_t ClientHandler::handleBotControlMarket(uint32_t requestId, BotProtocol::Co
       handlerClient->sendMessage(BotProtocol::controlEntity, requesteeRequestId, &controlMarket, sizeof(controlMarket));
     }
     break;
+//  case BotProtocol::ControlMarket::requestMarketAdapter:
+//    {
+//      BotProtocol::ControlSessionResponse response;
+//      response.entityType = BotProtocol::market;
+//      response.entityId = controlMarket.entityId;
+//      response.cmd = controlMarket.cmd;
+//      BotProtocol::MarketAdapter marketAdapter;
+//      market->getMarketAdapter()->getEntity(marketAdapter);
+//      size_t dataSize = sizeof(response) + sizeof(BotProtocol::MarketAdapter);
+//      sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
+//      sendMessageData(&response, sizeof(response));
+//      sendMessageData(&marketAdapter, sizeof(BotProtocol::MarketAdapter));
+//    }
+//    break;
   default:
     break;
   }

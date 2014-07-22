@@ -74,10 +74,10 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
     }
 
     //
-    broker = new SimBroker(botConnection, marketBalance.fee, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
+    broker = new SimBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), marketBalance.fee, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
   }
   else
-    broker = new LiveBroker(botConnection, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
+    broker = new LiveBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
 
   // instantiate bot implementation
   BotFactory botFactory;

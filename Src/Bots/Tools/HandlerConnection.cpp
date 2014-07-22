@@ -45,6 +45,8 @@ bool_t HandlerConnection::connect(uint16_t port)
     }
     BotProtocol::RegisterBotHandlerResponse* registerBotHandlerResponse = (BotProtocol::RegisterBotHandlerResponse*)data;
     marketAdapterName = BotProtocol::getString(registerBotHandlerResponse->marketAdapterName);
+    currencyBase = BotProtocol::getString(registerBotHandlerResponse->currencyBase);
+    currencyComm = BotProtocol::getString(registerBotHandlerResponse->currencyComm);
     simulation = registerBotHandlerResponse->simulation != 0;
   }
 

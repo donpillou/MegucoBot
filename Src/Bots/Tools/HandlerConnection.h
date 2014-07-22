@@ -29,6 +29,8 @@ public:
   bool_t process(Callback& callback);
 
   const String& getMarketAdapterName() const {return marketAdapterName;}
+  const String& getCurrencyBase() const {return currencyBase;}
+  const String& getCurrencyComm() const {return currencyComm;}
   bool isSimulation() const {return simulation;}
 
   bool_t sendMessage(BotProtocol::MessageType type, uint32_t requestId, const void_t* data, size_t size);
@@ -42,6 +44,8 @@ private:
   Buffer recvBuffer;
 
   String marketAdapterName;
+  String currencyBase;
+  String currencyComm;
   bool simulation;
 
 private:
