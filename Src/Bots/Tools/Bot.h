@@ -90,7 +90,6 @@ public:
   {
   public:
     virtual ~Session() {};
-    virtual void_t setParameters(double* parameters) = 0;
     virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0;
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
@@ -100,5 +99,4 @@ public:
   
   virtual ~Bot() {}
   virtual Session* createSession(Broker& broker) = 0;
-  virtual uint_t getParameterCount() const = 0;
 };

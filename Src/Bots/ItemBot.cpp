@@ -4,19 +4,15 @@
 
 #include "ItemBot.h"
 
+#define DEFAULT_BUY_PROFIT_GAIN 0.4
+#define DEFAULT_SELL_PROFIT_GAIN 0.4
+
 ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
 {
-  Memory::fill(&parameters, 0, sizeof(Session::Parameters));
-
-  //parameters.sellProfitGain = 0.8;
-  //parameters.buyProfitGain = 0.6;
-  
-  //parameters.sellProfitGain = 0.2;
-  parameters.sellProfitGain = 0.4;
-  parameters.buyProfitGain = 0.4; //0.2;
-
-  //parameters.sellProfitGain = 0.;
-  //parameters.buyProfitGain = 0.127171;
+  if(broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN) == DEFAULT_SELL_PROFIT_GAIN)
+    broker.setProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
+  if(broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN) == DEFAULT_BUY_PROFIT_GAIN)
+    broker.setProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
 
   updateBalance();
 }
@@ -34,11 +30,6 @@ void_t ItemBot::Session::updateBalance()
   }
   broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase, BotProtocol::SessionProperty::readOnly, broker.getCurrencyBase());
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
-}
-
-void ItemBot::Session::setParameters(double* parameters)
-{
-  Memory::copy(&this->parameters, parameters, sizeof(Session::Parameters));
 }
 
 void ItemBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
@@ -71,7 +62,8 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
       //double fee = broker.getFee();
       double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price * (1. + fee * 2.);
-      updatedItem.flipPrice = transaction2.price * (1. + fee * (1. + parameters.sellProfitGain) * 2.);
+      double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
+      updatedItem.flipPrice = transaction2.price * (1. + fee * (1. + sellProfitGain) * 2.);
       updatedItem.date = transaction2.date;
 
       broker.updateItem(updatedItem);
@@ -105,7 +97,8 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
       //double fee = broker.getFee();
       double fee = 0.005;
       updatedItem.profitablePrice = transaction2.price / (1. + fee * 2.);
-      updatedItem.flipPrice = transaction2.price / (1. + fee * (1. + parameters.buyProfitGain) * 2.);
+      double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
+      updatedItem.flipPrice = transaction2.price / (1. + fee * (1. + buyProfitGain) * 2.);
       updatedItem.date = transaction2.date;
 
       broker.updateItem(updatedItem);

@@ -1,10 +1,6 @@
 
 #include "TestBot.h"
 
-void TestBot::Session::setParameters(double* parameters)
-{
-}
-
 void TestBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
 {
   if(updateCount++ == 0)
