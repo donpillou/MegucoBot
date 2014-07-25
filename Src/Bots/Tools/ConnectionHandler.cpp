@@ -176,6 +176,11 @@ void_t ConnectionHandler::handleUpdateEntity(uint32_t requestId, const BotProtoc
   case BotProtocol::sessionItem:
     if(size >= sizeof(BotProtocol::SessionItem))
       handleUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    break;
+  case BotProtocol::sessionProperty:
+    if(size >= sizeof(BotProtocol::SessionProperty))
+      handleUpdateSessionProperty(requestId, *(BotProtocol::SessionProperty*)&entity);
+    break;
   default:
     break;
   }
@@ -234,5 +239,25 @@ void_t ConnectionHandler::handleRemoveSessionItem(uint32_t requestId, const BotP
   {
     broker->removeItem(entity.entityId);
     handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
+  }
+}
+
+void_t ConnectionHandler::handleUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty)
+{
+  const BotProtocol::SessionProperty* property = broker->getProperty(sessionProperty.entityId);
+  if(!property)
+    handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionProperty, "Could not find session property.");
+  else
+  {
+    if(property->flags & BotProtocol::SessionProperty::readOnly)
+    {
+      handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionProperty, "Property is not editable.");
+      return;
+    }
+
+    BotProtocol::SessionProperty updatedProperty = *property;
+    BotProtocol::setString(updatedProperty.value, BotProtocol::getString(sessionProperty.value));
+    broker->updateProperty(updatedProperty);
+    handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedProperty, sizeof(BotProtocol::Entity));
   }
 }

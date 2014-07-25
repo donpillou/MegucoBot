@@ -323,6 +323,21 @@ void_t LiveBroker::updateItem(const BotProtocol::SessionItem& item)
   botConnection.updateSessionItem(destItem);
 }
 
+const BotProtocol::SessionProperty* LiveBroker::getProperty(uint32_t id) const
+{
+  for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+    if(i->entityId == id)
+      return &*i;
+  return 0;
+}
+
+void_t LiveBroker::updateProperty(const BotProtocol::SessionProperty& property)
+{
+  for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+    if(i->entityId == property.entityId)
+      *i = property;
+}
+
 double LiveBroker::getProperty(const String& name, double defaultValue) const
 {
   HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);

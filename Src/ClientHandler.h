@@ -112,6 +112,8 @@ private:
   void_t handleUserUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
   void_t handleUserRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
 
+  void_t handleUserUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty);
+
   void_t sendMessageHeader(BotProtocol::MessageType type, uint32_t requestId, size_t dataSize);
   void_t sendMessageData(const void_t* data, size_t size);
   void_t sendErrorResponse(BotProtocol::MessageType messageType, uint32_t requestId, const BotProtocol::Entity* entity, const String& errorMessage);

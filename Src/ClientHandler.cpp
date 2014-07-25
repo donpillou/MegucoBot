@@ -575,6 +575,10 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::SessionItem))
         handleUserUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
       break;
+    case BotProtocol::sessionProperty:
+      if(size >= sizeof(BotProtocol::SessionProperty))
+        handleUserUpdateSessionProperty(requestId, *(BotProtocol::SessionProperty*)&entity);
+      break;
     default:
       break;
     }
@@ -1466,6 +1470,47 @@ void_t ClientHandler::handleUserRemoveSessionItem(uint32_t requestId, const BotP
     sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
     session->sendRemoveEntity(BotProtocol::sessionItem, entity.entityId);
+    session->saveData();
+  }
+}
+
+void_t ClientHandler::handleUserUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty)
+{
+  if(!session)
+  {
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionProperty, "Invalid session.");
+    return;
+  }
+
+  const BotProtocol::SessionProperty* property = session->getProperty(sessionProperty.entityId);
+  if(!property)
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &sessionProperty, "Could not find session property.");
+    return;
+  }
+
+  if(property->flags & BotProtocol::SessionProperty::readOnly)
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &sessionProperty, "Property is not editable.");
+    return;
+  }
+
+  BotProtocol::SessionProperty updatedProperty = *property;
+  BotProtocol::setString(updatedProperty.value, BotProtocol::getString(sessionProperty.value));
+
+  ClientHandler* handlerClient = session->getHandlerClient();
+  if(handlerClient)
+  {
+    uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
+    handlerClient->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &updatedProperty, sizeof(updatedProperty));
+  }
+  else
+  {
+    session->updateProperty(updatedProperty);
+
+    sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedProperty, sizeof(BotProtocol::Entity));
+
+    session->sendUpdateEntity(&updatedProperty, sizeof(updatedProperty));
     session->saveData();
   }
 }

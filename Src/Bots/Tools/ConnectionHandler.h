@@ -41,6 +41,8 @@ private:
   void_t handleUpdateSessionItem(uint32_t requestId, const BotProtocol::SessionItem& sessionItem);
   void_t handleRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
 
+  void_t handleUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty);
+
 private: // HandlerConnection::Callback
   virtual void_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size);
 

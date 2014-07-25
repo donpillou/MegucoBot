@@ -9,12 +9,12 @@
 
 ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
 {
+  updateBalance();
+
   if(broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN) == DEFAULT_SELL_PROFIT_GAIN)
     broker.setProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
   if(broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN) == DEFAULT_BUY_PROFIT_GAIN)
     broker.setProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
-
-  updateBalance();
 }
 
 void_t ItemBot::Session::updateBalance()

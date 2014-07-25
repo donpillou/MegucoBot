@@ -47,6 +47,8 @@ private: // Bot::Broker
   virtual void_t updateItem(const BotProtocol::SessionItem& item);
 
   virtual const HashMap<String, BotProtocol::SessionProperty>& getProperties() const {return properties;}
+  virtual const BotProtocol::SessionProperty* getProperty(uint32_t id) const;
+  virtual void_t updateProperty(const BotProtocol::SessionProperty& property);
   virtual double getProperty(const String& name, double defaultValue) const;
   virtual String getProperty(const String& name, const String& defaultValue) const;
   virtual void setProperty(const String& name, double value, uint32_t flags, const String& unit);
