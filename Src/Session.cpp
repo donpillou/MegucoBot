@@ -382,12 +382,12 @@ void_t Session::unregisterClient(ClientHandler& client)
     clients.remove(&client);
 }
 
-BotProtocol::Transaction* Session::createTransaction(const BotProtocol::Transaction& transaction)
+BotProtocol::Transaction& Session::createTransaction(const BotProtocol::Transaction& transaction)
 {
   uint32_t entityId = nextEntityId++;
   BotProtocol::Transaction& result = transactions.append(entityId, transaction);
   result.entityId = entityId;
-  return &result;
+  return result;
 }
 
 bool_t Session::deleteTransaction(uint32_t id)
@@ -407,13 +407,13 @@ const BotProtocol::SessionItem* Session::getItem(uint32_t id) const
   return &*it;
 }
 
-BotProtocol::SessionItem* Session::createItem(const BotProtocol::SessionItem& item)
+BotProtocol::SessionItem& Session::createItem(const BotProtocol::SessionItem& item)
 {
   uint32_t entityId = nextEntityId++;
   BotProtocol::SessionItem& result = items.append(entityId, item);
   result.entityId = entityId;
   result.date = Time::time();
-  return &result;
+  return result;
 }
 
 bool_t Session::deleteItem(uint32_t id)
@@ -433,12 +433,12 @@ const BotProtocol::SessionProperty* Session::getProperty(uint32_t id) const
   return &*it;
 }
 
-BotProtocol::SessionProperty* Session::createProperty(const BotProtocol::SessionProperty& property)
+BotProtocol::SessionProperty& Session::createProperty(const BotProtocol::SessionProperty& property)
 {
   uint32_t entityId = nextEntityId++;
   BotProtocol::SessionProperty& result = properties.append(entityId, property);
   result.entityId = entityId;
-  return &result;
+  return result;
 }
 
 bool_t Session::deleteProperty(uint32_t id)
@@ -450,13 +450,13 @@ bool_t Session::deleteProperty(uint32_t id)
   return true;
 }
 
-BotProtocol::Order* Session::createOrder(const BotProtocol::Order& order)
+BotProtocol::Order& Session::createOrder(const BotProtocol::Order& order)
 {
   uint32_t entityId = nextEntityId++;
   BotProtocol::Order& result = orders.append(entityId, order);
   result.entityId = entityId;
   result.date = Time::time();
-  return &result;
+  return result;
 }
 
 bool_t Session::deleteOrder(uint32_t id)
@@ -468,18 +468,18 @@ bool_t Session::deleteOrder(uint32_t id)
   return true;
 }
 
-BotProtocol::Marker* Session::createMarker(const BotProtocol::Marker& marker)
+BotProtocol::Marker& Session::createMarker(const BotProtocol::Marker& marker)
 {
   uint32_t entityId = nextEntityId++;
   BotProtocol::Marker& result = markers.append(entityId, marker);
   result.entityId = entityId;
-  return &result;
+  return result;
 }
 
-BotProtocol::SessionLogMessage* Session::addLogMessage(const BotProtocol::SessionLogMessage& logMessage)
+BotProtocol::SessionLogMessage& Session::addLogMessage(const BotProtocol::SessionLogMessage& logMessage)
 {
-  BotProtocol::SessionLogMessage* result = &logMessages.append(logMessage);
-  result->entityId = 0;
+  BotProtocol::SessionLogMessage& result = logMessages.append(logMessage);
+  result.entityId = 0;
   while(logMessages.size() > 100)
     logMessages.removeFront();
   return result;

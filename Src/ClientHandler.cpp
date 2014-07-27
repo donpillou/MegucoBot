@@ -1032,16 +1032,11 @@ void_t ClientHandler::handleBotControlMarket(uint32_t requestId, BotProtocol::Co
 
 void_t ClientHandler::handleBotCreateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& createTransactionArgs)
 {
-  BotProtocol::Transaction* transaction = session->createTransaction(createTransactionArgs);
-  if(!transaction)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &createTransactionArgs, "Could not create session transaction.");
-    return;
-  }
+  BotProtocol::Transaction& transaction = session->createTransaction(createTransactionArgs);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, transaction, sizeof(*transaction));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &transaction, sizeof(transaction));
 
-  session->sendUpdateEntity(transaction, sizeof(BotProtocol::Transaction));
+  session->sendUpdateEntity(&transaction, sizeof(transaction));
   session->saveData();
 }
 
@@ -1075,16 +1070,11 @@ void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t requestId, cons
 
 void_t ClientHandler::handleBotCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& args)
 {
-  BotProtocol::SessionItem* item = session->createItem(args);
-  if(!item)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &args, "Could not create session item.");
-    return;
-  }
+  BotProtocol::SessionItem& item = session->createItem(args);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, item, sizeof(*item));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &item, sizeof(item));
 
-  session->sendUpdateEntity(item, sizeof(*item));
+  session->sendUpdateEntity(&item, sizeof(item));
   session->saveData();
 }
 
@@ -1118,16 +1108,11 @@ void_t ClientHandler::handleBotRemoveSessionItem(uint32_t requestId, const BotPr
 
 void_t ClientHandler::handleBotCreateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& args)
 {
-  BotProtocol::SessionProperty* property = session->createProperty(args);
-  if(!property)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &args, "Could not create session property.");
-    return;
-  }
+  BotProtocol::SessionProperty& property = session->createProperty(args);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, property, sizeof(*property));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &property, sizeof(property));
 
-  session->sendUpdateEntity(property, sizeof(*property));
+  session->sendUpdateEntity(&property, sizeof(property));
   session->saveData();
 }
 
@@ -1161,16 +1146,11 @@ void_t ClientHandler::handleBotRemoveSessionProperty(uint32_t requestId, const B
 
 void_t ClientHandler::handleBotCreateSessionOrder(uint32_t requestId, BotProtocol::Order& createOrderArgs)
 {
-  BotProtocol::Order* order = session->createOrder(createOrderArgs);
-  if(!order)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, "Could not create session order.");
-    return;
-  }
+  BotProtocol::Order& order = session->createOrder(createOrderArgs);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, order, sizeof(*order));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order));
 
-  session->sendUpdateEntity(order, sizeof(BotProtocol::Order));
+  session->sendUpdateEntity(&order, sizeof(order));
   session->saveData();
 }
 
@@ -1200,31 +1180,21 @@ void_t ClientHandler::handleBotRemoveSessionOrder(uint32_t requestId, const BotP
 
 void_t ClientHandler::handleBotCreateSessionMarker(uint32_t requestId, BotProtocol::Marker& markerArgs)
 {
-  BotProtocol::Marker* marker = session->createMarker(markerArgs);
-  if(!marker)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &markerArgs, "Could not create session marker.");
-    return;
-  }
+  BotProtocol::Marker& marker = session->createMarker(markerArgs);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, marker, sizeof(*marker));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &marker, sizeof(marker));
 
-  session->sendUpdateEntity(marker, sizeof(BotProtocol::Marker));
+  session->sendUpdateEntity(&marker, sizeof(marker));
   session->saveData();
 }
 
 void_t ClientHandler::handleBotCreateSessionLogMessage(uint32_t requestId, BotProtocol::SessionLogMessage& logMessageArgs)
 {
-  BotProtocol::SessionLogMessage* logMessage = session->addLogMessage(logMessageArgs);
-  if(!logMessage)
-  {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &logMessageArgs, "Could not add session log message.");
-    return;
-  }
+  BotProtocol::SessionLogMessage& logMessage = session->addLogMessage(logMessageArgs);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, logMessage, sizeof(*logMessage));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &logMessage, sizeof(logMessage));
 
-  session->sendUpdateEntity(logMessage, sizeof(BotProtocol::SessionLogMessage));
+  session->sendUpdateEntity(&logMessage, sizeof(logMessage));
   session->saveData();
 }
 
@@ -1397,16 +1367,11 @@ void_t ClientHandler::handleUserCreateSessionItem(uint32_t requestId, BotProtoco
   else
   {
 
-    BotProtocol::SessionItem* item = session->createItem(sessionItemArgs);
-    if(!item)
-    {
-      sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "Could not create session item.");
-      return;
-    }
+    BotProtocol::SessionItem& item = session->createItem(sessionItemArgs);
 
-    sendMessage(BotProtocol::createEntityResponse, requestId, item, sizeof(*item));
+    sendMessage(BotProtocol::createEntityResponse, requestId, &item, sizeof(item));
 
-    session->sendUpdateEntity(item, sizeof(*item));
+    session->sendUpdateEntity(&item, sizeof(item));
     session->saveData();
   }
 }

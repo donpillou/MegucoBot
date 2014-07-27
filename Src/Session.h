@@ -51,32 +51,32 @@ public:
   bool isSimulation() const {return simulation;}
   ClientHandler* getHandlerClient() const {return handlerClient;}
 
-  BotProtocol::Transaction* createTransaction(const BotProtocol::Transaction& transaction);
+  BotProtocol::Transaction& createTransaction(const BotProtocol::Transaction& transaction);
   BotProtocol::Transaction* updateTransaction(const BotProtocol::Transaction& transaction) {return &transactions.append(transaction.entityId, transaction);}
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
   const BotProtocol::SessionItem* getItem(uint32_t id) const;
-  BotProtocol::SessionItem* createItem(const BotProtocol::SessionItem& item);
+  BotProtocol::SessionItem& createItem(const BotProtocol::SessionItem& item);
   BotProtocol::SessionItem* updateItem(const BotProtocol::SessionItem& item) {return &items.append(item.entityId, item);}
   const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
   bool_t deleteItem(uint32_t id);
 
   const BotProtocol::SessionProperty* getProperty(uint32_t id) const;
-  BotProtocol::SessionProperty* createProperty(const BotProtocol::SessionProperty& property);
+  BotProtocol::SessionProperty& createProperty(const BotProtocol::SessionProperty& property);
   BotProtocol::SessionProperty* updateProperty(const BotProtocol::SessionProperty& property) {return &properties.append(property.entityId, property);}
   const HashMap<uint32_t, BotProtocol::SessionProperty>& getProperties() const {return properties;}
   bool_t deleteProperty(uint32_t id);
 
-  BotProtocol::Order* createOrder(const BotProtocol::Order& order);
+  BotProtocol::Order& createOrder(const BotProtocol::Order& order);
   void_t updateOrder(const BotProtocol::Order& order) {orders.append(order.entityId, order);}
   const HashMap<uint32_t, BotProtocol::Order>& getOrders() const {return orders;}
   bool_t deleteOrder(uint32_t id);
 
-  BotProtocol::Marker* createMarker(const BotProtocol::Marker& marker);
+  BotProtocol::Marker& createMarker(const BotProtocol::Marker& marker);
   const HashMap<uint32_t, BotProtocol::Marker>& getMarkers() const {return markers;}
 
-  BotProtocol::SessionLogMessage* addLogMessage(const BotProtocol::SessionLogMessage& logMessage);
+  BotProtocol::SessionLogMessage& addLogMessage(const BotProtocol::SessionLogMessage& logMessage);
   const List<BotProtocol::SessionLogMessage>& getLogMessages() const {return logMessages;}
 
   void_t getEntity(BotProtocol::Session& session) const;
