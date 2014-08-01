@@ -6,15 +6,21 @@
 
 #define DEFAULT_BUY_PROFIT_GAIN 0.4
 #define DEFAULT_SELL_PROFIT_GAIN 0.4
+#define DEFAULT_BUY_COOLDOWN (60 * 60)
+#define DEFAULT_BUY_TIMEOUT (60 * 60)
+#define DEFAULT_SELL_COOLDOWN (60 * 60)
+#define DEFAULT_SELL_TIMEOUT (60 * 60)
 
 ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
 {
   updateBalance();
 
-  if(broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN) == DEFAULT_SELL_PROFIT_GAIN)
-    broker.setProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
-  if(broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN) == DEFAULT_BUY_PROFIT_GAIN)
-    broker.setProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
+  broker.registerProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
+  broker.registerProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
+  broker.registerProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
+  broker.registerProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
+  broker.registerProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
+  broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
 }
 
 void_t ItemBot::Session::updateBalance()
@@ -50,9 +56,6 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
     const BotProtocol::SessionItem& item = *i;
     if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
     {
-      //message.printf("itemId=%u", item.entityId);
-      //broker.warning(message);
-
       BotProtocol::SessionItem updatedItem = item;
       updatedItem.state = BotProtocol::SessionItem::waitSell;
       updatedItem.orderId = 0;
@@ -85,9 +88,6 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
     const BotProtocol::SessionItem& item = *i;
     if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
     {
-      //message.printf("itemId=%u", item.entityId);
-      //broker.warning(message);
-
       BotProtocol::SessionItem updatedItem = item;
       updatedItem.state = BotProtocol::SessionItem::waitBuy;
       updatedItem.orderId = 0;
@@ -146,7 +146,8 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
 {
   if(broker.getOpenBuyOrderCount() > 0)
     return; // there is already an open buy order
-  if(broker.getTimeSinceLastBuy() < 60 * 60 * 1000)
+  timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
+  if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
     return; // do not buy too often
 
   double tradePrice = trade.price;
@@ -160,7 +161,8 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
       updatedItem.state = BotProtocol::SessionItem::buying;
       broker.updateItem(updatedItem);
 
-      if(broker.buy(tradePrice, 0., item.balanceBase, 60 * 60 * 1000, &updatedItem.orderId, 0))
+      timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
+      if(broker.buy(tradePrice, 0., item.balanceBase, buyTimeout * 1000, &updatedItem.orderId, 0))
         broker.updateItem(updatedItem);
       else
       {
@@ -176,7 +178,8 @@ void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
 {
   if(broker.getOpenSellOrderCount() > 0)
     return; // there is already an open sell order
-  if(broker.getTimeSinceLastSell() < 60 * 60 * 1000)
+  timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
+  if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
     return; // do not sell too often
 
   double tradePrice = trade.price;
@@ -190,9 +193,8 @@ void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
       updatedItem.state = BotProtocol::SessionItem::selling;
       broker.updateItem(updatedItem);
 
-      //tradePrice = item.flipPrice; // todo: this is for debugging, remove this
-
-      if(broker.sell(tradePrice, item.balanceComm, 0., 60 * 60 * 1000, &updatedItem.orderId, 0))
+      timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+      if(broker.sell(tradePrice, item.balanceComm, 0., sellTimeout * 1000, &updatedItem.orderId, 0))
         broker.updateItem(updatedItem);
       else
       {

@@ -299,6 +299,30 @@ String SimBroker::getProperty(const String& name, const String& defaultValue) co
   return BotProtocol::getString(property.value);
 }
 
+void SimBroker::registerProperty(const String& name, double value, uint32_t flags, const String& unit)
+{
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+    setProperty(name, value, flags, unit);
+  else
+  {
+    it->flags = flags;
+    BotProtocol::setString(it->unit, unit);
+  }
+}
+
+void SimBroker::registerProperty(const String& name, const String& value, uint32_t flags, const String& unit)
+{
+  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  if(it == properties.end())
+    setProperty(name, value, flags, unit);
+  else
+  {
+    it->flags = flags;
+    BotProtocol::setString(it->unit, unit);
+  }
+}
+
 void SimBroker::setProperty(const String& name, double value, uint32_t flags, const String& unit)
 {
   BotProtocol::SessionProperty property;
