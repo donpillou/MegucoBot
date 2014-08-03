@@ -335,7 +335,10 @@ void_t LiveBroker::updateProperty(const BotProtocol::SessionProperty& property)
 {
   for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
     if(i->entityId == property.entityId)
+    {
+      botConnection.updateSessionProperty(property);
       *i = property;
+    }
 }
 
 double LiveBroker::getProperty(const String& name, double defaultValue) const
