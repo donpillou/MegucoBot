@@ -45,7 +45,7 @@ int_t main(int_t argc, char_t* argv[])
     }
     else
     {
-      Console::errorf("Usage: %s [-b] [-b <dir>]\n\
+      Console::errorf("Usage: %s [-f] [-c <dir>] [-b <dir>]\n\
   -f            run in foreground (not as daemon)\n\
   -c <dir>      set data directory (default is ./Data)\n\
   -b <dir>      set binary directory (default is ./%s)\n", argv[0], (const char_t*)defaultBinaryDir);
