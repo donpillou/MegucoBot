@@ -6,10 +6,10 @@
 #include "Tools/Market.h"
 #include "Tools/HttpRequest.h"
 
-class BitstampMarket : public Market
+class BitstampBtcUsd : public Market
 {
 public:
-  BitstampMarket(const String& clientId, const String& key, const String& secret);
+  BitstampBtcUsd(const String& clientId, const String& key, const String& secret);
 
 private:
   String clientId;

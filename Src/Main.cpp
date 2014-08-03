@@ -108,9 +108,9 @@ int_t main(int_t argc, char_t* argv[])
 
   // load market list
 #ifdef _WIN32
-  serverHandler.addMarketAdapter("Bitstamp/USD", binaryDir + "/BitstampUsd.exe", "USD", "BTC");
+  serverHandler.addMarketAdapter("Bitstamp BTC/USD", binaryDir + "/BitstampBtcUsd.exe", "USD", "BTC");
 #else
-  serverHandler.addMarketAdapter("Bitstamp/USD", binaryDir + "/BitstampUsd", "USD", "BTC");
+  serverHandler.addMarketAdapter("Bitstamp BTC/USD", binaryDir + "/BitstampBtcUsd", "USD", "BTC");
 #endif
 
   // load bot engine list

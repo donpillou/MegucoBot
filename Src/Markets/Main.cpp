@@ -17,9 +17,9 @@
 #include "Tools/BotConnection.h"
 #include "Tools/HandlerConnection.h"
 
-#ifdef MARKET_BITSTAMPUSD
-#include "Markets/BitstampUsd.h"
-typedef BitstampMarket MarketAdapter;
+#ifdef MARKET_BITSTAMPBTCUSD
+#include "Markets/BitstampBtcUsd.h"
+typedef BitstampBtcUsd MarketAdapter;
 #endif
 
 class BotConnectionHandler

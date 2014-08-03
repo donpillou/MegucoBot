@@ -7,13 +7,13 @@
 #include "Tools/Hex.h"
 #include "Tools/Json.h"
 
-#include "BitstampUsd.h"
+#include "BitstampBtcUsd.h"
 
-BitstampMarket::BitstampMarket(const String& clientId, const String& key, const String& secret) :
+BitstampBtcUsd::BitstampBtcUsd(const String& clientId, const String& key, const String& secret) :
   clientId(clientId), key(key), secret(secret),
   balanceLoaded(false), lastRequestTime(0), lastNonce(0), lastLiveTradeUpdateTime(0), nextEntityId(1) {}
 
-bool_t BitstampMarket::loadBalanceAndFee()
+bool_t BitstampBtcUsd::loadBalanceAndFee()
 {
   if(balanceLoaded)
     return true;
@@ -23,7 +23,7 @@ bool_t BitstampMarket::loadBalanceAndFee()
   return true;
 }
 
-bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type type, double price, double amount, double total, BotProtocol::Order& order)
+bool_t BitstampBtcUsd::createOrder(uint32_t entityId, BotProtocol::Order::Type type, double price, double amount, double total, BotProtocol::Order& order)
 {
   if(!loadBalanceAndFee())
     return false;
@@ -138,7 +138,7 @@ bool_t BitstampMarket::createOrder(uint32_t entityId, BotProtocol::Order::Type t
   return true;
 }
 
-bool_t BitstampMarket::getOrder(uint32_t entityId, BotProtocol::Order& order)
+bool_t BitstampBtcUsd::getOrder(uint32_t entityId, BotProtocol::Order& order)
 {
   HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(entityId);
   if(it == orders.end())
@@ -150,7 +150,7 @@ bool_t BitstampMarket::getOrder(uint32_t entityId, BotProtocol::Order& order)
   return true;
 }
 
-bool_t BitstampMarket::cancelOrder(uint32_t entityId)
+bool_t BitstampBtcUsd::cancelOrder(uint32_t entityId)
 {
   String bitstampId = *entityIds.find(entityId);
   if(!bitstampId.startsWith("order_"))
@@ -191,7 +191,7 @@ bool_t BitstampMarket::cancelOrder(uint32_t entityId)
   return true;
 }
 
-bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
+bool_t BitstampBtcUsd::loadOrders(List<BotProtocol::Order>& orders)
 {
   if(!loadBalanceAndFee())
     return false;
@@ -235,7 +235,7 @@ bool_t BitstampMarket::loadOrders(List<BotProtocol::Order>& orders)
   return true;
 }
 
-bool_t BitstampMarket::loadBalance(BotProtocol::Balance& balance)
+bool_t BitstampBtcUsd::loadBalance(BotProtocol::Balance& balance)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/balance/", false, HashMap<String, Variant>(), result))
@@ -254,7 +254,7 @@ bool_t BitstampMarket::loadBalance(BotProtocol::Balance& balance)
   return true;
 }
 
-bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transactions)
+bool_t BitstampBtcUsd::loadTransactions(List<BotProtocol::Transaction>& transactions)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/user_transactions/", false, HashMap<String, Variant>(), result))
@@ -296,12 +296,12 @@ bool_t BitstampMarket::loadTransactions(List<BotProtocol::Transaction>& transact
   return true;
 }
 
-double BitstampMarket::getMaxSellAmout() const
+double BitstampBtcUsd::getMaxSellAmout() const
 {
   return balance.availableBtc;
 }
 
-double BitstampMarket::getMaxBuyAmout(double price) const
+double BitstampBtcUsd::getMaxBuyAmout(double price) const
 {
   double fee = balance.fee; // e.g. 0.0044
   double availableUsd = balance.availableUsd;
@@ -313,7 +313,7 @@ double BitstampMarket::getMaxBuyAmout(double price) const
   return result;
 }
 
-double BitstampMarket::getOrderCharge(double amount, double price) const
+double BitstampBtcUsd::getOrderCharge(double amount, double price) const
 {
   //if(amount < 0.) // sell order
   //  return Math::floor(-amount * price / (1. + balance.fee) * 100.) / 100.;
@@ -337,7 +337,7 @@ double BitstampMarket::getOrderCharge(double amount, double price) const
   }
 }
 
-bool_t BitstampMarket::request(const String& url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result)
+bool_t BitstampBtcUsd::request(const String& url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result)
 {
   avoidSpamming();
 
@@ -431,7 +431,7 @@ bool_t BitstampMarket::request(const String& url, bool_t isPublic, const HashMap
     return true;
 }
 
-void_t BitstampMarket::avoidSpamming()
+void_t BitstampBtcUsd::avoidSpamming()
 {
   const timestamp_t queryDelay = 1337LL;
   timestamp_t now = Time::time();
@@ -447,13 +447,13 @@ void_t BitstampMarket::avoidSpamming()
   // TODO: allow more than 1 request per second but limit requests to 600 per 10 minutes
 }
 
-void_t BitstampMarket::setEntityId(const String& bitstampId, uint32_t entityId)
+void_t BitstampBtcUsd::setEntityId(const String& bitstampId, uint32_t entityId)
 {
   entityIds.append(entityId, bitstampId);
   entityIdsById.append(bitstampId, entityId);
 }
 
-uint32_t BitstampMarket::getNewEntityId(const String& bitstampId)
+uint32_t BitstampBtcUsd::getNewEntityId(const String& bitstampId)
 {
   HashMap<String, uint32_t>::Iterator it = entityIdsById.find(bitstampId);
   if(it == entityIdsById.end())
@@ -466,7 +466,7 @@ uint32_t BitstampMarket::getNewEntityId(const String& bitstampId)
   return *it;
 }
 
-void_t BitstampMarket::removeEntityId(uint32_t entityId)
+void_t BitstampBtcUsd::removeEntityId(uint32_t entityId)
 {
   HashMap<uint32_t, String>::Iterator it = entityIds.find(entityId);
   if(it != entityIds.end())
