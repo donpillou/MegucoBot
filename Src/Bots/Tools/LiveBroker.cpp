@@ -123,6 +123,10 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
       }
       botConnection.createSessionMarker(marker);
       openOrders.remove(i);
+
+      // update balance
+      BotProtocol::Balance marketBalance;
+      botConnection.getMarketBalance(marketBalance);
     }
   }
 }
