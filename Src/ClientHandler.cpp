@@ -683,13 +683,20 @@ void_t ClientHandler::handleUserCreateMarket(uint32_t requestId, BotProtocol::Ma
 
 void_t ClientHandler::handleUserRemoveMarket(uint32_t requestId, const BotProtocol::Entity& entity)
 {
-  // todo: do not remove markts that are in use by a bot session
-
-  if(!user->deleteMarket(entity.entityId))
+  Market* market = user->findMarket(entity.entityId);
+  if(!market)
   {
     sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown market.");
     return;
   }
+
+  if(!market->getSessions().isEmpty())
+  {
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Market still in use.");
+    return;
+  }
+
+  user->deleteMarket(entity.entityId);
 
   sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 

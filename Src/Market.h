@@ -13,6 +13,7 @@ class ServerHandler;
 class MarketAdapter;
 class ClientHandler;
 class User;
+class Session;
 
 class Market
 {
@@ -60,6 +61,10 @@ public:
   void_t sendUpdateEntity(const void_t* data, size_t size);
   void_t sendRemoveEntity(BotProtocol::EntityType type, uint32_t id);
 
+  void_t registerSession(Session& session) {sessions.append(&session);}
+  void_t unregisterSession(Session& session) {sessions.remove(&session);}
+  const HashSet<Session*>& getSessions() const {return sessions;}
+
 private:
   ServerHandler& serverHandler;
   User& user;
@@ -77,4 +82,5 @@ private:
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::Order> orders;
   BotProtocol::Balance balance;
+  HashSet<Session*> sessions;
 };

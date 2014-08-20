@@ -13,7 +13,10 @@
 Session::Session(ServerHandler& serverHandler, User& user, uint32_t id, const String& name, BotEngine& engine, Market& market) :
   serverHandler(serverHandler), user(user),
   __id(id), name(name), engine(&engine), market(&market), simulation(true),
-  state(BotProtocol::Session::stopped), pid(0), handlerClient(0), entityClient(0), nextEntityId(1) {}
+  state(BotProtocol::Session::stopped), pid(0), handlerClient(0), entityClient(0), nextEntityId(1)
+{
+  market.registerSession(*this);
+}
 
 Session::Session(ServerHandler& serverHandler, User& user, const Variant& variant) :
   serverHandler(serverHandler), user(user),
@@ -175,6 +178,9 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       logMessages.append(logMessage);
     }
   }
+
+  if(market)
+    market->registerSession(*this);
 }
 
 Session::~Session()
@@ -188,8 +194,8 @@ Session::~Session()
     entityClient->deselectSession();
   for(HashSet<ClientHandler*>::Iterator i = clients.begin(), end = clients.end(); i != end; ++i)
     (*i)->deselectSession();
-  //if(market)
-  //  market->unregisterSession(*this);
+  if(market)
+    market->unregisterSession(*this);
 }
 
 void_t Session::toVariant(Variant& variant)
