@@ -6,6 +6,11 @@
 #include "Tools/SimBroker.h"
 #include "Tools/LiveBroker.h"
 
+#ifdef BOT_BETBOT
+#include "Bots/BetBot.h"
+typedef BetBot BotFactory;
+const char* botName = "BetBot";
+#endif
 #ifdef BOT_FLIPBOT
 #include "Bots/FlipBot.h"
 typedef FlipBot BotFactory;
