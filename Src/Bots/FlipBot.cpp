@@ -2,7 +2,7 @@
 #include <nstd/Map.h>
 #include <nstd/Math.h>
 
-#include "ItemBot.h"
+#include "FlipBot.h"
 
 #define DEFAULT_BUY_PROFIT_GAIN 0.4
 #define DEFAULT_SELL_PROFIT_GAIN 0.4
@@ -11,7 +11,7 @@
 #define DEFAULT_SELL_COOLDOWN (60 * 60)
 #define DEFAULT_SELL_TIMEOUT (60 * 60)
 
-ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
+FlipBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
 {
   updateBalance();
 
@@ -23,7 +23,7 @@ ItemBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.),
   broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
 }
 
-void_t ItemBot::Session::updateBalance()
+void_t FlipBot::Session::updateBalance()
 {
   double balanceBase = 0.;
   double balanceComm = 0.;
@@ -38,13 +38,13 @@ void_t ItemBot::Session::updateBalance()
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
 }
 
-void ItemBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
 {
   checkBuy(trade, values);
   checkSell(trade, values);
 }
 
-void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction2)
+void FlipBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction2)
 {
   String message;
   message.printf("Bought %.08f @ %.02f", transaction2.amount, transaction2.price);
@@ -76,7 +76,7 @@ void ItemBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
   }
 }
 
-void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction2)
+void FlipBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction2)
 {
   String message;
   message.printf("Sold %.08f @ %.02f", transaction2.amount, transaction2.price);
@@ -108,7 +108,7 @@ void ItemBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
   }
 }
 
-void_t ItemBot::Session::handleBuyTimeout(uint32_t orderId)
+void_t FlipBot::Session::handleBuyTimeout(uint32_t orderId)
 {
   const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
@@ -125,7 +125,7 @@ void_t ItemBot::Session::handleBuyTimeout(uint32_t orderId)
   }
 }
 
-void_t ItemBot::Session::handleSellTimeout(uint32_t orderId)
+void_t FlipBot::Session::handleSellTimeout(uint32_t orderId)
 {
   const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
   for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
@@ -142,7 +142,7 @@ void_t ItemBot::Session::handleSellTimeout(uint32_t orderId)
   }
 }
 
-void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& values)
 {
   if(broker.getOpenBuyOrderCount() > 0)
     return; // there is already an open buy order
@@ -174,7 +174,7 @@ void ItemBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
   }
 }
 
-void ItemBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& values)
 {
   if(broker.getOpenSellOrderCount() > 0)
     return; // there is already an open sell order

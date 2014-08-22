@@ -6,10 +6,10 @@
 #include "Tools/SimBroker.h"
 #include "Tools/LiveBroker.h"
 
-#ifdef BOT_ITEMBOT
-#include "Bots/ItemBot.h"
-typedef ItemBot BotFactory;
-const char* botName = "ItemBot";
+#ifdef BOT_FLIPBOT
+#include "Bots/FlipBot.h"
+typedef FlipBot BotFactory;
+const char* botName = "FlipBot";
 #endif
 #ifdef BOT_TESTBOT
 #include "Bots/TestBot.h"

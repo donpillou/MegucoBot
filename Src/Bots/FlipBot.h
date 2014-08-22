@@ -3,7 +3,7 @@
 
 #include "Tools/Bot.h"
 
-class ItemBot : public Bot
+class FlipBot : public Bot
 {
 public:
 
