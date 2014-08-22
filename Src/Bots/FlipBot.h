@@ -11,14 +11,6 @@ private:
   class Session : public Bot::Session
   {
   public:
-    struct Parameters
-    {
-      double sellProfitGain;
-      double buyProfitGain;
-      //double sellPriceGain;
-      //double buyPriceGain;
-    };
-
     Session(Broker& broker);
 
   private:
