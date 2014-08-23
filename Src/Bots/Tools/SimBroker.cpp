@@ -198,6 +198,25 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   return true;
 }
 
+bool_t SimBroker::cancelOder(uint32_t id)
+{
+  if(!botConnection.removeSessionOrder(id))
+  {
+    error = botConnection.getErrorString();
+    return false;
+  }
+  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  {
+    const BotProtocol::Order& order = *i;
+    if(order.entityId == id)
+    {
+      openOrders.remove(i);
+      break;
+    }
+  }
+  return true;
+}
+
 uint_t SimBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;

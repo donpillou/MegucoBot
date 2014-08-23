@@ -15,6 +15,12 @@ private:
 
   private:
     Broker& broker;
+    int buyState;
+    int sellState;
+    double maxBuyPrice;
+    double minSellPrice;
+    double buyIncline;
+    double sellIncline;
 
     virtual ~Session() {}
 

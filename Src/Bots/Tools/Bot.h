@@ -50,6 +50,8 @@ public:
       double price; // a
       double incline; // b
       double average;
+      double min;
+      double max;
     };
     RegressionLine regressions[(int)numOfRegressions];
     RegressionLine bellRegressions[(int)numOfBellRegressions];
@@ -72,6 +74,7 @@ public:
 
     virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
     virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
+    virtual bool_t cancelOder(uint32_t id) = 0;
     virtual size_t getOpenBuyOrderCount() const = 0;
     virtual size_t getOpenSellOrderCount() const = 0;
     virtual timestamp_t getTimeSinceLastBuy() const = 0;

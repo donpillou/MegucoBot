@@ -38,6 +38,7 @@ private: // Bot::Broker
 
   virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
+  virtual bool_t cancelOder(uint32_t id);
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}

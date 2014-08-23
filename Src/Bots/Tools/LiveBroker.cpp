@@ -262,6 +262,17 @@ testok:
   return true;
 }
 
+bool_t LiveBroker::cancelOder(uint32_t id)
+{
+  if(!botConnection.removeMarketOrder(id))
+  {
+    error = botConnection.getErrorString();
+    return false;
+  }
+  botConnection.removeSessionOrder(id);
+  return true;
+}
+
 uint_t LiveBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;

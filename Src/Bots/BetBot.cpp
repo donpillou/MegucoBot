@@ -11,7 +11,11 @@
 #define DEFAULT_SELL_COOLDOWN (60 * 60)
 //#define DEFAULT_SELL_TIMEOUT (60 * 60)
 
-BetBot::Session::Session(Broker& broker) : broker(broker)
+#define DEFAULT_BUY_PREDICT_TIME (10 * 60)
+#define DEFAULT_SELL_PREDICT_TIME (10 * 60)
+
+
+BetBot::Session::Session(Broker& broker) : broker(broker), buyState(0), sellState(0)
 {
   //updateBalance();
   //
@@ -21,6 +25,8 @@ BetBot::Session::Session(Broker& broker) : broker(broker)
   //broker.registerProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
   broker.registerProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
   //broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+  broker.registerProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
+  broker.registerProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
 }
 
 //void_t BetBot::Session::updateBalance()
@@ -49,8 +55,6 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
   String message;
   message.printf("Bought %.08f @ %.02f", transaction.amount, transaction.price);
   broker.warning(message);
-
-
 }
 
 void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction)
@@ -76,10 +80,34 @@ void BetBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& v
   if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
     return; // do not buy too often
 
-  for(int i = 0; i < numOfRegressions; ++i)
-    if(values.regressions[i].incline >= 0)
+  if(buyState == 0)
+  {
+    if(trade.price > values.regressions[regression12h].min)
       return;
+    buyState = 1;
+    buyIncline = values.bellRegressions[bellRegression30m].incline;
+    maxBuyPrice = trade.price + buyIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
+  }
+  else if(buyState == 1)
+  {
+    double buyIncline = values.bellRegressions[bellRegression30m].incline;
+    if(buyIncline < this->buyIncline)
+    {
+      double newMaxBuyPrice = trade.price + buyIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
+      if(newMaxBuyPrice < maxBuyPrice)
+      {
+        maxBuyPrice = newMaxBuyPrice;
+        this->buyIncline = buyIncline;
+      }
+    }
+  }
+
+  if(trade.price > maxBuyPrice)
+    return;
+
   broker.addMarker(Broker::goodBuy);
+  buyState = 0;
+  sellState = 0;
 }
 
 void BetBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& values)
@@ -90,8 +118,33 @@ void BetBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& 
   if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
     return; // do not sell too often
 
-  for(int i = 0; i < numOfRegressions; ++i)
-    if(values.regressions[i].incline <= 0)
+  if(sellState == 0)
+  {
+    if(trade.price < values.regressions[regression12h].max)
       return;
+    sellState = 1;
+    sellIncline = values.bellRegressions[bellRegression30m].incline;
+    minSellPrice = trade.price + sellIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
+    
+  }
+  else if(sellState == 1)
+  {
+    double sellIncline = values.bellRegressions[bellRegression30m].incline;
+    if(sellIncline > this->sellIncline)
+    {
+      double newMinSellPrice = trade.price + sellIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
+      if(newMinSellPrice > minSellPrice)
+      {
+        minSellPrice = newMinSellPrice;
+        this->sellIncline = sellIncline;
+      }
+    }
+  }
+
+  if(trade.price < minSellPrice)
+    return;
+
   broker.addMarker(Broker::goodSell);
+  sellState = 0;
+  buyState = 0;
 }

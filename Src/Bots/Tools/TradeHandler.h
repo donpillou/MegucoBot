@@ -30,10 +30,7 @@ public:
         averager[i].add(time, trade.amount, trade.price);
         averager[i].limitToAge(depths[i]);
         if(updateValues)
-        {
-          Bot::Values::RegressionLine& rl = values.regressions[i];
-          averager[i].getLine(rl.price, rl.incline, rl.average);
-        }
+          averager[i].getLine(values.regressions[i]);
       }
     }
 
@@ -43,10 +40,7 @@ public:
       {
         bellAverager[i].add(time, trade.amount, trade.price, depths[i]);
         if(updateValues)
-        {
-          Bot::Values::RegressionLine& rl = values.bellRegressions[i];
-          bellAverager[i].getLine(depths[i], rl.price, rl.incline, rl.average);
-        }
+          bellAverager[i].getLine(depths[i], values.bellRegressions[i]);
       }
     }
   }
@@ -55,7 +49,7 @@ private:
   class Averager
   {
   public:
-    Averager() : startTime(0), x(0), sumXY(0.), sumY(0.), sumX(0.), sumXX(0.), sumN(0.), newSumXY(0.), newSumY(0.), newSumX(0.), newSumXX(0.), newSumN(0.) {}
+    Averager() : startTime(0), x(0), sumXY(0.), sumY(0.), sumX(0.), sumXX(0.), sumN(0.), newSumXY(0.), newSumY(0.), newSumX(0.), newSumXX(0.), newSumN(0.), minPrice(1.7976931348623158e+308), maxPrice(0.), needMinMaxUpdate(false) {}
 
     void add(timestamp_t time, double amount, double price)
     {
@@ -90,6 +84,11 @@ private:
       dataEntry.x = x;
       dataEntry.y = y;
       dataEntry.n = n;
+
+      if(price > maxPrice)
+        maxPrice = price;
+      if(price < minPrice)
+        minPrice = price;
     }
 
     void limitToVolume(double amount)
@@ -103,6 +102,9 @@ private:
         const double& x = dataEntry.x;
         const double& y = dataEntry.y;
         const double& n = nToRemove;
+
+        if(y >= maxPrice || y <= minPrice)
+          needMinMaxUpdate = true;
 
         const double nx = n * x;
         const double ny = n * y;
@@ -144,6 +146,9 @@ private:
         const double& y = dataEntry.y;
         const double& n = dataEntry.n;
 
+        if(y >= maxPrice || y <= minPrice)
+          needMinMaxUpdate = true;
+
         const double nx = n * x;
         const double ny = n * y;
         const double nxy = nx * y;
@@ -161,12 +166,16 @@ private:
       }
     }
 
-    void getLine(double& a, double& b, double& avg) const
+    void getLine(Bot::Values::RegressionLine& rl)
     {
-      b = (sumN * sumXY - sumX * sumY) / (sumN * sumXX - sumX * sumX);
+      rl.incline = (sumN * sumXY - sumX * sumY) / (sumN * sumXX - sumX * sumX);
       double ar = (sumXX * sumY - sumX * sumXY) / (sumN * sumXX - sumX * sumX);
-      a = ar + b * x;
-      avg = sumY / sumN;
+      rl.price = ar + rl.incline * x;
+      rl.average = sumY / sumN;
+      if(needMinMaxUpdate)
+        updateMinMax();
+      rl.min = minPrice;
+      rl.max = maxPrice;
     }
 
   private:
@@ -192,6 +201,10 @@ private:
     double newSumN;
     unsigned newCount;
 
+    double minPrice;
+    double maxPrice;
+    bool needMinMaxUpdate;
+
     void useNewSum()
     {
       sumXY = newSumXY;
@@ -207,12 +220,27 @@ private:
       sumN = 0;
       newCount = 0;
     }
+
+    void updateMinMax()
+    {
+      minPrice = 1.7976931348623158e+308;
+      maxPrice = 0.;
+      double price;
+      for(List<DataEntry>::Iterator i = data.begin(), end = data.end(); i != end; ++i)
+      {
+        price = i->y;
+        if(price > maxPrice)
+          maxPrice = price;
+        if(price < minPrice)
+          minPrice = price;
+      }
+    }
   };
 
   class BellAverager
   {
   public:
-    BellAverager() : startTime(0), x(0), sumXY(0.), sumY(0.), sumX(0.), sumXX(0.), sumN(0.) {}
+    BellAverager() : startTime(0), x(0), sumXY(0.), sumY(0.), sumX(0.), sumXX(0.), sumN(0.), minPrice(1.7976931348623158e+308), maxPrice(0.), needMinMaxUpdate(false) {}
 
     void add(timestamp_t time, double amount, double price, timestamp_t ageDeviation)
     {
@@ -229,12 +257,27 @@ private:
       dataEntry.y = y;
       dataEntry.n = n;
 
+      if(price > maxPrice)
+        maxPrice = price;
+      if(price < minPrice)
+        minPrice = price;
+
       timestamp_t ageDeviationTimes3 = ageDeviation * 3;
-      while(time - data.front().time > ageDeviationTimes3)
-        data.removeFront();
+      for(;;)
+      {
+        DataEntry& entry = data.front();
+        if(time - entry.time > ageDeviationTimes3)
+        {
+          if(entry.y >= maxPrice || entry.y <= minPrice)
+            needMinMaxUpdate = true;
+          data.removeFront();
+        }
+        else
+          break;
+      }
     }
 
-    void getLine(timestamp_t ageDeviation, double& a, double& b, double& avg)
+    void getLine(timestamp_t ageDeviation, Bot::Values::RegressionLine& rl)
     {
       // recompute
       sumXY = sumY = sumX = sumXX = sumN = 0.;
@@ -269,10 +312,16 @@ private:
           break;
       }
 
-      b = (sumN * sumXY - sumX * sumY) / (sumN * sumXX - sumX * sumX);
+      rl.incline = (sumN * sumXY - sumX * sumY) / (sumN * sumXX - sumX * sumX);
       double ar = (sumXX * sumY - sumX * sumXY) / (sumN * sumXX - sumX * sumX);
-      a = ar + b * x;
-      avg = sumY / sumN;
+      rl.price = ar + rl.incline * x;
+      rl.average = sumY / sumN;
+
+      if(needMinMaxUpdate)
+        updateMinMax();
+
+      rl.min = minPrice;
+      rl.max = maxPrice;
     }
 
   private:
@@ -291,6 +340,25 @@ private:
     double sumX;
     double sumXX;
     double sumN;
+
+    void updateMinMax()
+    {
+      minPrice = 1.7976931348623158e+308;
+      maxPrice = 0.;
+      double price;
+      for(List<DataEntry>::Iterator i = data.begin(), end = data.end(); i != end; ++i)
+      {
+        price = i->y;
+        if(price > maxPrice)
+          maxPrice = price;
+        if(price < minPrice)
+          minPrice = price;
+      }
+    }
+
+    double minPrice;
+    double maxPrice;
+    bool needMinMaxUpdate;
   };
 
   Averager averager[(int)Bot::numOfRegressions];
