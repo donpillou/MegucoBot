@@ -58,6 +58,13 @@ public:
   class Broker
   {
   public:
+    enum MarkerType
+    {
+      goodBuy,
+      goodSell,
+    };
+
+  public:
     virtual ~Broker() {}
 
     virtual const String& getCurrencyBase() const = 0;
@@ -81,12 +88,13 @@ public:
     virtual void_t updateProperty(const BotProtocol::SessionProperty& property) = 0;
     virtual double getProperty(const String& name, double defaultValue) const = 0;
     virtual String getProperty(const String& name, const String& defaultValue) const = 0;
-    virtual void registerProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
-    virtual void registerProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
-    virtual void setProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
-    virtual void setProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
-    virtual void removeProperty(const String& name) = 0;
+    virtual void_t registerProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
+    virtual void_t registerProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
+    virtual void_t setProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
+    virtual void_t setProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
+    virtual void_t removeProperty(const String& name) = 0;
 
+    virtual void_t addMarker(MarkerType markerType) = 0;
     virtual void_t warning(const String& message) = 0;
   };
 

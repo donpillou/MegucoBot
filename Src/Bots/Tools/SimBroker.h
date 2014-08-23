@@ -51,12 +51,13 @@ private: // Bot::Broker
   virtual void_t updateProperty(const BotProtocol::SessionProperty& property);
   virtual double getProperty(const String& name, double defaultValue) const;
   virtual String getProperty(const String& name, const String& defaultValue) const;
-  virtual void registerProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String());
-  virtual void registerProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String());
-  virtual void setProperty(const String& name, double value, uint32_t flags, const String& unit);
-  virtual void setProperty(const String& name, const String& value, uint32_t flags, const String& unit);
-  virtual void removeProperty(const String& name);
+  virtual void_t registerProperty(const String& name, double value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String());
+  virtual void_t registerProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String());
+  virtual void_t setProperty(const String& name, double value, uint32_t flags, const String& unit);
+  virtual void_t setProperty(const String& name, const String& value, uint32_t flags, const String& unit);
+  virtual void_t removeProperty(const String& name);
 
+  virtual void_t addMarker(MarkerType markerType);
   virtual void_t warning(const String& message);
 
 public: // Broker

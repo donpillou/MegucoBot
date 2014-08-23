@@ -196,6 +196,8 @@ public:
       sell,
       buyAttempt,
       sellAttempt,
+      goodBuy,
+      goodSell,
     };
 
     uint8_t type;

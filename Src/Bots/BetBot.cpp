@@ -44,17 +44,19 @@ void BetBot::Session::handle(const DataProtocol::Trade& trade, const Values& val
   checkSell(trade, values);
 }
 
-void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction2)
+void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
 {
   String message;
-  message.printf("Bought %.08f @ %.02f", transaction2.amount, transaction2.price);
+  message.printf("Bought %.08f @ %.02f", transaction.amount, transaction.price);
   broker.warning(message);
+
+
 }
 
-void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction2)
+void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction)
 {
   String message;
-  message.printf("Sold %.08f @ %.02f", transaction2.amount, transaction2.price);
+  message.printf("Sold %.08f @ %.02f", transaction.amount, transaction.price);
   broker.warning(message);
 }
 
@@ -73,6 +75,11 @@ void BetBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& v
   timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
   if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
     return; // do not buy too often
+
+  for(int i = 0; i < numOfRegressions; ++i)
+    if(values.regressions[i].incline >= 0)
+      return;
+  broker.addMarker(Broker::goodBuy);
 }
 
 void BetBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& values)
@@ -82,4 +89,9 @@ void BetBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& 
   timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
   if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
     return; // do not sell too often
+
+  for(int i = 0; i < numOfRegressions; ++i)
+    if(values.regressions[i].incline <= 0)
+      return;
+  broker.addMarker(Broker::goodSell);
 }

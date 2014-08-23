@@ -444,6 +444,25 @@ void LiveBroker::removeProperty(const String& name)
   properties.remove(it);
 }
 
+void_t LiveBroker::addMarker(MarkerType markerType)
+{
+  BotProtocol::Marker marker;
+  marker.entityType = BotProtocol::sessionMarker;
+  marker.date = time;
+  switch(markerType)
+  {
+  case goodBuy:
+    marker.type = BotProtocol::Marker::goodBuy;
+    break;
+  case goodSell:
+    marker.type = BotProtocol::Marker::goodSell;
+    break;
+  default:
+    return;
+  }
+  botConnection.createSessionMarker(marker);
+}
+
 void_t LiveBroker::warning(const String& message)
 {
   botConnection.addLogMessage(Time::time(), message);
