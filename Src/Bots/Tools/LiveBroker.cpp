@@ -139,7 +139,7 @@ void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
     ++next;
 
     const BotProtocol::Order& order = *i;
-    if(time >= order.timeout)
+    if(order.timeout > 0 && time >= order.timeout)
     {
       if(botConnection.removeMarketOrder(order.entityId))
       {

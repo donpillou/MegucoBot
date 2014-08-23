@@ -57,7 +57,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
     ++next;
 
     const BotProtocol::Order& order = *i;
-    if(time >= order.timeout)
+    if(order.timeout > 0 && time >= order.timeout)
     {
       botConnection.removeSessionOrder(order.entityId);
 
