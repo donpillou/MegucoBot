@@ -867,7 +867,6 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       session->getUser().sendUpdateEntity(&sessionEntity, sizeof(sessionEntity));
     }
     // todo: do this only if a simulation (or optimization?) was stopped
-    // todo: update balance?
     session->sendRemoveAllEntities(BotProtocol::sessionTransaction);
     session->sendRemoveAllEntities(BotProtocol::sessionItem);
     session->sendRemoveAllEntities(BotProtocol::sessionProperty);

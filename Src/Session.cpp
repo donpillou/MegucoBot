@@ -337,7 +337,8 @@ bool_t Session::stop()
     // restore backup of orders, transactions, log messages, and markers
     backupTransactions.swap(transactions);
     backupItems.swap(items);
-    backupProperties.swap(properties);
+    if(!backupProperties.isEmpty())
+      backupProperties.swap(properties);
     backupOrders.swap(orders);
     backupMarkers.swap(markers);
     backupLogMessages.swap(logMessages);
