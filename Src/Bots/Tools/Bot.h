@@ -60,13 +60,6 @@ public:
   class Broker
   {
   public:
-    enum MarkerType // todo: remove this
-    {
-      goodBuy,
-      goodSell,
-    };
-
-  public:
     virtual ~Broker() {}
 
     virtual const String& getCurrencyBase() const = 0;
@@ -98,7 +91,7 @@ public:
     virtual void_t setProperty(const String& name, const String& value, uint32_t flags = BotProtocol::SessionProperty::none, const String& unit = String()) = 0;
     virtual void_t removeProperty(const String& name) = 0;
 
-    virtual void_t addMarker(MarkerType markerType) = 0;
+    virtual void_t addMarker(BotProtocol::Marker::Type markerType) = 0;
     virtual void_t warning(const String& message) = 0;
   };
 

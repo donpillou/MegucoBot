@@ -59,7 +59,7 @@ private: // Bot::Broker
   virtual void_t setProperty(const String& name, const String& value, uint32_t flags, const String& unit);
   virtual void_t removeProperty(const String& name);
 
-  virtual void_t addMarker(MarkerType markerType);
+  virtual void_t addMarker(BotProtocol::Marker::Type markerType);
   virtual void_t warning(const String& message);
 
 public: // Broker

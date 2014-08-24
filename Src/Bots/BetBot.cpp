@@ -269,7 +269,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
   if(trade.price > maxBuyInPrice)
     return;
 
-  broker.addMarker(Broker::goodBuy);
+  broker.addMarker(BotProtocol::Marker::goodBuy);
 }
 
 void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values& values)
@@ -329,7 +329,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
   if(trade.price < minSellInPrice)
     return;
 
-  broker.addMarker(Broker::goodSell);
+  broker.addMarker(BotProtocol::Marker::goodSell);
 }
 
 void_t BetBot::Session::resetBetOrders()
