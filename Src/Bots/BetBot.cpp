@@ -78,7 +78,7 @@ void_t BetBot::Session::applyBalanceUpdate(double base, double comm)
 double BetBot::Session::getBuyInBase(double currentPrice) const
 {
   double botValueBase = balanceBase + balanceComm * currentPrice;
-  double maxBase = botValueBase / 3.;
+  double maxBase = botValueBase / 10.;
   double base = Math::min(availableBalanceBase / 2., maxBase);
   if(base < broker.getProperty(String("Min Bet"), DEFAULT_MIN_BET))
     return 0;
@@ -88,7 +88,7 @@ double BetBot::Session::getBuyInBase(double currentPrice) const
 double BetBot::Session::getSellInComm(double currentPrice) const
 {
   double botValueComm = balanceComm + balanceBase / currentPrice;
-  double maxComm = botValueComm / 3.;
+  double maxComm = botValueComm / 10.;
   double comm = Math::min(availableBalanceComm / 2., maxComm);
   if(comm * currentPrice < broker.getProperty(String("Min Bet"), DEFAULT_MIN_BET))
     return 0;
