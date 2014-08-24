@@ -60,7 +60,7 @@ public:
   class Broker
   {
   public:
-    enum MarkerType
+    enum MarkerType // todo: remove this
     {
       goodBuy,
       goodSell,
@@ -75,6 +75,7 @@ public:
     virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
     virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
     virtual bool_t cancelOder(uint32_t id) = 0;
+    virtual const HashMap<uint32_t, BotProtocol::Order> getOrders() const = 0;
     virtual size_t getOpenBuyOrderCount() const = 0;
     virtual size_t getOpenSellOrderCount() const = 0;
     virtual timestamp_t getTimeSinceLastBuy() const = 0;
@@ -105,11 +106,12 @@ public:
   {
   public:
     virtual ~Session() {};
-    virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0;
+    virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0; // todo: rename handleTrade
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleBuyTimeout(uint32_t orderId) = 0;
     virtual void_t handleSellTimeout(uint32_t orderId) = 0;
+    virtual void_t handlePropertyUpdate(BotProtocol::SessionProperty& property) = 0;
   };
   
   virtual ~Bot() {}

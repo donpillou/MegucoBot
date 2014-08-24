@@ -23,7 +23,7 @@ SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, c
   for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
-    this->openOrders.append(order);
+    this->openOrders.append(order.entityId, order);
   }
   for(List<BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
   {
@@ -51,7 +51,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
 
   time = trade.time;
 
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
     next = i;
     ++next;
@@ -131,7 +131,7 @@ bool_t SimBroker::buy(double price, double amount, double total, timestamp_t tim
   order.amount = amount;
   order.price = price;
   order.total = total;
-  timestamp_t orderTimeout = time + timeout;;
+  timestamp_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))
   {
@@ -150,7 +150,7 @@ bool_t SimBroker::buy(double price, double amount, double total, timestamp_t tim
   marker.type = BotProtocol::Marker::buyAttempt;
   botConnection.createSessionMarker(marker);
 
-  openOrders.append(order);
+  openOrders.append(order.entityId, order);
   return true;
 }
 
@@ -175,7 +175,7 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   order.amount = amount;
   order.price = price;
   order.total = Math::floor(price * amount * (1 - tradeFee) * 100.) / 100.;
-  timestamp_t orderTimeout = time + timeout;
+  timestamp_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))
   {
@@ -194,7 +194,7 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   marker.type = BotProtocol::Marker::sellAttempt;
   botConnection.createSessionMarker(marker);
 
-  openOrders.append(order);
+  openOrders.append(order.entityId, order);
   return true;
 }
 
@@ -205,22 +205,14 @@ bool_t SimBroker::cancelOder(uint32_t id)
     error = botConnection.getErrorString();
     return false;
   }
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
-  {
-    const BotProtocol::Order& order = *i;
-    if(order.entityId == id)
-    {
-      openOrders.remove(i);
-      break;
-    }
-  }
+  openOrders.remove(id);
   return true;
 }
 
 uint_t SimBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
     if(order.type == BotProtocol::Order::buy)
@@ -232,7 +224,7 @@ uint_t SimBroker::getOpenBuyOrderCount() const
 uint_t SimBroker::getOpenSellOrderCount() const
 {
   size_t openSellOrders = 0;
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
     if(order.type == BotProtocol::Order::sell)

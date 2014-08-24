@@ -23,7 +23,7 @@ LiveBroker::LiveBroker(BotConnection& botConnection, const String& currencyBase,
   for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
-    this->openOrders.append(order);
+    this->openOrders.append(order.entityId, order);
   }
   for(List<BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
   {
@@ -46,7 +46,7 @@ void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Tra
   tradeHandler.add(trade, 0LL);
   time = trade.time;
 
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
     if (Math::abs(order.price - trade.price) <= 0.01)
@@ -83,7 +83,7 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
     const BotProtocol::Order& order = *i;
     openOrderIds.insert(order.entityId, &order);
   }
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
     next = i;
     ++next;
@@ -133,7 +133,7 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
 
 void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
 {
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
     next = i;
     ++next;
@@ -176,7 +176,7 @@ bool_t LiveBroker::buy(double price, double amount, double total, timestamp_t ti
     return false;
   }
   lastOrderRefreshTime = Time::time();
-  order.timeout = time + timeout;
+  order.timeout = timeout > 0 ? time + timeout : 0;
   if(id)
     *id = order.entityId;
   if(orderedAmount)
@@ -208,7 +208,7 @@ testok:
   marker.type = BotProtocol::Marker::buyAttempt;
   botConnection.createSessionMarker(marker);
 
-  openOrders.append(order);
+  openOrders.append(order.entityId, order);
   return true;
 }
 
@@ -226,7 +226,7 @@ bool_t LiveBroker::sell(double price, double amount, double total, timestamp_t t
     return false;
   }
   lastOrderRefreshTime = Time::time();
-  order.timeout = time + timeout;
+  order.timeout = timeout > 0 ? time + timeout : 0;
   if(id)
     *id = order.entityId;
   if(orderedAmount)
@@ -258,7 +258,7 @@ testok:
   marker.type = BotProtocol::Marker::sellAttempt;
   botConnection.createSessionMarker(marker);
 
-  openOrders.append(order);
+  openOrders.append(order.entityId, order);
   return true;
 }
 
@@ -270,13 +270,14 @@ bool_t LiveBroker::cancelOder(uint32_t id)
     return false;
   }
   botConnection.removeSessionOrder(id);
+  openOrders.remove(id);
   return true;
 }
 
 uint_t LiveBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
     if(order.type == BotProtocol::Order::buy)
@@ -288,7 +289,7 @@ uint_t LiveBroker::getOpenBuyOrderCount() const
 uint_t LiveBroker::getOpenSellOrderCount() const
 {
   size_t openSellOrders = 0;
-  for(List<BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
     const BotProtocol::Order& order = *i;
     if(order.type == BotProtocol::Order::sell)

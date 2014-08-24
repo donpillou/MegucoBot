@@ -26,6 +26,7 @@ private:
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleBuyTimeout(uint32_t orderId) {}
     virtual void_t handleSellTimeout(uint32_t orderId) {}
+    virtual void_t handlePropertyUpdate(BotProtocol::SessionProperty& property) {};
   };
 
 public: // Bot

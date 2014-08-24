@@ -264,5 +264,7 @@ void_t ConnectionHandler::handleUpdateSessionProperty(uint32_t requestId, BotPro
     BotProtocol::setString(updatedProperty.value, BotProtocol::getString(sessionProperty.value));
     broker->updateProperty(updatedProperty);
     handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedProperty, sizeof(BotProtocol::Entity));
+
+    botSession->handlePropertyUpdate(updatedProperty);
   }
 }

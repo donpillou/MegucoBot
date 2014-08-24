@@ -18,7 +18,7 @@ private:
   String currencyBase;
   String currencyComm;
   String error;
-  List<BotProtocol::Order> openOrders;
+  HashMap<uint32_t, BotProtocol::Order> openOrders;
   timestamp_t time;
   timestamp_t lastBuyTime;
   timestamp_t lastSellTime;
@@ -39,6 +39,7 @@ private: // Bot::Broker
   virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t cancelOder(uint32_t id);
+  virtual const HashMap<uint32_t, BotProtocol::Order> getOrders() const {return openOrders;}
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}
