@@ -234,6 +234,7 @@ private:
         if(price < minPrice)
           minPrice = price;
       }
+      needMinMaxUpdate = false;
     }
   };
 
@@ -354,6 +355,7 @@ private:
         if(price < minPrice)
           minPrice = price;
       }
+      needMinMaxUpdate = false;
     }
 
     double minPrice;
