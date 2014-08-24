@@ -24,7 +24,7 @@ private:
     void_t checkSell(const DataProtocol::Trade& trade, const Values& values);
 
   private: // Bot::Session
-    virtual void_t handle(const DataProtocol::Trade& trade, const Values& values);
+    virtual void_t handleTrade(const DataProtocol::Trade& trade, const Values& values);
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleBuyTimeout(uint32_t orderId);

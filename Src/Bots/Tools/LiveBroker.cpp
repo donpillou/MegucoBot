@@ -69,7 +69,7 @@ doneRefreshing:
 
   cancelTimedOutOrders(botSession);
 
-  botSession.handle(trade, tradeHandler.values);
+  botSession.handleTrade(trade, tradeHandler.values);
 }
 
 void_t LiveBroker::refreshOrders(Bot::Session& botSession)

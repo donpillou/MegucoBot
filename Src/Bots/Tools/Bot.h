@@ -106,7 +106,7 @@ public:
   {
   public:
     virtual ~Session() {};
-    virtual void_t handle(const DataProtocol::Trade& trade, const Values& values) = 0; // todo: rename handleTrade
+    virtual void_t handleTrade(const DataProtocol::Trade& trade, const Values& values) = 0;
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleBuyTimeout(uint32_t orderId) = 0;

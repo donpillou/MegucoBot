@@ -95,7 +95,7 @@ double BetBot::Session::getSellInComm(double currentPrice) const
   return comm;
 }
 
-void BetBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
+void BetBot::Session::handleTrade(const DataProtocol::Trade& trade, const Values& values)
 {
   checkAssetBuy(trade);
   checkAssetSell(trade);

@@ -38,7 +38,7 @@ void_t FlipBot::Session::updateBalance()
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
 }
 
-void FlipBot::Session::handle(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::handleTrade(const DataProtocol::Trade& trade, const Values& values)
 {
   checkBuy(trade, values);
   checkSell(trade, values);

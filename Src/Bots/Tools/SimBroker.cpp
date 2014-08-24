@@ -107,7 +107,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
     }
   }
 
-  botSession.handle(trade, tradeHandler.values);
+  botSession.handleTrade(trade, tradeHandler.values);
 }
 
 bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
