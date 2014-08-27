@@ -201,6 +201,22 @@ void_t BetBot::Session::handleBuyTimeout(uint32_t orderId)
 {
   if(orderId == buyInOrderId)
     buyInOrderId = 0;
+  else
+  {
+    const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    {
+      const BotProtocol::SessionItem& item = *i;
+      if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
+      {
+        BotProtocol::SessionItem updatedItem = item;
+        updatedItem.state = BotProtocol::SessionItem::waitBuy;
+        updatedItem.orderId = 0;
+        broker.updateItem(updatedItem);
+        break;
+      }
+    }
+  }
   updateAvailableBalance();
 }
 
@@ -208,6 +224,22 @@ void_t BetBot::Session::handleSellTimeout(uint32_t orderId)
 {
   if(orderId == sellInOrderId)
     sellInOrderId = 0;
+  else
+  {
+    const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
+    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    {
+      const BotProtocol::SessionItem& item = *i;
+      if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
+      {
+        BotProtocol::SessionItem updatedItem = item;
+        updatedItem.state = BotProtocol::SessionItem::waitSell;
+        updatedItem.orderId = 0;
+        broker.updateItem(updatedItem);
+        break;
+      }
+    }
+  }
   updateAvailableBalance();
 }
 
