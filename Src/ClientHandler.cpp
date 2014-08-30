@@ -411,9 +411,9 @@ void_t ClientHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Order))
         handleUserCreateMarketOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
-    case BotProtocol::sessionItem:
-      if(size >= sizeof(BotProtocol::SessionItem))
-        handleUserCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    case BotProtocol::sessionAsset:
+      if(size >= sizeof(BotProtocol::SessionAsset))
+        handleUserCreateSessionAsset(requestId, *(BotProtocol::SessionAsset*)&entity);
       break;
     default:
       break;
@@ -426,9 +426,9 @@ void_t ClientHandler::handleCreateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Transaction))
         handleBotCreateSessionTransaction(requestId, *(BotProtocol::Transaction*)&entity);
       break;
-    case BotProtocol::sessionItem:
-      if(size >= sizeof(BotProtocol::SessionItem))
-        handleBotCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    case BotProtocol::sessionAsset:
+      if(size >= sizeof(BotProtocol::SessionAsset))
+        handleBotCreateSessionAsset(requestId, *(BotProtocol::SessionAsset*)&entity);
       break;
     case BotProtocol::sessionProperty:
       if(size >= sizeof(BotProtocol::SessionProperty))
@@ -474,8 +474,8 @@ void_t ClientHandler::handleRemoveEntity(uint32_t requestId, const BotProtocol::
     case BotProtocol::marketOrder:
       handleUserRemoveMarketOrder(requestId, entity);
       break;
-    case BotProtocol::sessionItem:
-      handleUserRemoveSessionItem(requestId, entity);
+    case BotProtocol::sessionAsset:
+      handleUserRemoveSessionAsset(requestId, entity);
       break;
     default:
       break;
@@ -487,8 +487,8 @@ void_t ClientHandler::handleRemoveEntity(uint32_t requestId, const BotProtocol::
     case BotProtocol::sessionTransaction:
       handleBotRemoveSessionTransaction(requestId, entity);
       break;
-    case BotProtocol::sessionItem:
-      handleBotRemoveSessionItem(requestId, entity);
+    case BotProtocol::sessionAsset:
+      handleBotRemoveSessionAsset(requestId, entity);
       break;
     case BotProtocol::sessionProperty:
       handleBotRemoveSessionProperty(requestId, entity);
@@ -571,9 +571,9 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Order))
         handleUserUpdateMarketOrder(requestId, *(BotProtocol::Order*)&entity);
       break;
-    case BotProtocol::sessionItem:
-      if(size >= sizeof(BotProtocol::SessionItem))
-        handleUserUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    case BotProtocol::sessionAsset:
+      if(size >= sizeof(BotProtocol::SessionAsset))
+        handleUserUpdateSessionAsset(requestId, *(BotProtocol::SessionAsset*)&entity);
       break;
     case BotProtocol::sessionProperty:
       if(size >= sizeof(BotProtocol::SessionProperty))
@@ -609,9 +609,9 @@ void_t ClientHandler::handleUpdateEntity(uint32_t requestId, BotProtocol::Entity
       if(size >= sizeof(BotProtocol::Transaction))
         handleBotUpdateSessionTransaction(requestId, *(BotProtocol::Transaction*)&entity);
       break;
-    case BotProtocol::sessionItem:
-      if(size >= sizeof(BotProtocol::SessionItem))
-        handleBotUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+    case BotProtocol::sessionAsset:
+      if(size >= sizeof(BotProtocol::SessionAsset))
+        handleBotUpdateSessionAsset(requestId, *(BotProtocol::SessionAsset*)&entity);
       break;
     case BotProtocol::sessionProperty:
       if(size >= sizeof(BotProtocol::SessionProperty))
@@ -868,7 +868,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     }
     // todo: do this only if a simulation (or optimization?) was stopped
     session->sendRemoveAllEntities(BotProtocol::sessionTransaction);
-    session->sendRemoveAllEntities(BotProtocol::sessionItem);
+    session->sendRemoveAllEntities(BotProtocol::sessionAsset);
     session->sendRemoveAllEntities(BotProtocol::sessionProperty);
     session->sendRemoveAllEntities(BotProtocol::sessionOrder);
     session->sendRemoveAllEntities(BotProtocol::sessionLogMessage);
@@ -877,9 +877,9 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::Transaction));
-      const HashMap<uint32_t, BotProtocol::SessionItem>& items = session->getItems();
-      for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
-        sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionItem));
+      const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = session->getAssets();
+      for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+        sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionAsset));
       const HashMap<uint32_t, BotProtocol::SessionProperty>& properties = session->getProperties();
       for(HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionProperty));
@@ -901,7 +901,7 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
     this->session = session;
     sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response));
     sendRemoveAllEntities(BotProtocol::sessionTransaction);
-    sendRemoveAllEntities(BotProtocol::sessionItem);
+    sendRemoveAllEntities(BotProtocol::sessionAsset);
     sendRemoveAllEntities(BotProtocol::sessionProperty);
     sendRemoveAllEntities(BotProtocol::sessionOrder);
     sendRemoveAllEntities(BotProtocol::sessionLogMessage);
@@ -910,9 +910,9 @@ void_t ClientHandler::handleUserControlSession(uint32_t requestId, BotProtocol::
       const HashMap<uint32_t, BotProtocol::Transaction>& transactions = session->getTransactions();
       for(HashMap<uint32_t, BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::Transaction));
-      const HashMap<uint32_t, BotProtocol::SessionItem>& items = session->getItems();
-      for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
-        sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionItem));
+      const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = session->getAssets();
+      for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+        sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionAsset));
       const HashMap<uint32_t, BotProtocol::SessionProperty>& properties = session->getProperties();
       for(HashMap<uint32_t, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
         sendUpdateEntity(0, &*i, sizeof(BotProtocol::SessionProperty));
@@ -957,14 +957,14 @@ void_t ClientHandler::handleBotControlSession(uint32_t requestId, BotProtocol::C
         sendMessageData(&*i, sizeof(BotProtocol::Transaction));
     }
     break;
-  case BotProtocol::ControlSession::requestItems:
+  case BotProtocol::ControlSession::requestAssets:
     {
-      const HashMap<uint32_t, BotProtocol::SessionItem>& items = session->getItems();
-      size_t dataSize = sizeof(response) + items.size() * sizeof(BotProtocol::SessionItem);
+      const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = session->getAssets();
+      size_t dataSize = sizeof(response) + assets.size() * sizeof(BotProtocol::SessionAsset);
       sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize);
       sendMessageData(&response, sizeof(response));
-      for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
-        sendMessageData(&*i, sizeof(BotProtocol::SessionItem));
+      for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+        sendMessageData(&*i, sizeof(BotProtocol::SessionAsset));
     }
     break;
   case BotProtocol::ControlSession::requestProperties:
@@ -1074,41 +1074,41 @@ void_t ClientHandler::handleBotRemoveSessionTransaction(uint32_t requestId, cons
   session->saveData();
 }
 
-void_t ClientHandler::handleBotCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& args)
+void_t ClientHandler::handleBotCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& args)
 {
-  BotProtocol::SessionItem& item = session->createItem(args);
+  BotProtocol::SessionAsset& asset = session->createAsset(args);
 
-  sendMessage(BotProtocol::createEntityResponse, requestId, &item, sizeof(item));
+  sendMessage(BotProtocol::createEntityResponse, requestId, &asset, sizeof(asset));
 
-  session->sendUpdateEntity(&item, sizeof(item));
+  session->sendUpdateEntity(&asset, sizeof(asset));
   session->saveData();
 }
 
-void_t ClientHandler::handleBotUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& item)
+void_t ClientHandler::handleBotUpdateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& asset)
 {
-  if(!session->updateItem(item))
+  if(!session->updateAsset(asset))
   {
-    sendErrorResponse(BotProtocol::updateEntity, requestId, &item, "Could not update session item.");
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &asset, "Could not update session asset.");
     return;
   }
 
-  sendMessage(BotProtocol::updateEntityResponse, requestId, &item, sizeof(BotProtocol::Entity));
+  sendMessage(BotProtocol::updateEntityResponse, requestId, &asset, sizeof(BotProtocol::Entity));
 
-  session->sendUpdateEntity(&item, sizeof(item));
+  session->sendUpdateEntity(&asset, sizeof(asset));
   session->saveData();
 }
 
-void_t ClientHandler::handleBotRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
+void_t ClientHandler::handleBotRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity)
 {
-  if(!session->deleteItem(entity.entityId))
+  if(!session->deleteAsset(entity.entityId))
   {
-    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown session item.");
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown session asset.");
     return;
   }
 
   sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
-  session->sendRemoveEntity(BotProtocol::sessionItem, entity.entityId);
+  session->sendRemoveEntity(BotProtocol::sessionAsset, entity.entityId);
   session->saveData();
 }
 
@@ -1351,73 +1351,73 @@ void_t ClientHandler::handleUserRemoveMarketOrder(uint32_t requestId, const BotP
   handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::marketOrder, entity.entityId);
 }
 
-void_t ClientHandler::handleUserCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItemArgs)
+void_t ClientHandler::handleUserCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAssetArgs)
 {
   if(!session)
   {
-    sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItemArgs, "Invalid session.");
+    sendErrorResponse(BotProtocol::createEntity, requestId, &sessionAssetArgs, "Invalid session.");
     return;
   }
 
-  sessionItemArgs.state = sessionItemArgs.type == BotProtocol::SessionItem::buy ? BotProtocol::SessionItem::waitBuy : BotProtocol::SessionItem::waitSell;
-  sessionItemArgs.price = 0.;
-  sessionItemArgs.profitablePrice = 0.;
-  sessionItemArgs.orderId = 0;
+  sessionAssetArgs.state = sessionAssetArgs.type == BotProtocol::SessionAsset::buy ? BotProtocol::SessionAsset::waitBuy : BotProtocol::SessionAsset::waitSell;
+  sessionAssetArgs.price = 0.;
+  sessionAssetArgs.profitablePrice = 0.;
+  sessionAssetArgs.orderId = 0;
 
   ClientHandler* handlerClient = session->getHandlerClient();
   if(handlerClient)
   {
     uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
-    handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &sessionItemArgs, sizeof(sessionItemArgs));
+    handlerClient->sendMessage(BotProtocol::createEntity, requesteeRequestId, &sessionAssetArgs, sizeof(sessionAssetArgs));
   }
   else
   {
 
-    BotProtocol::SessionItem& item = session->createItem(sessionItemArgs);
+    BotProtocol::SessionAsset& asset = session->createAsset(sessionAssetArgs);
 
-    sendMessage(BotProtocol::createEntityResponse, requestId, &item, sizeof(item));
+    sendMessage(BotProtocol::createEntityResponse, requestId, &asset, sizeof(asset));
 
-    session->sendUpdateEntity(&item, sizeof(item));
+    session->sendUpdateEntity(&asset, sizeof(asset));
     session->saveData();
   }
 }
 
-void_t ClientHandler::handleUserUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem)
+void_t ClientHandler::handleUserUpdateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAsset)
 {
   if(!session)
   {
-    sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionItem, "Invalid session.");
+    sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionAsset, "Invalid session.");
     return;
   }
 
-  const BotProtocol::SessionItem* item = session->getItem(sessionItem.entityId);
-  if(!item)
+  const BotProtocol::SessionAsset* asset = session->getAsset(sessionAsset.entityId);
+  if(!asset)
   {
-    sendErrorResponse(BotProtocol::removeEntity, requestId, &sessionItem, "Could not find session item.");
+    sendErrorResponse(BotProtocol::removeEntity, requestId, &sessionAsset, "Could not find session asset.");
     return;
   }
 
-  BotProtocol::SessionItem updatedItem = *item;
-  updatedItem.flipPrice = sessionItem.flipPrice;
+  BotProtocol::SessionAsset updatedAsset = *asset;
+  updatedAsset.flipPrice = sessionAsset.flipPrice;
 
   ClientHandler* handlerClient = session->getHandlerClient();
   if(handlerClient)
   {
     uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
-    handlerClient->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &updatedItem, sizeof(updatedItem));
+    handlerClient->sendMessage(BotProtocol::updateEntity, requesteeRequestId, &updatedAsset, sizeof(updatedAsset));
   }
   else
   {
-    session->updateItem(updatedItem);
+    session->updateAsset(updatedAsset);
 
-    sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedItem, sizeof(BotProtocol::Entity));
+    sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedAsset, sizeof(BotProtocol::Entity));
 
-    session->sendUpdateEntity(&updatedItem, sizeof(updatedItem));
+    session->sendUpdateEntity(&updatedAsset, sizeof(updatedAsset));
     session->saveData();
   }
 }
 
-void_t ClientHandler::handleUserRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
+void_t ClientHandler::handleUserRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity)
 {
   if(!session)
   {
@@ -1428,19 +1428,19 @@ void_t ClientHandler::handleUserRemoveSessionItem(uint32_t requestId, const BotP
   if(handlerClient)
   {
     uint32_t requesteeRequestId = serverHandler.createRequestId(requestId, *this, *handlerClient);
-    handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::sessionItem, entity.entityId);
+    handlerClient->sendRemoveEntity(requesteeRequestId, BotProtocol::sessionAsset, entity.entityId);
   }
   else
   {
-    if(!session->deleteItem(entity.entityId))
+    if(!session->deleteAsset(entity.entityId))
     {
-      sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown session item.");
+      sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Unknown session asset.");
       return;
     }
 
     sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
-    session->sendRemoveEntity(BotProtocol::sessionItem, entity.entityId);
+    session->sendRemoveEntity(BotProtocol::sessionAsset, entity.entityId);
     session->saveData();
   }
 }

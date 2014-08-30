@@ -27,8 +27,8 @@ private:
     virtual void_t handleBuyTimeout(uint32_t orderId) {}
     virtual void_t handleSellTimeout(uint32_t orderId) {}
     virtual void_t handlePropertyUpdate(const BotProtocol::SessionProperty& property) {};
-    virtual void_t handleAssetUpdate(const BotProtocol::SessionItem& asset) {};
-    virtual void_t handleAssetRemoval(const BotProtocol::SessionItem& asset) {};
+    virtual void_t handleAssetUpdate(const BotProtocol::SessionAsset& asset) {};
+    virtual void_t handleAssetRemoval(const BotProtocol::SessionAsset& asset) {};
   };
 
 public: // Bot

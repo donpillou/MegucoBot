@@ -6,7 +6,7 @@
 #include "LiveBroker.h"
 #include "BotConnection.h"
 
-LiveBroker::LiveBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
+LiveBroker::LiveBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
   botConnection(botConnection), currencyBase(currencyBase), currencyComm(currencyComm),
   time(0), lastBuyTime(0), lastSellTime(0), lastOrderRefreshTime(0)
 {
@@ -15,10 +15,10 @@ LiveBroker::LiveBroker(BotConnection& botConnection, const String& currencyBase,
     const BotProtocol::Transaction& transaction = *i;
     this->transactions.append(transaction.entityId, transaction);
   }
-  for(List<BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  for(List<BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    this->items.append(item.entityId, item);
+    const BotProtocol::SessionAsset& asset = *i;
+    this->assets.append(asset.entityId, asset);
   }
   for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
   {
@@ -298,45 +298,45 @@ uint_t LiveBroker::getOpenSellOrderCount() const
   return openSellOrders;
 }
 
-const BotProtocol::SessionItem* LiveBroker::getItem(uint32_t id) const
+const BotProtocol::SessionAsset* LiveBroker::getAsset(uint32_t id) const
 {
-  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
-  if(it == items.end())
+  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(id);
+  if(it == assets.end())
     return 0;
   return &*it;
 }
 
-bool_t LiveBroker::createItem(BotProtocol::SessionItem& item)
+bool_t LiveBroker::createAsset(BotProtocol::SessionAsset& asset)
 {
-  if(!botConnection.createSessionItem(item))
+  if(!botConnection.createSessionAsset(asset))
   {
     error = botConnection.getErrorString();
     return false;
   }
-  items.append(item.entityId, item);
+  assets.append(asset.entityId, asset);
   return true;
 }
 
-void_t LiveBroker::removeItem(uint32_t id)
+void_t LiveBroker::removeAsset(uint32_t id)
 {
-  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
-  if(it == items.end())
+  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(id);
+  if(it == assets.end())
     return;
-  const BotProtocol::SessionItem& item = *it;
-  botConnection.removeSessionItem(item.entityId);
-  items.remove(it);
+  const BotProtocol::SessionAsset& asset = *it;
+  botConnection.removeSessionAsset(asset.entityId);
+  assets.remove(it);
 }
 
-void_t LiveBroker::updateItem(const BotProtocol::SessionItem& item)
+void_t LiveBroker::updateAsset(const BotProtocol::SessionAsset& asset)
 {
-  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(item.entityId);
-  if(it == items.end())
+  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(asset.entityId);
+  if(it == assets.end())
     return;
-  BotProtocol::SessionItem& destItem = *it;
-  destItem = item;
-  destItem.entityType = BotProtocol::sessionItem;
-  destItem.entityId = item.entityId;
-  botConnection.updateSessionItem(destItem);
+  BotProtocol::SessionAsset& destAsset = *it;
+  destAsset = asset;
+  destAsset.entityType = BotProtocol::sessionAsset;
+  destAsset.entityId = asset.entityId;
+  botConnection.updateSessionAsset(destAsset);
 }
 
 const BotProtocol::SessionProperty* LiveBroker::getProperty(uint32_t id) const

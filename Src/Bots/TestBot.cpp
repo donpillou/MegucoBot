@@ -18,40 +18,40 @@ void TestBot::Session::handleTrade(const DataProtocol::Trade& trade, const Value
       broker.warning("sell order count is not 1.");
 
     // test item creating, updating and removing
-    BotProtocol::SessionItem item;
-    item.entityType = BotProtocol::sessionItem;
-    item.type = BotProtocol::SessionItem::buy;
-    item.state = BotProtocol::SessionItem::waitSell;
-    item.date = 89;
-    item.price = 300;
-    item.balanceComm = 0.;
-    item.balanceBase = 12.;
-    item.price = 320;
-    item.profitablePrice = 330;
-    item.flipPrice = 340;
-    if(!broker.createItem(item))
+    BotProtocol::SessionAsset asset;
+    asset.entityType = BotProtocol::sessionAsset;
+    asset.type = BotProtocol::SessionAsset::buy;
+    asset.state = BotProtocol::SessionAsset::waitSell;
+    asset.date = 89;
+    asset.price = 300;
+    asset.balanceComm = 0.;
+    asset.balanceBase = 12.;
+    asset.price = 320;
+    asset.profitablePrice = 330;
+    asset.flipPrice = 340;
+    if(!broker.createAsset(asset))
       broker.warning("createItem returned false.");
     {
-      const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-      if(items.size() == 0)
+      const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+      if(assets.size() == 0)
         broker.warning("items size is 0.");
       else
       {
-        BotProtocol::SessionItem item = *items.begin();
-        double newBalanceBase = item.balanceBase / 2.;
-        item.balanceBase = newBalanceBase;
-        broker.updateItem(item);
-        size_t itemCount = items.size();
-        const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-        if(items.size() != itemCount)
-          broker.warning("item count changed after update.");
-        BotProtocol::SessionItem& item2 = *items.find(item.entityId);
-        if(item.balanceBase != item2.balanceBase)
-          broker.warning("item update failed.");
-        broker.removeItem(item2.entityId);
-        const HashMap<uint32_t, BotProtocol::SessionItem>& items2 = broker.getItems();
-        if(items2.size() != itemCount - 1)
-          broker.warning("item remove failed.");
+        BotProtocol::SessionAsset asset = *assets.begin();
+        double newBalanceBase = asset.balanceBase / 2.;
+        asset.balanceBase = newBalanceBase;
+        broker.updateAsset(asset);
+        size_t assetCount = assets.size();
+        const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+        if(assets.size() != assetCount)
+          broker.warning("asset count changed after update.");
+        BotProtocol::SessionAsset& asset2 = *assets.find(asset.entityId);
+        if(asset.balanceBase != asset2.balanceBase)
+          broker.warning("asset update failed.");
+        broker.removeAsset(asset2.entityId);
+        const HashMap<uint32_t, BotProtocol::SessionAsset>& assets2 = broker.getAssets();
+        if(assets2.size() != assetCount - 1)
+          broker.warning("asset remove failed.");
       }
     }
 

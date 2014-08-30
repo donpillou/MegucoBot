@@ -26,16 +26,16 @@ public:
   bool_t addLogMessage(timestamp_t time, const String& message);
 
   bool_t getSessionTransactions(List<BotProtocol::Transaction>& transactions);
-  bool_t getSessionItems(List<BotProtocol::SessionItem>& items);
+  bool_t getSessionAssets(List<BotProtocol::SessionAsset>& assets);
   bool_t getSessionOrders(List<BotProtocol::Order>& orders);
   bool_t getSessionProperties(List<BotProtocol::SessionProperty>& properties);
 
   bool_t createSessionTransaction(BotProtocol::Transaction& transaction);
   bool_t updateSessionTransaction(const BotProtocol::Transaction& transaction);
   bool_t removeSessionTransaction(uint32_t id);
-  bool_t createSessionItem(BotProtocol::SessionItem& item);
-  bool_t updateSessionItem(const BotProtocol::SessionItem& item);
-  bool_t removeSessionItem(uint32_t id);
+  bool_t createSessionAsset(BotProtocol::SessionAsset& asset);
+  bool_t updateSessionAsset(const BotProtocol::SessionAsset& asset);
+  bool_t removeSessionAsset(uint32_t id);
   bool_t createSessionOrder(BotProtocol::Order& order);
   bool_t updateSessionOrder(BotProtocol::Order& order);
   bool_t removeSessionOrder(uint32_t id);

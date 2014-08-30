@@ -54,12 +54,12 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
 
   // load session data
   List<BotProtocol::Transaction> sessionTransactions;
-  List<BotProtocol::SessionItem> sessionItems;
+  List<BotProtocol::SessionAsset> sessionAssets;
   List<BotProtocol::Order> sessionOrders;
   BotProtocol::Balance sessionBalance;
   List<BotProtocol::SessionProperty> sessionProperties;
   if(!botConnection.getSessionTransactions(sessionTransactions) ||
-     !botConnection.getSessionItems(sessionItems) ||
+     !botConnection.getSessionAssets(sessionAssets) ||
      !botConnection.getSessionOrders(sessionOrders) ||
      !botConnection.getSessionProperties(sessionProperties))
   {
@@ -79,10 +79,10 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
     }
 
     //
-    broker = new SimBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), marketBalance.fee, sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
+    broker = new SimBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), marketBalance.fee, sessionBalance, sessionTransactions, sessionAssets, sessionOrders, sessionProperties);
   }
   else
-    broker = new LiveBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), sessionBalance, sessionTransactions, sessionItems, sessionOrders, sessionProperties);
+    broker = new LiveBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), sessionBalance, sessionTransactions, sessionAssets, sessionOrders, sessionProperties);
 
   // instantiate bot implementation
   BotFactory botFactory;
@@ -165,9 +165,9 @@ void_t ConnectionHandler::handleCreateEntity(uint32_t requestId, BotProtocol::En
 {
   switch((BotProtocol::EntityType)entity.entityType)
   {
-  case BotProtocol::sessionItem:
-    if(size >= sizeof(BotProtocol::SessionItem))
-      handleCreateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+  case BotProtocol::sessionAsset:
+    if(size >= sizeof(BotProtocol::SessionAsset))
+      handleCreateSessionAsset(requestId, *(BotProtocol::SessionAsset*)&entity);
     break;
   default:
     break;
@@ -178,9 +178,9 @@ void_t ConnectionHandler::handleUpdateEntity(uint32_t requestId, const BotProtoc
 {
   switch((BotProtocol::EntityType)entity.entityType)
   {
-  case BotProtocol::sessionItem:
-    if(size >= sizeof(BotProtocol::SessionItem))
-      handleUpdateSessionItem(requestId, *(BotProtocol::SessionItem*)&entity);
+  case BotProtocol::sessionAsset:
+    if(size >= sizeof(BotProtocol::SessionAsset))
+      handleUpdateSessionAsset(requestId, *(BotProtocol::SessionAsset*)&entity);
     break;
   case BotProtocol::sessionProperty:
     if(size >= sizeof(BotProtocol::SessionProperty))
@@ -195,8 +195,8 @@ void_t ConnectionHandler::handleRemoveEntity(uint32_t requestId, const BotProtoc
 {
   switch((BotProtocol::EntityType)entity.entityType)
   {
-  case BotProtocol::sessionItem:
-    handleRemoveSessionItem(requestId, entity);
+  case BotProtocol::sessionAsset:
+    handleRemoveSessionAsset(requestId, entity);
     break;
   default:
     break;
@@ -213,43 +213,43 @@ void_t ConnectionHandler::handleControlEntity(uint32_t requestId, BotProtocol::E
   //}
 }
 
-void_t ConnectionHandler::handleCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem)
+void_t ConnectionHandler::handleCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAsset)
 {
-  if(!broker->createItem(sessionItem))
-    handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &sessionItem, broker->getLastError());
+  if(!broker->createAsset(sessionAsset))
+    handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &sessionAsset, broker->getLastError());
   else
-    handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &sessionItem, sizeof(sessionItem));
+    handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &sessionAsset, sizeof(sessionAsset));
 }
 
-void_t ConnectionHandler::handleUpdateSessionItem(uint32_t requestId, const BotProtocol::SessionItem& sessionItem)
+void_t ConnectionHandler::handleUpdateSessionAsset(uint32_t requestId, const BotProtocol::SessionAsset& sessionAsset)
 {
-  const BotProtocol::SessionItem* item = broker->getItem(sessionItem.entityId);
-  if(!item)
-    handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionItem, "Could not find session item.");
+  const BotProtocol::SessionAsset* asset = broker->getAsset(sessionAsset.entityId);
+  if(!asset)
+    handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionAsset, "Could not find session item.");
   else
   {
-    BotProtocol::SessionItem updatedItem = *item;
-    updatedItem.flipPrice = sessionItem.flipPrice;
-    broker->updateItem(updatedItem);
-    handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &sessionItem, sizeof(BotProtocol::Entity));
+    BotProtocol::SessionAsset updatedAsset = *asset;
+    updatedAsset.flipPrice = sessionAsset.flipPrice;
+    broker->updateAsset(updatedAsset);
+    handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &sessionAsset, sizeof(BotProtocol::Entity));
 
-    botSession->handleAssetUpdate(updatedItem);
+    botSession->handleAssetUpdate(updatedAsset);
   }
 }
 
-void_t ConnectionHandler::handleRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity)
+void_t ConnectionHandler::handleRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity)
 {
-  const BotProtocol::SessionItem* item = broker->getItem(entity.entityId);
-  if(!item)
+  const BotProtocol::SessionAsset* asset = broker->getAsset(entity.entityId);
+  if(!asset)
     handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Could not find session item.");
   else
   {
-    BotProtocol::SessionItem removedItem = *item;
+    BotProtocol::SessionAsset removedAsset = *asset;
 
-    broker->removeItem(entity.entityId);
+    broker->removeAsset(entity.entityId);
     handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
 
-    botSession->handleAssetRemoval(removedItem);
+    botSession->handleAssetRemoval(removedAsset);
   }
 }
 

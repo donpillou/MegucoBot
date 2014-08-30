@@ -77,9 +77,9 @@ private:
   void_t handleBotUpdateSessionTransaction(uint32_t requestId, BotProtocol::Transaction& transaction);
   void_t handleBotRemoveSessionTransaction(uint32_t requestId, const BotProtocol::Entity& entity);
 
-  void_t handleBotCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& item);
-  void_t handleBotUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& item);
-  void_t handleBotRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
+  void_t handleBotCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& asset);
+  void_t handleBotUpdateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& asset);
+  void_t handleBotRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleBotCreateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& property);
   void_t handleBotUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& property);
@@ -108,9 +108,9 @@ private:
   void_t handleUserUpdateMarketOrder(uint32_t requestId, BotProtocol::Order& order);
   void_t handleUserRemoveMarketOrder(uint32_t requestId, const BotProtocol::Entity& entity);
 
-  void_t handleUserCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
-  void_t handleUserUpdateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
-  void_t handleUserRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
+  void_t handleUserCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAsset);
+  void_t handleUserUpdateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAsset);
+  void_t handleUserRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleUserUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty);
 

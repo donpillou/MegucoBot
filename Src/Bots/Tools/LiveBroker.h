@@ -11,7 +11,7 @@ class BotConnection;
 class LiveBroker : public Broker
 {
 public:
-  LiveBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionItem>& items, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties);
+  LiveBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties);
 
 private:
   BotConnection& botConnection;
@@ -24,7 +24,7 @@ private:
   timestamp_t lastSellTime;
   timestamp_t lastOrderRefreshTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
-  HashMap<uint32_t, BotProtocol::SessionItem> items;
+  HashMap<uint32_t, BotProtocol::SessionAsset> assets;
   HashMap<String, BotProtocol::SessionProperty> properties;
   TradeHandler tradeHandler;
 
@@ -45,11 +45,11 @@ private: // Bot::Broker
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}
   virtual timestamp_t getTimeSinceLastSell() const {return time - lastSellTime;}
 
-  virtual const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
-  virtual const BotProtocol::SessionItem* getItem(uint32_t id) const;
-  virtual bool_t createItem(BotProtocol::SessionItem& item);
-  virtual void_t removeItem(uint32_t id);
-  virtual void_t updateItem(const BotProtocol::SessionItem& item);
+  virtual const HashMap<uint32_t, BotProtocol::SessionAsset>& getAssets() const {return assets;}
+  virtual const BotProtocol::SessionAsset* getAsset(uint32_t id) const;
+  virtual bool_t createAsset(BotProtocol::SessionAsset& asset);
+  virtual void_t removeAsset(uint32_t id);
+  virtual void_t updateAsset(const BotProtocol::SessionAsset& asset);
 
   virtual const HashMap<String, BotProtocol::SessionProperty>& getProperties() const {return properties;}
   virtual const BotProtocol::SessionProperty* getProperty(uint32_t id) const;

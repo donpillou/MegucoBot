@@ -54,70 +54,70 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
   }
   {
     const List<Variant>& itemsVar = data.find("items")->toList();
-    BotProtocol::SessionItem item;
-    item.entityType = BotProtocol::sessionItem;
+    BotProtocol::SessionAsset asset;
+    asset.entityType = BotProtocol::sessionAsset;
     for(List<Variant>::Iterator i = itemsVar.begin(), end = itemsVar.end(); i != end; ++i)
     {
-      const HashMap<String, Variant>& itemVar = i->toMap();
-      item.entityId = itemVar.find("id")->toUInt();
-      item.type = itemVar.find("type")->toUInt();
-      item.state = itemVar.find("state")->toUInt();
-      item.date = itemVar.find("date")->toInt64();
-      item.price = itemVar.find("price")->toDouble();
-      double amount = itemVar.find("amount")->toDouble();
-      double total = itemVar.find("total")->toDouble();
-      item.balanceBase = itemVar.find("balanceBase")->toDouble();
-      item.balanceComm = itemVar.find("balanceComm")->toDouble();
-      item.profitablePrice = itemVar.find("profitablePrice")->toDouble();
-      item.flipPrice = itemVar.find("flipPrice")->toDouble();
-      item.orderId = itemVar.find("orderId")->toUInt();
+      const HashMap<String, Variant>& assetVar = i->toMap();
+      asset.entityId = assetVar.find("id")->toUInt();
+      asset.type = assetVar.find("type")->toUInt();
+      asset.state = assetVar.find("state")->toUInt();
+      asset.date = assetVar.find("date")->toInt64();
+      asset.price = assetVar.find("price")->toDouble();
+      double amount = assetVar.find("amount")->toDouble();
+      double total = assetVar.find("total")->toDouble();
+      asset.balanceBase = assetVar.find("balanceBase")->toDouble();
+      asset.balanceComm = assetVar.find("balanceComm")->toDouble();
+      asset.profitablePrice = assetVar.find("profitablePrice")->toDouble();
+      asset.flipPrice = assetVar.find("flipPrice")->toDouble();
+      asset.orderId = assetVar.find("orderId")->toUInt();
 
-      if(total == 0. && item.price != 0. && amount != 0.) // todo: this is code for backward compatibility; remove this
+      if(total == 0. && asset.price != 0. && amount != 0.) // todo: this is code for backward compatibility; remove this
       {
-        BotProtocol::SessionItem::Type type = (BotProtocol::SessionItem::Type)item.type;
-        switch(item.state)
+        BotProtocol::SessionAsset::Type type = (BotProtocol::SessionAsset::Type)asset.type;
+        switch(asset.state)
         {
-        case BotProtocol::SessionItem::waitBuy:
-        case BotProtocol::SessionItem::buying:
-          type = BotProtocol::SessionItem::buy;
+        case BotProtocol::SessionAsset::waitBuy:
+        case BotProtocol::SessionAsset::buying:
+          type = BotProtocol::SessionAsset::buy;
           break;
-        case BotProtocol::SessionItem::waitSell:
-        case BotProtocol::SessionItem::selling:
-          type = BotProtocol::SessionItem::sell;
+        case BotProtocol::SessionAsset::waitSell:
+        case BotProtocol::SessionAsset::selling:
+          type = BotProtocol::SessionAsset::sell;
           break;
         default:
           break;
         }
-        total = type == BotProtocol::SessionItem::buy ? Math::ceil(item.price * amount * (1. + .005) * 100.) / 100. : Math::floor(item.price * amount * (1. - .005) * 100.) / 100.;
+        total = type == BotProtocol::SessionAsset::buy ? Math::ceil(asset.price * amount * (1. + .005) * 100.) / 100. : Math::floor(asset.price * amount * (1. - .005) * 100.) / 100.;
       }
 
-      if(item.balanceBase == 0. && item.balanceComm == 0.) // todo: this is code for backward compatibility; remove this
+      if(asset.balanceBase == 0. && asset.balanceComm == 0.) // todo: this is code for backward compatibility; remove this
       {
-        BotProtocol::SessionItem::Type type = (BotProtocol::SessionItem::Type)item.type;
-        switch(item.state)
+        BotProtocol::SessionAsset::Type type = (BotProtocol::SessionAsset::Type)asset.type;
+        switch(asset.state)
         {
-        case BotProtocol::SessionItem::waitBuy:
-        case BotProtocol::SessionItem::buying:
-          type = BotProtocol::SessionItem::buy;
+        case BotProtocol::SessionAsset::waitBuy:
+        case BotProtocol::SessionAsset::buying:
+          type = BotProtocol::SessionAsset::buy;
           break;
-        case BotProtocol::SessionItem::waitSell:
-        case BotProtocol::SessionItem::selling:
-          type = BotProtocol::SessionItem::sell;
+        case BotProtocol::SessionAsset::waitSell:
+        case BotProtocol::SessionAsset::selling:
+          type = BotProtocol::SessionAsset::sell;
           break;
         default:
           break;
         }
-        if(type == BotProtocol::SessionItem::buy)
-          item.balanceBase = total != 0. ? total : Math::ceil(item.flipPrice * amount * (1. + .005) * 100.) / 100.;
+        if(type == BotProtocol::SessionAsset::buy)
+          asset.balanceBase = total != 0. ? total : Math::ceil(asset.flipPrice * amount * (1. + .005) * 100.) / 100.;
         else
-          item.balanceComm = amount;
+          asset.balanceComm = amount;
       }
 
-      if(items.find(item.entityId) != items.end())
+      if(assets.find(asset.entityId) != assets.end())
         continue;
-      items.append(item.entityId, item);
-      if(item.entityId >= nextEntityId)
-        nextEntityId = item.entityId + 1;
+      assets.append(asset.entityId, asset);
+      if(asset.entityId >= nextEntityId)
+        nextEntityId = asset.entityId + 1;
     }
   }
   {
@@ -221,20 +221,20 @@ void_t Session::toVariant(Variant& variant)
   }
   {
     List<Variant>& itemsVar = data.append("items", Variant()).toList();
-    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionItem& item = *i;
-      HashMap<String, Variant>& itemVar = itemsVar.append(Variant()).toMap();
-      itemVar.append("id", item.entityId);
-      itemVar.append("type", (uint32_t)item.type);
-      itemVar.append("state", (uint32_t)item.state);
-      itemVar.append("date", item.date);
-      itemVar.append("price", item.price);
-      itemVar.append("balanceComm", item.balanceComm);
-      itemVar.append("balanceBase", item.balanceBase);
-      itemVar.append("profitablePrice", item.profitablePrice);
-      itemVar.append("flipPrice", item.flipPrice);
-      itemVar.append("orderId", item.orderId);
+      const BotProtocol::SessionAsset& asset = *i;
+      HashMap<String, Variant>& assetVar = itemsVar.append(Variant()).toMap();
+      assetVar.append("id", asset.entityId);
+      assetVar.append("type", (uint32_t)asset.type);
+      assetVar.append("state", (uint32_t)asset.state);
+      assetVar.append("date", asset.date);
+      assetVar.append("price", asset.price);
+      assetVar.append("balanceComm", asset.balanceComm);
+      assetVar.append("balanceBase", asset.balanceBase);
+      assetVar.append("profitablePrice", asset.profitablePrice);
+      assetVar.append("flipPrice", asset.flipPrice);
+      assetVar.append("orderId", asset.orderId);
     }
   }
   {
@@ -297,14 +297,14 @@ bool_t Session::startSimulation()
 
   // clear and save backup of orders, transactions, log messages, and markers
   backupTransactions.swap(transactions);
-  backupItems.swap(items);
+  backupAssets.swap(assets);
   backupProperties.swap(properties);
   backupOrders.swap(orders);
   backupMarkers.swap(markers);
   backupLogMessages.swap(logMessages);
 
   // but, keep items and properties
-  items = backupItems;
+  assets = backupAssets;
   properties = backupProperties;
 
   return true;
@@ -336,7 +336,7 @@ bool_t Session::stop()
 
     // restore backup of orders, transactions, log messages, and markers
     backupTransactions.swap(transactions);
-    backupItems.swap(items);
+    backupAssets.swap(assets);
     if(!backupProperties.isEmpty())
       backupProperties.swap(properties);
     backupOrders.swap(orders);
@@ -344,7 +344,7 @@ bool_t Session::stop()
     backupLogMessages.swap(logMessages);
 
     backupTransactions.clear();
-    backupItems.clear();
+    backupAssets.clear();
     backupProperties.clear();
     backupOrders.clear();
     backupMarkers.clear();
@@ -406,29 +406,29 @@ bool_t Session::deleteTransaction(uint32_t id)
   return true;
 }
 
-const BotProtocol::SessionItem* Session::getItem(uint32_t id) const
+const BotProtocol::SessionAsset* Session::getAsset(uint32_t id) const
 {
-  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
-  if(it == items.end())
+  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(id);
+  if(it == assets.end())
     return 0;
   return &*it;
 }
 
-BotProtocol::SessionItem& Session::createItem(const BotProtocol::SessionItem& item)
+BotProtocol::SessionAsset& Session::createAsset(const BotProtocol::SessionAsset& asset)
 {
   uint32_t entityId = nextEntityId++;
-  BotProtocol::SessionItem& result = items.append(entityId, item);
+  BotProtocol::SessionAsset& result = assets.append(entityId, asset);
   result.entityId = entityId;
   result.date = Time::time();
   return result;
 }
 
-bool_t Session::deleteItem(uint32_t id)
+bool_t Session::deleteAsset(uint32_t id)
 {
-  HashMap<uint32_t, BotProtocol::SessionItem>::Iterator it = items.find(id);
-  if(it == items.end())
+  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(id);
+  if(it == assets.end())
     return false;
-  items.remove(it);
+  assets.remove(it);
   return true;
 }
 

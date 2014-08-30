@@ -37,9 +37,9 @@ private:
   void_t handleRemoveEntity(uint32_t requestId, const BotProtocol::Entity& entity);
   void_t handleControlEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size);
 
-  void_t handleCreateSessionItem(uint32_t requestId, BotProtocol::SessionItem& sessionItem);
-  void_t handleUpdateSessionItem(uint32_t requestId, const BotProtocol::SessionItem& sessionItem);
-  void_t handleRemoveSessionItem(uint32_t requestId, const BotProtocol::Entity& entity);
+  void_t handleCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAsset);
+  void_t handleUpdateSessionAsset(uint32_t requestId, const BotProtocol::SessionAsset& sessionAsset);
+  void_t handleRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity);
 
   void_t handleUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty);
 

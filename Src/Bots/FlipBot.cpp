@@ -27,12 +27,12 @@ void_t FlipBot::Session::updateBalance()
 {
   double balanceBase = 0.;
   double balanceComm = 0.;
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    balanceComm += item.balanceComm;
-    balanceBase += item.balanceBase;
+    const BotProtocol::SessionAsset& asset = *i;
+    balanceComm += asset.balanceComm;
+    balanceBase += asset.balanceBase;
   }
   broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase, BotProtocol::SessionProperty::readOnly, broker.getCurrencyBase());
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
@@ -50,26 +50,26 @@ void FlipBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
   message.printf("Bought %.08f @ %.02f", transaction2.amount, transaction2.price);
   broker.warning(message);
 
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::waitSell;
-      updatedItem.orderId = 0;
-      updatedItem.price = transaction2.price;
-      updatedItem.balanceComm += transaction2.amount;
-      updatedItem.balanceBase -= transaction2.total;
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::waitSell;
+      updatedAsset.orderId = 0;
+      updatedAsset.price = transaction2.price;
+      updatedAsset.balanceComm += transaction2.amount;
+      updatedAsset.balanceBase -= transaction2.total;
       //double fee = broker.getFee();
       double fee = 0.005;
-      updatedItem.profitablePrice = transaction2.price * (1. + fee * 2.);
+      updatedAsset.profitablePrice = transaction2.price * (1. + fee * 2.);
       double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
-      updatedItem.flipPrice = transaction2.price * (1. + fee * (1. + sellProfitGain) * 2.);
-      updatedItem.date = transaction2.date;
+      updatedAsset.flipPrice = transaction2.price * (1. + fee * (1. + sellProfitGain) * 2.);
+      updatedAsset.date = transaction2.date;
 
-      broker.updateItem(updatedItem);
+      broker.updateAsset(updatedAsset);
       updateBalance();
       break;
     }
@@ -82,26 +82,26 @@ void FlipBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
   message.printf("Sold %.08f @ %.02f", transaction2.amount, transaction2.price);
   broker.warning(message);
 
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::waitBuy;
-      updatedItem.orderId = 0;
-      updatedItem.price = transaction2.price;
-      updatedItem.balanceComm -= transaction2.amount;
-      updatedItem.balanceBase += transaction2.total;
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
+      updatedAsset.orderId = 0;
+      updatedAsset.price = transaction2.price;
+      updatedAsset.balanceComm -= transaction2.amount;
+      updatedAsset.balanceBase += transaction2.total;
       //double fee = broker.getFee();
       double fee = 0.005;
-      updatedItem.profitablePrice = transaction2.price / (1. + fee * 2.);
+      updatedAsset.profitablePrice = transaction2.price / (1. + fee * 2.);
       double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
-      updatedItem.flipPrice = transaction2.price / (1. + fee * (1. + buyProfitGain) * 2.);
-      updatedItem.date = transaction2.date;
+      updatedAsset.flipPrice = transaction2.price / (1. + fee * (1. + buyProfitGain) * 2.);
+      updatedAsset.date = transaction2.date;
 
-      broker.updateItem(updatedItem);
+      broker.updateAsset(updatedAsset);
       updateBalance();
       break;
     }
@@ -110,16 +110,16 @@ void FlipBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
 
 void_t FlipBot::Session::handleBuyTimeout(uint32_t orderId)
 {
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::waitBuy;
-      updatedItem.orderId = 0;
-      broker.updateItem(updatedItem);
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
+      updatedAsset.orderId = 0;
+      broker.updateAsset(updatedAsset);
       break;
     }
   }
@@ -127,27 +127,27 @@ void_t FlipBot::Session::handleBuyTimeout(uint32_t orderId)
 
 void_t FlipBot::Session::handleSellTimeout(uint32_t orderId)
 {
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::waitSell;
-      updatedItem.orderId = 0;
-      broker.updateItem(updatedItem);
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::waitSell;
+      updatedAsset.orderId = 0;
+      broker.updateAsset(updatedAsset);
       break;
     }
   }
 }
 
-void_t FlipBot::Session::handleAssetUpdate(const BotProtocol::SessionItem& asset)
+void_t FlipBot::Session::handleAssetUpdate(const BotProtocol::SessionAsset& asset)
 {
   updateBalance();
 }
 
-void_t FlipBot::Session::handleAssetRemoval(const BotProtocol::SessionItem& asset)
+void_t FlipBot::Session::handleAssetRemoval(const BotProtocol::SessionAsset& asset)
 {
   updateBalance();
 }
@@ -161,23 +161,23 @@ void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
     return; // do not buy too often
 
   double tradePrice = trade.price;
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitBuy && tradePrice <= item.flipPrice)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::waitBuy && tradePrice <= asset.flipPrice)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::buying;
-      broker.updateItem(updatedItem);
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::buying;
+      broker.updateAsset(updatedAsset);
 
       timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
-      if(broker.buy(tradePrice, 0., item.balanceBase, buyTimeout * 1000, &updatedItem.orderId, 0))
-        broker.updateItem(updatedItem);
+      if(broker.buy(tradePrice, 0., asset.balanceBase, buyTimeout * 1000, &updatedAsset.orderId, 0))
+        broker.updateAsset(updatedAsset);
       else
       {
-        updatedItem.state = BotProtocol::SessionItem::waitBuy;
-        broker.updateItem(updatedItem);
+        updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
+        broker.updateAsset(updatedAsset);
       }
       break;
     }
@@ -193,23 +193,23 @@ void FlipBot::Session::checkSell(const DataProtocol::Trade& trade, const Values&
     return; // do not sell too often
 
   double tradePrice = trade.price;
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitSell && tradePrice >= item.flipPrice)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::waitSell && tradePrice >= asset.flipPrice)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::selling;
-      broker.updateItem(updatedItem);
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::selling;
+      broker.updateAsset(updatedAsset);
 
       timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
-      if(broker.sell(tradePrice, item.balanceComm, 0., sellTimeout * 1000, &updatedItem.orderId, 0))
-        broker.updateItem(updatedItem);
+      if(broker.sell(tradePrice, asset.balanceComm, 0., sellTimeout * 1000, &updatedAsset.orderId, 0))
+        broker.updateAsset(updatedAsset);
       else
       {
-        updatedItem.state = BotProtocol::SessionItem::waitSell;
-        broker.updateItem(updatedItem);
+        updatedAsset.state = BotProtocol::SessionAsset::waitSell;
+        broker.updateAsset(updatedAsset);
       }
       break;
     }

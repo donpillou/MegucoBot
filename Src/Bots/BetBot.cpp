@@ -42,13 +42,13 @@ void_t BetBot::Session::updateAvailableBalance()
 {
   availableBalanceBase = balanceBase;
   availableBalanceComm = balanceComm;
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
+    const BotProtocol::SessionAsset& asset = *i;
     // todo: allow reinvesting assets!
-    availableBalanceComm -= item.balanceComm;
-    availableBalanceBase -= item.balanceBase;
+    availableBalanceComm -= asset.balanceComm;
+    availableBalanceBase -= asset.balanceBase;
   }
   const HashMap<uint32_t, BotProtocol::Order>& orders = broker.getOrders();
   for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
@@ -113,21 +113,21 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
 
   if(orderId == buyInOrderId)
   {
-    BotProtocol::SessionItem sessionItem;
-    sessionItem.entityId = 0;
-    sessionItem.entityType = BotProtocol::sessionItem;
-    sessionItem.type = BotProtocol::SessionItem::buy;
-    sessionItem.state = BotProtocol::SessionItem::waitSell;
-    sessionItem.date = transaction.date;
-    sessionItem.price = transaction.price;
-    sessionItem.balanceComm = transaction.amount;
-    sessionItem.balanceBase = 0.;
+    BotProtocol::SessionAsset sessionAsset;
+    sessionAsset.entityId = 0;
+    sessionAsset.entityType = BotProtocol::sessionAsset;
+    sessionAsset.type = BotProtocol::SessionAsset::buy;
+    sessionAsset.state = BotProtocol::SessionAsset::waitSell;
+    sessionAsset.date = transaction.date;
+    sessionAsset.price = transaction.price;
+    sessionAsset.balanceComm = transaction.amount;
+    sessionAsset.balanceBase = 0.;
     double fee = 0.005;
-    sessionItem.profitablePrice = transaction.price * (1. + fee * 2.);
+    sessionAsset.profitablePrice = transaction.price * (1. + fee * 2.);
     double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
-    sessionItem.flipPrice = transaction.price * (1. + fee * (1. + sellProfitGain) * 2.);
-    sessionItem.orderId = 0;
-    broker.createItem(sessionItem);
+    sessionAsset.flipPrice = transaction.price * (1. + fee * (1. + sellProfitGain) * 2.);
+    sessionAsset.orderId = 0;
+    broker.createAsset(sessionAsset);
 
     buyInOrderId = 0;
     resetBetOrders();
@@ -136,13 +136,13 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
   }
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionItem& item = *i;
-      if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
+      const BotProtocol::SessionAsset& asset = *i;
+      if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
       {
-        broker.removeItem(item.entityId);
+        broker.removeAsset(asset.entityId);
         updateAvailableBalance();
         break;
       }
@@ -160,21 +160,21 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
 
   if(orderId == sellInOrderId)
   {
-    BotProtocol::SessionItem sessionItem;
-    sessionItem.entityId = 0;
-    sessionItem.entityType = BotProtocol::sessionItem;
-    sessionItem.type = BotProtocol::SessionItem::sell;
-    sessionItem.state = BotProtocol::SessionItem::waitBuy;
-    sessionItem.date = transaction.date;
-    sessionItem.price = transaction.price;
-    sessionItem.balanceComm = 0.;
-    sessionItem.balanceBase = transaction.total;
+    BotProtocol::SessionAsset sessionAsset;
+    sessionAsset.entityId = 0;
+    sessionAsset.entityType = BotProtocol::sessionAsset;
+    sessionAsset.type = BotProtocol::SessionAsset::sell;
+    sessionAsset.state = BotProtocol::SessionAsset::waitBuy;
+    sessionAsset.date = transaction.date;
+    sessionAsset.price = transaction.price;
+    sessionAsset.balanceComm = 0.;
+    sessionAsset.balanceBase = transaction.total;
     double fee = 0.005;
-    sessionItem.profitablePrice = transaction.price / (1. + fee * 2.);
+    sessionAsset.profitablePrice = transaction.price / (1. + fee * 2.);
     double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
-    sessionItem.flipPrice = transaction.price / (1. + fee * (1. + buyProfitGain) * 2.);
-    sessionItem.orderId = 0;
-    broker.createItem(sessionItem);
+    sessionAsset.flipPrice = transaction.price / (1. + fee * (1. + buyProfitGain) * 2.);
+    sessionAsset.orderId = 0;
+    broker.createAsset(sessionAsset);
 
     sellInOrderId = 0;
     resetBetOrders();
@@ -183,13 +183,13 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
   }
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionItem& item = *i;
-      if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
+      const BotProtocol::SessionAsset& asset = *i;
+      if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
       {
-        broker.removeItem(item.entityId);
+        broker.removeAsset(asset.entityId);
         updateAvailableBalance();
         break;
       }
@@ -203,16 +203,16 @@ void_t BetBot::Session::handleBuyTimeout(uint32_t orderId)
     buyInOrderId = 0;
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionItem& item = *i;
-      if(item.state == BotProtocol::SessionItem::buying && item.orderId == orderId)
+      const BotProtocol::SessionAsset& asset = *i;
+      if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
       {
-        BotProtocol::SessionItem updatedItem = item;
-        updatedItem.state = BotProtocol::SessionItem::waitBuy;
-        updatedItem.orderId = 0;
-        broker.updateItem(updatedItem);
+        BotProtocol::SessionAsset updatedAsset = asset;
+        updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
+        updatedAsset.orderId = 0;
+        broker.updateAsset(updatedAsset);
         break;
       }
     }
@@ -226,16 +226,16 @@ void_t BetBot::Session::handleSellTimeout(uint32_t orderId)
     sellInOrderId = 0;
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-    for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionItem& item = *i;
-      if(item.state == BotProtocol::SessionItem::selling && item.orderId == orderId)
+      const BotProtocol::SessionAsset& asset = *i;
+      if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
       {
-        BotProtocol::SessionItem updatedItem = item;
-        updatedItem.state = BotProtocol::SessionItem::waitSell;
-        updatedItem.orderId = 0;
-        broker.updateItem(updatedItem);
+        BotProtocol::SessionAsset updatedAsset = asset;
+        updatedAsset.state = BotProtocol::SessionAsset::waitSell;
+        updatedAsset.orderId = 0;
+        broker.updateAsset(updatedAsset);
         break;
       }
     }
@@ -381,23 +381,23 @@ void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
     return; // do not buy too often
 
   double tradePrice = trade.price;
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitBuy && tradePrice <= item.flipPrice)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::waitBuy && tradePrice <= asset.flipPrice)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::buying;
-      broker.updateItem(updatedItem);
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::buying;
+      broker.updateAsset(updatedAsset);
 
       timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
-      if(broker.buy(tradePrice, 0., item.balanceBase, buyTimeout * 1000, &updatedItem.orderId, 0))
-        broker.updateItem(updatedItem);
+      if(broker.buy(tradePrice, 0., asset.balanceBase, buyTimeout * 1000, &updatedAsset.orderId, 0))
+        broker.updateAsset(updatedAsset);
       else
       {
-        updatedItem.state = BotProtocol::SessionItem::waitBuy;
-        broker.updateItem(updatedItem);
+        updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
+        broker.updateAsset(updatedAsset);
       }
       break;
     }
@@ -411,23 +411,23 @@ void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
     return; // do not sell too often
 
   double tradePrice = trade.price;
-  const HashMap<uint32_t, BotProtocol::SessionItem>& items = broker.getItems();
-  for(HashMap<uint32_t, BotProtocol::SessionItem>::Iterator i = items.begin(), end = items.end(); i != end; ++i)
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionItem& item = *i;
-    if(item.state == BotProtocol::SessionItem::waitSell && tradePrice >= item.flipPrice)
+    const BotProtocol::SessionAsset& asset = *i;
+    if(asset.state == BotProtocol::SessionAsset::waitSell && tradePrice >= asset.flipPrice)
     {
-      BotProtocol::SessionItem updatedItem = item;
-      updatedItem.state = BotProtocol::SessionItem::selling;
-      broker.updateItem(updatedItem);
+      BotProtocol::SessionAsset updatedAsset = asset;
+      updatedAsset.state = BotProtocol::SessionAsset::selling;
+      broker.updateAsset(updatedAsset);
 
       timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
-      if(broker.sell(tradePrice, item.balanceComm, 0., sellTimeout * 1000, &updatedItem.orderId, 0))
-        broker.updateItem(updatedItem);
+      if(broker.sell(tradePrice, asset.balanceComm, 0., sellTimeout * 1000, &updatedAsset.orderId, 0))
+        broker.updateAsset(updatedAsset);
       else
       {
-        updatedItem.state = BotProtocol::SessionItem::waitSell;
-        broker.updateItem(updatedItem);
+        updatedAsset.state = BotProtocol::SessionAsset::waitSell;
+        broker.updateAsset(updatedAsset);
       }
       break;
     }
@@ -442,12 +442,12 @@ void_t BetBot::Session::handlePropertyUpdate(const BotProtocol::SessionProperty&
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleAssetUpdate(const BotProtocol::SessionItem& asset)
+void_t BetBot::Session::handleAssetUpdate(const BotProtocol::SessionAsset& asset)
 {
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleAssetRemoval(const BotProtocol::SessionItem& asset)
+void_t BetBot::Session::handleAssetRemoval(const BotProtocol::SessionAsset& asset)
 {
   updateAvailableBalance();
 }

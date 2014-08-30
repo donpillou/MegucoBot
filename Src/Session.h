@@ -56,11 +56,11 @@ public:
   const HashMap<uint32_t, BotProtocol::Transaction>& getTransactions() const {return transactions;}
   bool_t deleteTransaction(uint32_t id);
 
-  const BotProtocol::SessionItem* getItem(uint32_t id) const;
-  BotProtocol::SessionItem& createItem(const BotProtocol::SessionItem& item);
-  BotProtocol::SessionItem* updateItem(const BotProtocol::SessionItem& item) {return &items.append(item.entityId, item);}
-  const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const {return items;}
-  bool_t deleteItem(uint32_t id);
+  const BotProtocol::SessionAsset* getAsset(uint32_t id) const;
+  BotProtocol::SessionAsset& createAsset(const BotProtocol::SessionAsset& asset);
+  BotProtocol::SessionAsset* updateAsset(const BotProtocol::SessionAsset& asset) {return &assets.append(asset.entityId, asset);}
+  const HashMap<uint32_t, BotProtocol::SessionAsset>& getAssets() const {return assets;}
+  bool_t deleteAsset(uint32_t id);
 
   const BotProtocol::SessionProperty* getProperty(uint32_t id) const;
   BotProtocol::SessionProperty& createProperty(const BotProtocol::SessionProperty& property);
@@ -99,13 +99,13 @@ private:
   ClientHandler* entityClient;
   HashSet<ClientHandler*> clients;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
-  HashMap<uint32_t, BotProtocol::SessionItem> items;
+  HashMap<uint32_t, BotProtocol::SessionAsset> assets;
   HashMap<uint32_t, BotProtocol::SessionProperty> properties;
   HashMap<uint32_t, BotProtocol::Order> orders;
   HashMap<uint32_t, BotProtocol::Marker> markers;
   List<BotProtocol::SessionLogMessage> logMessages;
   HashMap<uint32_t, BotProtocol::Transaction> backupTransactions;
-  HashMap<uint32_t, BotProtocol::SessionItem> backupItems;
+  HashMap<uint32_t, BotProtocol::SessionAsset> backupAssets;
   HashMap<uint32_t, BotProtocol::SessionProperty> backupProperties;
   HashMap<uint32_t, BotProtocol::Order> backupOrders;
   HashMap<uint32_t, BotProtocol::Marker> backupMarkers;

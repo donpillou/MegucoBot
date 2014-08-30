@@ -100,9 +100,9 @@ bool_t BotConnection::getSessionTransactions(List<BotProtocol::Transaction>& tra
   return true;
 }
 
-bool_t BotConnection::getSessionItems(List<BotProtocol::SessionItem>& items)
+bool_t BotConnection::getSessionAssets(List<BotProtocol::SessionAsset>& assets)
 {
-  if(!sendControlSession(BotProtocol::ControlSession::requestItems, items))
+  if(!sendControlSession(BotProtocol::ControlSession::requestAssets, assets))
     return false;
   return true;
 }
@@ -136,19 +136,19 @@ bool_t BotConnection::removeSessionTransaction(uint32_t id)
   return removeEntity(BotProtocol::sessionTransaction, id);
 }
 
-bool_t BotConnection::createSessionItem(BotProtocol::SessionItem& item)
+bool_t BotConnection::createSessionAsset(BotProtocol::SessionAsset& asset)
 {
-  return createEntity(&item, sizeof(item));
+  return createEntity(&asset, sizeof(asset));
 }
 
-bool_t BotConnection::updateSessionItem(const BotProtocol::SessionItem& item)
+bool_t BotConnection::updateSessionAsset(const BotProtocol::SessionAsset& asset)
 {
-  return updateEntity(&item, sizeof(item));
+  return updateEntity(&asset, sizeof(asset));
 }
 
-bool_t BotConnection::removeSessionItem(uint32_t id)
+bool_t BotConnection::removeSessionAsset(uint32_t id)
 {
-  return removeEntity(BotProtocol::sessionItem, id);
+  return removeEntity(BotProtocol::sessionAsset, id);
 }
 
 bool_t BotConnection::createSessionOrder(BotProtocol::Order& order)

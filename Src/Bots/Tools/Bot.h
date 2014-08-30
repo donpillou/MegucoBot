@@ -74,11 +74,11 @@ public:
     virtual timestamp_t getTimeSinceLastBuy() const = 0;
     virtual timestamp_t getTimeSinceLastSell() const = 0;
 
-    virtual const HashMap<uint32_t, BotProtocol::SessionItem>& getItems() const = 0;
-    virtual const BotProtocol::SessionItem* getItem(uint32_t id) const = 0;
-    virtual bool_t createItem(BotProtocol::SessionItem& item) = 0;
-    virtual void_t removeItem(uint32_t id) = 0;
-    virtual void_t updateItem(const BotProtocol::SessionItem& item) = 0;
+    virtual const HashMap<uint32_t, BotProtocol::SessionAsset>& getAssets() const = 0;
+    virtual const BotProtocol::SessionAsset* getAsset(uint32_t id) const = 0;
+    virtual bool_t createAsset(BotProtocol::SessionAsset& asset) = 0;
+    virtual void_t removeAsset(uint32_t id) = 0;
+    virtual void_t updateAsset(const BotProtocol::SessionAsset& asset) = 0;
 
     virtual const HashMap<String, BotProtocol::SessionProperty>& getProperties() const = 0;
     virtual const BotProtocol::SessionProperty* getProperty(uint32_t id) const = 0;
@@ -105,8 +105,8 @@ public:
     virtual void_t handleBuyTimeout(uint32_t orderId) = 0;
     virtual void_t handleSellTimeout(uint32_t orderId) = 0;
     virtual void_t handlePropertyUpdate(const BotProtocol::SessionProperty& property) = 0;
-    virtual void_t handleAssetUpdate(const BotProtocol::SessionItem& asset) = 0;
-    virtual void_t handleAssetRemoval(const BotProtocol::SessionItem& asset) = 0;
+    virtual void_t handleAssetUpdate(const BotProtocol::SessionAsset& asset) = 0;
+    virtual void_t handleAssetRemoval(const BotProtocol::SessionAsset& asset) = 0;
   };
   
   virtual ~Bot() {}

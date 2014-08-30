@@ -48,7 +48,7 @@ public:
     marketTransaction,
     marketOrder,
     marketBalance,
-    sessionItem,
+    sessionAsset,
     sessionProperty,
   };
 
@@ -235,7 +235,7 @@ public:
     char_t message[129];
   };
 
-  struct SessionItem : public Entity
+  struct SessionAsset : public Entity
   {
     enum Type
     {
@@ -292,7 +292,7 @@ public:
       select,
       requestTransactions,
       requestOrders,
-      requestItems,
+      requestAssets,
       requestProperties,
     };
 
