@@ -60,8 +60,6 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       asset.state = assetVar.find("state")->toUInt();
       asset.date = assetVar.find("date")->toInt64();
       asset.price = assetVar.find("price")->toDouble();
-      double amount = assetVar.find("amount")->toDouble();
-      double total = assetVar.find("total")->toDouble();
       asset.balanceBase = assetVar.find("balanceBase")->toDouble();
       asset.balanceComm = assetVar.find("balanceComm")->toDouble();
       asset.profitablePrice = assetVar.find("profitablePrice")->toDouble();
