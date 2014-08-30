@@ -232,6 +232,8 @@ void_t ConnectionHandler::handleUpdateSessionItem(uint32_t requestId, const BotP
     updatedItem.flipPrice = sessionItem.flipPrice;
     broker->updateItem(updatedItem);
     handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &sessionItem, sizeof(BotProtocol::Entity));
+
+    botSession->handleAssetUpdate(updatedItem);
   }
 }
 
@@ -242,8 +244,12 @@ void_t ConnectionHandler::handleRemoveSessionItem(uint32_t requestId, const BotP
     handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Could not find session item.");
   else
   {
+    BotProtocol::SessionItem removedItem = *item;
+
     broker->removeItem(entity.entityId);
     handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
+
+    botSession->handleAssetRemoval(removedItem);
   }
 }
 

@@ -434,10 +434,20 @@ void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
   }
 }
 
-void_t BetBot::Session::handlePropertyUpdate(BotProtocol::SessionProperty& property)
+void_t BetBot::Session::handlePropertyUpdate(const BotProtocol::SessionProperty& property)
 {
   balanceBase = broker.getProperty(String("Balance ") + broker.getCurrencyBase(), 0);
   balanceComm = broker.getProperty(String("Balance ") + broker.getCurrencyComm(), 0);
 
+  updateAvailableBalance();
+}
+
+void_t BetBot::Session::handleAssetUpdate(const BotProtocol::SessionItem& asset)
+{
+  updateAvailableBalance();
+}
+
+void_t BetBot::Session::handleAssetRemoval(const BotProtocol::SessionItem& asset)
+{
   updateAvailableBalance();
 }

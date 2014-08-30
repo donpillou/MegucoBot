@@ -104,7 +104,9 @@ public:
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleBuyTimeout(uint32_t orderId) = 0;
     virtual void_t handleSellTimeout(uint32_t orderId) = 0;
-    virtual void_t handlePropertyUpdate(BotProtocol::SessionProperty& property) = 0;
+    virtual void_t handlePropertyUpdate(const BotProtocol::SessionProperty& property) = 0;
+    virtual void_t handleAssetUpdate(const BotProtocol::SessionItem& asset) = 0;
+    virtual void_t handleAssetRemoval(const BotProtocol::SessionItem& asset) = 0;
   };
   
   virtual ~Bot() {}

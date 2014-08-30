@@ -142,6 +142,16 @@ void_t FlipBot::Session::handleSellTimeout(uint32_t orderId)
   }
 }
 
+void_t FlipBot::Session::handleAssetUpdate(const BotProtocol::SessionItem& asset)
+{
+  updateBalance();
+}
+
+void_t FlipBot::Session::handleAssetRemoval(const BotProtocol::SessionItem& asset)
+{
+  updateBalance();
+}
+
 void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& values)
 {
   if(broker.getOpenBuyOrderCount() > 0)
