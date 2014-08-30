@@ -7,25 +7,28 @@
 #define DEFAULT_BUY_PROFIT_GAIN 0.6
 #define DEFAULT_SELL_PROFIT_GAIN 0.6
 #define DEFAULT_BUY_COOLDOWN (60 * 60)
-#define DEFAULT_BUY_TIMEOUT (6 * 60 * 60)
 #define DEFAULT_SELL_COOLDOWN (60 * 60)
+#define DEFAULT_BUY_TIMEOUT (6 * 60 * 60)
 #define DEFAULT_SELL_TIMEOUT (6 * 60 * 60)
-#define DEFAULT_MIN_BET 7.
-
 #define DEFAULT_BUY_PREDICT_TIME (2 * 60 * 60)
 #define DEFAULT_SELL_PREDICT_TIME (2 * 60 * 60)
-
+#define DEFAULT_BUY_MIN_PRICE_SHIFT 0.01
+#define DEFAULT_SELL_MIN_PRICE_SHIFT 0.01
+#define DEFAULT_MIN_BET 7.
 
 BetBot::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sellInOrderId(0), lastBuyInTime(0), lastSellInTime(0)
 {
-  broker.registerProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
   broker.registerProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
+  broker.registerProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
   broker.registerProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
-  broker.registerProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
   broker.registerProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
+  broker.registerProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
   broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
   broker.registerProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
   broker.registerProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
+  broker.registerProperty("Buy Min Price Shift", DEFAULT_BUY_MIN_PRICE_SHIFT);
+  broker.registerProperty("Sell Min Price Shift", DEFAULT_SELL_MIN_PRICE_SHIFT);
+
   broker.registerProperty(String("Balance ") + broker.getCurrencyBase(), 0, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
   broker.registerProperty(String("Balance ") + broker.getCurrencyComm(), 0, BotProtocol::SessionProperty::none, broker.getCurrencyComm());
   broker.registerProperty(String("Available Balance ") + broker.getCurrencyBase(), 0, BotProtocol::SessionProperty::readOnly, broker.getCurrencyBase());
@@ -264,7 +267,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
     //if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
     //  return; // do not buy too often
 
-    if(trade.price > values.regressions[regression12h].min)
+    if(trade.price > values.regressions[regression12h].min || trade.price > values.regressions[regression12h].max * (1. - broker.getProperty("Buy Min Price Shift", DEFAULT_BUY_MIN_PRICE_SHIFT)))
       return;
     buyInIncline = values.regressions[regression6h].incline;
     buyInStartPrice = trade.price;
@@ -324,7 +327,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
     //if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
     //  return; // do not sell too often
 
-    if(trade.price < values.regressions[regression12h].max)
+    if(trade.price < values.regressions[regression12h].max || trade.price < values.regressions[regression12h].min * (1. + broker.getProperty("Sell Min Price Shift", DEFAULT_SELL_MIN_PRICE_SHIFT)))
       return;
     sellInIncline = values.regressions[regression6h].incline;
     sellInStartPrice = trade.price;
