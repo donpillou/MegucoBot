@@ -75,21 +75,29 @@ void_t BetBot::Session::applyBalanceUpdate(double base, double comm)
   updateAvailableBalance();
 }
 
-double BetBot::Session::getBuyInBase(double currentPrice) const
+double BetBot::Session::getBuyInBase(double currentPrice, const Values& values) const
 {
+  int bottomness = 1;
+  if(currentPrice <= values.regressions[regression24h].min)
+      ++bottomness;
+
   double botValueBase = balanceBase + balanceComm * currentPrice;
   double maxBase = botValueBase / 10.;
-  double base = Math::min(availableBalanceBase / 2., maxBase);
+  double base = Math::min(availableBalanceBase / 2., maxBase) * 0.5 * bottomness;
   if(base < broker.getProperty(String("Min Bet"), DEFAULT_MIN_BET))
     return 0;
   return base;
 }
 
-double BetBot::Session::getSellInComm(double currentPrice) const
+double BetBot::Session::getSellInComm(double currentPrice, const Values& values) const
 {
+  int topness = 1;
+  if(currentPrice >= values.regressions[regression24h].max)
+      ++topness;
+
   double botValueComm = balanceComm + balanceBase / currentPrice;
   double maxComm = botValueComm / 10.;
-  double comm = Math::min(availableBalanceComm / 2., maxComm);
+  double comm = Math::min(availableBalanceComm / 2., maxComm) * 0.5 * topness;
   if(comm * currentPrice < broker.getProperty(String("Min Bet"), DEFAULT_MIN_BET))
     return 0;
   return comm;
@@ -263,7 +271,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
     maxBuyInPrice = buyInStartPrice + buyInIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
     if(!std::isnormal(maxBuyInPrice))
       return;
-    double buyInBase = getBuyInBase(trade.price);
+    double buyInBase = getBuyInBase(trade.price, values);
     if(buyInBase == 0.)
       return;
     timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
@@ -281,7 +289,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
         return;
       if(newMaxBuyPrice < maxBuyInPrice * (1. - 0.00002))
       {
-        double buyInBase = getBuyInBase(trade.price);
+        double buyInBase = getBuyInBase(trade.price, values);
         if(buyInBase == 0.)
           return;
         if(!broker.cancelOder(buyInOrderId))
@@ -323,7 +331,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
     minSellInPrice = sellInStartPrice + sellInIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
     if(!std::isnormal(minSellInPrice))
       return;
-    double sellInComm = getSellInComm(trade.price);
+    double sellInComm = getSellInComm(trade.price, values);
     if(sellInComm == 0.)
       return;
     timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
@@ -341,7 +349,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
         return;
       if(newMinSellPrice > minSellInPrice * (1. + 0.00002))
       {
-        double sellInComm = getSellInComm(trade.price);
+        double sellInComm = getSellInComm(trade.price, values);
         if(sellInComm == 0.)
           return;
         if(!broker.cancelOder(sellInOrderId))

@@ -42,8 +42,8 @@ private:
     void_t updateAvailableBalance();
     void_t applyBalanceUpdate(double base, double comm);
 
-    double getBuyInBase(double currentPrice) const;
-    double getSellInComm(double currentPrice) const;
+    double getBuyInBase(double currentPrice, const Values& values) const;
+    double getSellInComm(double currentPrice, const Values& values) const;
 
   private: // Bot::Session
     virtual void_t handleTrade(const DataProtocol::Trade& trade, const Values& values);
