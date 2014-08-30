@@ -41,10 +41,6 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       transaction.amount = transactionVar.find("amount")->toDouble();
       transaction.total = transactionVar.find("total")->toDouble();
 
-      double fee = transactionVar.find("fee")->toDouble(); // todo: this is code for backward compatibility; remove this
-      if(fee != 0)
-        transaction.total = transaction.type == BotProtocol::Transaction::buy ? (Math::abs(transaction.price * transaction.amount) + fee) : (Math::abs(transaction.price * transaction.amount) - fee);
-
       if(transactions.find(transaction.entityId) != transactions.end())
         continue;
       transactions.append(transaction.entityId, transaction);
@@ -53,7 +49,7 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
     }
   }
   {
-    const List<Variant>& itemsVar = data.find("items")->toList();
+    const List<Variant>& itemsVar = data.find("assets")->toList();
     BotProtocol::SessionAsset asset;
     asset.entityType = BotProtocol::sessionAsset;
     for(List<Variant>::Iterator i = itemsVar.begin(), end = itemsVar.end(); i != end; ++i)
@@ -71,47 +67,6 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       asset.profitablePrice = assetVar.find("profitablePrice")->toDouble();
       asset.flipPrice = assetVar.find("flipPrice")->toDouble();
       asset.orderId = assetVar.find("orderId")->toUInt();
-
-      if(total == 0. && asset.price != 0. && amount != 0.) // todo: this is code for backward compatibility; remove this
-      {
-        BotProtocol::SessionAsset::Type type = (BotProtocol::SessionAsset::Type)asset.type;
-        switch(asset.state)
-        {
-        case BotProtocol::SessionAsset::waitBuy:
-        case BotProtocol::SessionAsset::buying:
-          type = BotProtocol::SessionAsset::buy;
-          break;
-        case BotProtocol::SessionAsset::waitSell:
-        case BotProtocol::SessionAsset::selling:
-          type = BotProtocol::SessionAsset::sell;
-          break;
-        default:
-          break;
-        }
-        total = type == BotProtocol::SessionAsset::buy ? Math::ceil(asset.price * amount * (1. + .005) * 100.) / 100. : Math::floor(asset.price * amount * (1. - .005) * 100.) / 100.;
-      }
-
-      if(asset.balanceBase == 0. && asset.balanceComm == 0.) // todo: this is code for backward compatibility; remove this
-      {
-        BotProtocol::SessionAsset::Type type = (BotProtocol::SessionAsset::Type)asset.type;
-        switch(asset.state)
-        {
-        case BotProtocol::SessionAsset::waitBuy:
-        case BotProtocol::SessionAsset::buying:
-          type = BotProtocol::SessionAsset::buy;
-          break;
-        case BotProtocol::SessionAsset::waitSell:
-        case BotProtocol::SessionAsset::selling:
-          type = BotProtocol::SessionAsset::sell;
-          break;
-        default:
-          break;
-        }
-        if(type == BotProtocol::SessionAsset::buy)
-          asset.balanceBase = total != 0. ? total : Math::ceil(asset.flipPrice * amount * (1. + .005) * 100.) / 100.;
-        else
-          asset.balanceComm = amount;
-      }
 
       if(assets.find(asset.entityId) != assets.end())
         continue;
@@ -153,10 +108,6 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       order.price = orderVar.find("price")->toDouble();
       order.amount = orderVar.find("amount")->toDouble();
       order.total = orderVar.find("total")->toDouble();
-
-      double fee = orderVar.find("fee")->toDouble(); // todo: this is code for backward compatibility; remove this
-      if(fee != 0)
-        order.total = order.type == BotProtocol::Order::buy ? (Math::abs(order.price * order.amount) + fee) : (Math::abs(order.price * order.amount) - fee);
 
       if(orders.find(order.entityId) != orders.end())
         continue;
@@ -220,7 +171,7 @@ void_t Session::toVariant(Variant& variant)
     }
   }
   {
-    List<Variant>& itemsVar = data.append("items", Variant()).toList();
+    List<Variant>& itemsVar = data.append("assets", Variant()).toList();
     for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
       const BotProtocol::SessionAsset& asset = *i;
