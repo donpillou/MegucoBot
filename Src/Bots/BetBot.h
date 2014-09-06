@@ -25,6 +25,8 @@ private:
     double sellInStartPrice;
     timestamp_t lastBuyInTime;
     timestamp_t lastSellInTime;
+    timestamp_t lastAssetBuyTime;
+    timestamp_t lastAssetSellTime;
     double balanceBase;
     double balanceComm;
     double availableBalanceBase;

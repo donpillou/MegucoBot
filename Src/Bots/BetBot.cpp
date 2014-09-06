@@ -16,7 +16,7 @@
 #define DEFAULT_SELL_MIN_PRICE_SHIFT 0.01
 #define DEFAULT_MIN_BET 7.
 
-BetBot::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sellInOrderId(0), lastBuyInTime(0), lastSellInTime(0)
+BetBot::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sellInOrderId(0), lastBuyInTime(0), lastSellInTime(0), lastAssetBuyTime(0), lastAssetSellTime(0)
 {
   broker.registerProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
   broker.registerProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
@@ -154,6 +154,7 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
       if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
       {
         broker.removeAsset(asset.entityId);
+        lastAssetBuyTime = transaction.date;
         updateAvailableBalance();
         break;
       }
@@ -201,6 +202,7 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
       if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
       {
         broker.removeAsset(asset.entityId);
+        lastAssetSellTime = transaction.date;
         updateAvailableBalance();
         break;
       }
@@ -388,7 +390,7 @@ void_t BetBot::Session::resetBetOrders()
 void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
 {
   timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
-  if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
+  if((timestamp_t)trade.time - lastAssetBuyTime < buyCooldown * 1000)
     return; // do not buy too often
 
   double tradePrice = trade.price;
@@ -418,7 +420,7 @@ void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
 void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
 {
   timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
-  if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
+  if((timestamp_t)trade.time - lastAssetSellTime < sellCooldown * 1000)
     return; // do not sell too often
 
   double tradePrice = trade.price;
