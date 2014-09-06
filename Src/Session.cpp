@@ -71,9 +71,9 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       if(asset.investComm == 0. && asset.investBase == 0.) // todo: this is compatibilty loading code; remove this
       {
         if(asset.state == BotProtocol::SessionAsset::waitBuy || asset.state == BotProtocol::SessionAsset::buying)
-          asset.investComm = Math::ceil(asset.balanceBase / asset.price * (1 + 0.005));
+          asset.investComm = Math::ceil(asset.balanceBase / asset.price * (1 + 0.005) * 100000000.) / 100000000.;
         if(asset.state == BotProtocol::SessionAsset::waitSell || asset.state == BotProtocol::SessionAsset::selling)
-          asset.investBase = Math::ceil(asset.balanceComm * asset.price * (1 + 0.005));
+          asset.investBase = Math::ceil(asset.balanceComm * asset.price * (1 + 0.005) * 100.) / 100.;
       }
 
       if(assets.find(asset.entityId) != assets.end())
@@ -189,6 +189,8 @@ void_t Session::toVariant(Variant& variant)
       assetVar.append("state", (uint32_t)asset.state);
       assetVar.append("date", asset.date);
       assetVar.append("price", asset.price);
+      assetVar.append("investComm", asset.investComm);
+      assetVar.append("investBase", asset.investBase);
       assetVar.append("balanceComm", asset.balanceComm);
       assetVar.append("balanceBase", asset.balanceBase);
       assetVar.append("profitablePrice", asset.profitablePrice);
