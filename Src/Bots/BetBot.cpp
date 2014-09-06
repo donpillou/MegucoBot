@@ -513,7 +513,7 @@ void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
       double buyAmountBase = asset.balanceBase;
       if(waitingForSell)
       {
-        buyAmountComm = asset.investComm - asset.balanceComm;
+        buyAmountComm = asset.investComm /* - asset.balanceComm */;
         buyAmountBase = 0.;
       }
 
@@ -562,7 +562,7 @@ void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
       if(waitingForBuy)
       {
         buyAmountComm = 0.;
-        buyAmountBase = asset.investBase - asset.balanceBase;
+        buyAmountBase = asset.investBase /* - asset.balanceBase */;
       }
 
       timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
