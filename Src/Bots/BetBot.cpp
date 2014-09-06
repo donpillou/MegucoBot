@@ -252,7 +252,7 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
       if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
       {
         double gainBase = transaction.total - asset.investBase + asset.balanceBase;
-        double gainComm = asset.balanceComm -  transaction.amount;
+        double gainComm = asset.balanceComm - transaction.amount;
 
         Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
         if(gainComm > 0.)
@@ -513,7 +513,7 @@ void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
       double buyAmountBase = asset.balanceBase;
       if(waitingForSell)
       {
-        buyAmountComm = asset.investComm /* - asset.balanceComm */;
+        buyAmountComm = asset.investComm;
         buyAmountBase = 0.;
       }
 
@@ -562,7 +562,7 @@ void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
       if(waitingForBuy)
       {
         buyAmountComm = 0.;
-        buyAmountBase = asset.investBase /* - asset.balanceBase */;
+        buyAmountBase = asset.investBase;
       }
 
       timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
