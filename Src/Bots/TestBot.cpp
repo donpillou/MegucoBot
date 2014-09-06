@@ -24,6 +24,8 @@ void TestBot::Session::handleTrade(const DataProtocol::Trade& trade, const Value
     asset.state = BotProtocol::SessionAsset::waitSell;
     asset.date = 89;
     asset.price = 300;
+    asset.investComm = 0.;
+    asset.investBase = 0.;
     asset.balanceComm = 0.;
     asset.balanceBase = 12.;
     asset.price = 320;

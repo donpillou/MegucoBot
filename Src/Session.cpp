@@ -60,11 +60,21 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
       asset.state = assetVar.find("state")->toUInt();
       asset.date = assetVar.find("date")->toInt64();
       asset.price = assetVar.find("price")->toDouble();
-      asset.balanceBase = assetVar.find("balanceBase")->toDouble();
+      asset.investComm = assetVar.find("investComm")->toDouble();
+      asset.investBase = assetVar.find("investBase")->toDouble();
       asset.balanceComm = assetVar.find("balanceComm")->toDouble();
+      asset.balanceBase = assetVar.find("balanceBase")->toDouble();
       asset.profitablePrice = assetVar.find("profitablePrice")->toDouble();
       asset.flipPrice = assetVar.find("flipPrice")->toDouble();
       asset.orderId = assetVar.find("orderId")->toUInt();
+
+      if(asset.investComm == 0. && asset.investBase == 0.) // todo: this is compatibilty loading code; remove this
+      {
+        if(asset.state == BotProtocol::SessionAsset::waitBuy || asset.state == BotProtocol::SessionAsset::buying)
+          asset.investComm = Math::ceil(asset.balanceBase / asset.price * (1 + 0.005));
+        if(asset.state == BotProtocol::SessionAsset::waitSell || asset.state == BotProtocol::SessionAsset::selling)
+          asset.investBase = Math::ceil(asset.balanceComm * asset.price * (1 + 0.005));
+      }
 
       if(assets.find(asset.entityId) != assets.end())
         continue;

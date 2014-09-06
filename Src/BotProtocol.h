@@ -255,6 +255,8 @@ public:
     uint8_t state;
     int64_t date;
     double price;
+    double investComm;
+    double investBase;
     double balanceComm;
     double balanceBase;
     double profitablePrice;
