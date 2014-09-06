@@ -43,9 +43,8 @@ public:
   bool_t saveData();
 
   uint32_t createRequestId(uint32_t requesterRequestId, ClientHandler& requester, ClientHandler& requestee);
-  //bool_t findRequestId(uint32_t requestId, uint32_t& requesterRequestId, ClientHandler*& requester);
-  bool_t findAndRemoveRequestId(uint32_t requestId, uint32_t& requesterRequestId, ClientHandler*& requester);
-  void_t removeRequestId(uint32_t requesteeRequestId);
+  bool_t findAndRemoveRequestId(uint32_t id, uint32_t& requesterRequestId, ClientHandler*& requester);
+  void_t removeRequestId(uint32_t id);
 
 private:
   class ClientData

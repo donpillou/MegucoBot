@@ -154,20 +154,9 @@ uint32_t ServerHandler::createRequestId(uint32_t requesterRequestId, ClientHandl
   return id;
 }
 
-//bool_t ServerHandler::findRequestId(uint32_t requesteeRequestId, uint32_t& requesterRequestId, ClientHandler*& requester)
-//{
-//  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);
-//  if(it == requestIds.end())
-//    return false;
-//  RequestId& requestId = *it;
-//  requester = requestId.requester;
-//  requesterRequestId = requestId.requesterRequestId;
-//  return true;
-//}
-
-bool_t ServerHandler::findAndRemoveRequestId(uint32_t requesteeRequestId, uint32_t& requesterRequestId, ClientHandler*& requester)
+bool_t ServerHandler::findAndRemoveRequestId(uint32_t id, uint32_t& requesterRequestId, ClientHandler*& requester)
 {
-  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);
+  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(id);
   if(it == requestIds.end())
     return false;
   RequestId& requestId = *it;
@@ -179,14 +168,15 @@ bool_t ServerHandler::findAndRemoveRequestId(uint32_t requesteeRequestId, uint32
   requesterRequestId = requestId.requesterRequestId;
   ClientData& requsterData = *itRequester;
   ClientData& requsteeData = *itRequestee;
-  requsterData.requestIds.remove(requesteeRequestId);
-  requsteeData.requestIds.remove(requesteeRequestId);
+  requsterData.requestIds.remove(id);
+  requsteeData.requestIds.remove(id);
+  requestIds.remove(it);
   return true;
 }
 
-void_t ServerHandler::removeRequestId(uint32_t requesteeRequestId)
+void_t ServerHandler::removeRequestId(uint32_t id)
 {
-  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(requesteeRequestId);
+  HashMap<uint32_t, RequestId>::Iterator it = requestIds.find(id);
   if(it == requestIds.end())
     return;
   RequestId& requestId = *it;
@@ -196,6 +186,7 @@ void_t ServerHandler::removeRequestId(uint32_t requesteeRequestId)
   ASSERT(itRequestee != clients.end());
   ClientData& requsterData = *itRequester;
   ClientData& requsteeData = *itRequestee;
-  requsterData.requestIds.remove(requesteeRequestId);
-  requsteeData.requestIds.remove(requesteeRequestId);
+  requsterData.requestIds.remove(id);
+  requsteeData.requestIds.remove(id);
+  requestIds.remove(it);
 }
