@@ -23,6 +23,8 @@ private:
     double sellInIncline;
     double buyInStartPrice;
     double sellInStartPrice;
+    double buyInBase;
+    double sellInComm;
     timestamp_t lastBuyInTime;
     timestamp_t lastSellInTime;
     timestamp_t lastAssetBuyTime;

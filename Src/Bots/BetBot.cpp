@@ -165,7 +165,7 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           {
             const BotProtocol::SessionAsset& asset = *i;
             if(asset.state == BotProtocol::SessionAsset::waitSell)
-              sortedSellAssets.insert(asset.price, &asset);
+              sortedSellAssets.insert(asset.profitablePrice, &asset);
           }
 
         if(!sortedSellAssets.isEmpty())
@@ -260,7 +260,7 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           {
             const BotProtocol::SessionAsset& asset = *i;
             if(asset.state == BotProtocol::SessionAsset::waitBuy)
-              sortedBuyAssets.insert(asset.price, &asset);
+              sortedBuyAssets.insert(asset.profitablePrice, &asset);
           }
 
         if(!sortedBuyAssets.isEmpty())
@@ -371,7 +371,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
     maxBuyInPrice = buyInStartPrice + buyInIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
     if(!std::isnormal(maxBuyInPrice))
       return;
-    double buyInBase = getBuyInBase(trade.price, values);
+    buyInBase = getBuyInBase(trade.price, values);
     if(buyInBase == 0.)
       return;
     timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
@@ -389,17 +389,20 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
         return;
       if(newMaxBuyPrice < maxBuyInPrice * (1. - 0.00002))
       {
-        double buyInBase = getBuyInBase(trade.price, values);
-        if(buyInBase == 0.)
+        double newBuyInBase = getBuyInBase(trade.price, values);
+        if(newBuyInBase == 0.)
           return;
+        if(newBuyInBase < buyInBase)
+          newBuyInBase = buyInBase;
         if(!broker.cancelOder(buyInOrderId))
           return;
         buyInOrderId = 0;
         updateAvailableBalance();
         maxBuyInPrice = newMaxBuyPrice;
         buyInIncline = newBuyIncline;
+        buyInBase = newBuyInBase;
         timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
-        if(!broker.buy(maxBuyInPrice, 0., buyInBase, buyTimeout * 1000, &buyInOrderId, 0))
+        if(!broker.buy(maxBuyInPrice, 0., newBuyInBase, buyTimeout * 1000, &buyInOrderId, 0))
           return;
         updateAvailableBalance();
       }
@@ -431,7 +434,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
     minSellInPrice = sellInStartPrice + sellInIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
     if(!std::isnormal(minSellInPrice))
       return;
-    double sellInComm = getSellInComm(trade.price, values);
+    sellInComm = getSellInComm(trade.price, values);
     if(sellInComm == 0.)
       return;
     timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
@@ -449,17 +452,20 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
         return;
       if(newMinSellPrice > minSellInPrice * (1. + 0.00002))
       {
-        double sellInComm = getSellInComm(trade.price, values);
-        if(sellInComm == 0.)
+        double newSellInComm = getSellInComm(trade.price, values);
+        if(newSellInComm == 0.)
           return;
+        if(newSellInComm < sellInComm)
+          newSellInComm = sellInComm;
         if(!broker.cancelOder(sellInOrderId))
           return;
         buyInOrderId = 0;
         updateAvailableBalance();
         minSellInPrice = newMinSellPrice;
         sellInIncline = newSellIncline;
+        sellInComm = newSellInComm;
         timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
-        if(!broker.sell(minSellInPrice, sellInComm, 0., sellTimeout * 1000, &sellInOrderId, 0))
+        if(!broker.sell(minSellInPrice, newSellInComm, 0., sellTimeout * 1000, &sellInOrderId, 0))
           return;
         updateAvailableBalance();
       }
