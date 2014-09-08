@@ -164,7 +164,7 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
             const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitSell)
+            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
               sortedSellAssets.insert(asset.profitablePrice, &asset);
           }
 
@@ -259,7 +259,7 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
             const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitBuy)
+            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
               sortedBuyAssets.insert(asset.profitablePrice, &asset);
           }
 
