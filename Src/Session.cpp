@@ -125,6 +125,24 @@ Session::Session(ServerHandler& serverHandler, User& user, const Variant& varian
     }
   }
   {
+    const List<Variant>& markersVar = data.find("markers")->toList();
+    BotProtocol::Marker marker;
+    marker.entityType = BotProtocol::sessionMarker;
+    for(List<Variant>::Iterator i = markersVar.begin(), end = markersVar.end(); i != end; ++i)
+    {
+      const HashMap<String, Variant>& markerVar = i->toMap();
+      marker.entityId = markerVar.find("id")->toUInt();
+      marker.type = markerVar.find("type")->toUInt();
+      marker.date = markerVar.find("date")->toInt64();
+
+      if(markers.find(marker.entityId) != markers.end())
+        continue;
+      markers.append(marker.entityId, marker);
+      if(marker.entityId >= nextEntityId)
+        nextEntityId = marker.entityId + 1;
+    }
+  }
+  {
     const List<Variant>& logMessagesVar = data.find("logMessages")->toList();
     BotProtocol::SessionLogMessage logMessage;
     logMessage.entityType = BotProtocol::sessionLogMessage;
@@ -224,6 +242,20 @@ void_t Session::toVariant(Variant& variant)
       orderVar.append("price", order.price);
       orderVar.append("amount", order.amount);
       orderVar.append("total", order.total);
+    }
+  }
+  {
+    List<Variant>& markersVar = data.append("markers", Variant()).toList();
+    for(HashMap<uint32_t, BotProtocol::Marker>::Iterator i = markers.begin(), end = markers.end(); i != end; ++i)
+    {
+      const BotProtocol::Marker& marker = *i;
+      if(marker.type == BotProtocol::Marker::buy || marker.type == BotProtocol::Marker::sell)
+      {
+        HashMap<String, Variant>& markerVar = markersVar.append(Variant()).toMap();
+        markerVar.append("id", marker.entityId);
+        markerVar.append("type", marker.type);
+        markerVar.append("date", marker.date);
+      }
     }
   }
   {
