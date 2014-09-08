@@ -69,6 +69,7 @@ public:
     virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id = 0, double* orderedAmount = 0) = 0;
     virtual bool_t cancelOder(uint32_t id) = 0;
     virtual const HashMap<uint32_t, BotProtocol::Order> getOrders() const = 0;
+    virtual const BotProtocol::Order* getOrder(uint32_t id) const = 0;
     virtual size_t getOpenBuyOrderCount() const = 0;
     virtual size_t getOpenSellOrderCount() const = 0;
     virtual timestamp_t getTimeSinceLastBuy() const = 0;

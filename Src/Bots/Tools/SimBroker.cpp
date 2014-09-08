@@ -209,6 +209,14 @@ bool_t SimBroker::cancelOder(uint32_t id)
   return true;
 }
 
+const BotProtocol::Order* SimBroker::getOrder(uint32_t id) const
+{
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = openOrders.find(id);
+  if(it == openOrders.end())
+    return 0;
+  return &*it;
+}
+
 uint_t SimBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;

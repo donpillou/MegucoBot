@@ -40,6 +40,7 @@ private: // Bot::Broker
   virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t cancelOder(uint32_t id);
   virtual const HashMap<uint32_t, BotProtocol::Order> getOrders() const {return openOrders;}
+  virtual const BotProtocol::Order* getOrder(uint32_t id) const;
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}

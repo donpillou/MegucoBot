@@ -274,6 +274,14 @@ bool_t LiveBroker::cancelOder(uint32_t id)
   return true;
 }
 
+const BotProtocol::Order* LiveBroker::getOrder(uint32_t id) const
+{
+  HashMap<uint32_t, BotProtocol::Order>::Iterator it = openOrders.find(id);
+  if(it == openOrders.end())
+    return 0;
+  return &*it;
+}
+
 uint_t LiveBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
