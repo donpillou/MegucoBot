@@ -160,6 +160,7 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
         double gainComm = transaction.amount - asset.investComm + asset.balanceComm;
 
         Map<double, const BotProtocol::SessionAsset*> sortedSellAssets;
+        Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
         if(gainBase > 0.)
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
@@ -167,16 +168,26 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
             if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
               sortedSellAssets.insert(asset.profitablePrice, &asset);
           }
+        if(gainComm > 0.)
+          for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+          {
+            const BotProtocol::SessionAsset& asset = *i;
+            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
+              sortedBuyAssets.insert(asset.profitablePrice, &asset);
+          }
+
+        String message;
+        message.printf("Buy: asset %.02f @ %.02f, %.02f %s => %.08f %s, Made %.08f %s, %.02f %s", asset.price, transaction.price,
+          transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.amount, (const char_t*)broker.getCurrencyComm(),
+          gainComm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase());
+        broker.warning(message);
 
         if(!sortedSellAssets.isEmpty())
         {
           BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
 
           String message;
-          message.printf("Buy: asset %.02f @ %.02f, %.02f %s => %.08f %s, Made %.08f %s, Gave %.02f %s to asset %.02f", 
-            asset.price, transaction.price,
-            transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.amount, (const char_t*)broker.getCurrencyComm(),
-            gainComm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price);
+          message.printf("Gave %.02f %s to asset %.02f", gainBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price);
           broker.warning(message);
 
           lowestSellAsset.balanceBase += gainBase;
@@ -191,13 +202,26 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
 
           broker.updateAsset(lowestSellAsset);
         }
-        else
+        if(!sortedBuyAssets.isEmpty())
         {
+          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
+
           String message;
-          message.printf("Buy: asset %.02f @ %.02f, %.02f %s => %.08f %s, Made %.08f %s, %.02f %s", asset.price, transaction.price,
-            transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.amount, (const char_t*)broker.getCurrencyComm(),
-            gainComm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase());
+          message.printf("Gave %.08f %s to asset %.02f", gainComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price);
           broker.warning(message);
+
+          highestBuyAsset.balanceComm += gainComm;
+
+          double fee = 0.005;
+          // highestBuyAsset.balanceComm + highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice / (1. + fee) = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + fee);
+          // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice / (1. + fee) = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + fee) - highestBuyAsset.balanceComm;
+          // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + fee) - highestBuyAsset.balanceComm) * (1. + fee);
+          // approx:
+          // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee);
+          // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
+          highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+
+          broker.updateAsset(highestBuyAsset);
         }
 
         broker.removeAsset(asset.entityId);
@@ -255,6 +279,7 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
         double gainComm = asset.balanceComm - transaction.amount;
 
         Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
+        Map<double, const BotProtocol::SessionAsset*> sortedSellAssets;
         if(gainComm > 0.)
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
@@ -262,16 +287,26 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
             if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
               sortedBuyAssets.insert(asset.profitablePrice, &asset);
           }
+        if(gainBase > 0.)
+          for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+          {
+            const BotProtocol::SessionAsset& asset = *i;
+            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
+              sortedSellAssets.insert(asset.profitablePrice, &asset);
+          }
+
+        String message;
+        message.printf("Sell: asset %.02f @ %.02f, %.08f %s => %.02f %s, Made %.02f %s, %.08f %s", asset.price, transaction.price,
+          transaction.amount, (const char_t*)broker.getCurrencyComm(), transaction.total, (const char_t*)broker.getCurrencyBase(),
+          gainBase, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm());
+        broker.warning(message);
 
         if(!sortedBuyAssets.isEmpty())
         {
           BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
 
           String message;
-          message.printf("Sell: asset %.02f @ %.02f, %.08f %s => %.02f %s, Made %.02f %s, Gave %.08f %s to asset %.02f", 
-            asset.price, transaction.price, 
-            transaction.amount, (const char_t*)broker.getCurrencyComm(), transaction.total, (const char_t*)broker.getCurrencyBase(),
-            gainBase, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price);
+          message.printf("Gave %.08f %s to asset %.02f", gainComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price);
           broker.warning(message);
 
           highestBuyAsset.balanceComm += gainComm;
@@ -287,13 +322,25 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
 
           broker.updateAsset(highestBuyAsset);
         }
-        else
+        if(!sortedSellAssets.isEmpty())
         {
+          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
+
           String message;
-          message.printf("Sell: asset %.02f @ %.02f, %.08f %s => %.02f %s, Made %.02f %s, %.08f %s", asset.price, transaction.price,
-            transaction.amount, (const char_t*)broker.getCurrencyComm(), transaction.total, (const char_t*)broker.getCurrencyBase(),
-            gainBase, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm());
+          message.printf("Gave %.02f %s to asset %.02f", gainBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price);
           broker.warning(message);
+
+          lowestSellAsset.balanceBase += gainBase;
+
+          double fee = 0.005;
+          // lowestSellAsset.balanceBase + lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice / (1. + fee) = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee);
+          // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice / (1. + fee) = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee) - lowestSellAsset.balanceBase;
+          // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee) - lowestSellAsset.balanceBase) * (1. + fee);
+          // approx:
+          // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
+          lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+
+          broker.updateAsset(lowestSellAsset);
         }
 
         broker.removeAsset(asset.entityId);
