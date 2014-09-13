@@ -121,8 +121,9 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
   if(orderId == buyInOrderId)
   {
     String message;
-    message.printf("BuyIn: @ %.02f, %.02f %s => %.08f %s", transaction.price,
-      transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.amount, (const char_t*)broker.getCurrencyComm());
+    message.printf("Bought asset: %.02f %s @ %.02f => %.08f %s",
+      transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.price,
+      transaction.amount, (const char_t*)broker.getCurrencyComm());
     broker.warning(message);
 
     BotProtocol::SessionAsset sessionAsset;
@@ -177,8 +178,10 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           }
 
         String message;
-        message.printf("Buy: asset %.02f @ %.02f, %.02f %s => %.08f %s, Made %.08f %s, %.02f %s", asset.price, transaction.price,
-          transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.amount, (const char_t*)broker.getCurrencyComm(),
+        message.printf("Sold asset: %.08f %s @ %.02f => %.02f %s @ %.02f + %.08f %s => %.08f %s + %.02f %s (Balance: %+.08f %s, %+.02f %s)",
+          asset.investComm, (const char_t*)broker.getCurrencyComm(), asset.price,
+          asset.balanceBase, (const char_t*)broker.getCurrencyBase(), transaction.price, asset.balanceComm, (const char_t*)broker.getCurrencyComm(),
+          transaction.amount, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase(),
           gainComm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase());
         broker.warning(message);
 
@@ -187,7 +190,11 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
 
           String message;
-          message.printf("Gave %.02f %s to asset %.02f", gainBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price);
+          message.printf("Updated asset:  %.02f %s @ %.02f => %.08f %s + %.02f %s => %.08f %s + %.02f %s (Balance: %+.02f %s)",
+            lowestSellAsset.investBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
+            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase, (const char_t*)broker.getCurrencyBase(),
+            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase + gainBase, (const char_t*)broker.getCurrencyBase(),
+            gainBase, (const char_t*)broker.getCurrencyBase());
           broker.warning(message);
 
           lowestSellAsset.balanceBase += gainBase;
@@ -209,7 +216,11 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           gainComm *= 0.5;
 
           String message;
-          message.printf("Gave %.08f %s to asset %.02f", gainComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price);
+          message.printf("Updated asset:  %.08f %s @ %.02f => %.02f %s + %.08f %s => %.02f %s + %.08f %s (Balance: %+.08f %s)",
+            highestBuyAsset.investComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price,
+            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm, (const char_t*)broker.getCurrencyComm(),
+            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm + gainComm, (const char_t*)broker.getCurrencyComm(),
+            gainComm, (const char_t*)broker.getCurrencyComm());
           broker.warning(message);
 
           highestBuyAsset.balanceComm += gainComm;
@@ -242,8 +253,9 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
   if(orderId == sellInOrderId)
   {
     String message;
-    message.printf("SellIn: @ %.02f, %.08f %s => %.02f %s", transaction.price, 
-      transaction.amount, (const char_t*)broker.getCurrencyComm(), transaction.total, (const char_t*)broker.getCurrencyBase());
+    message.printf("Bought asset: %.08f %s @ %.02f => %.02f %s",
+      transaction.amount, (const char_t*)broker.getCurrencyComm(), transaction.price,
+      transaction.total, (const char_t*)broker.getCurrencyBase());
     broker.warning(message);
 
     BotProtocol::SessionAsset sessionAsset;
@@ -298,8 +310,10 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           }
 
         String message;
-        message.printf("Sell: asset %.02f @ %.02f, %.08f %s => %.02f %s, Made %.02f %s, %.08f %s", asset.price, transaction.price,
-          transaction.amount, (const char_t*)broker.getCurrencyComm(), transaction.total, (const char_t*)broker.getCurrencyBase(),
+        message.printf("Sold asset: %.02f %s @ %.02f => %.08f %s @ %.02f + %.02f %s => %.02f %s + %.08f %s (Balance: %+.02f %s, %+.08f %s)",
+          asset.investBase, (const char_t*)broker.getCurrencyBase(), asset.price,
+          asset.balanceComm, (const char_t*)broker.getCurrencyComm(), transaction.price, asset.balanceBase, (const char_t*)broker.getCurrencyBase(),
+          transaction.total, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm(),
           gainBase, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm());
         broker.warning(message);
 
@@ -308,7 +322,11 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
 
           String message;
-          message.printf("Gave %.08f %s to asset %.02f", gainComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price);
+          message.printf("Updated asset:  %.08f %s @ %.02f => %.02f %s + %.08f %s => %.02f %s + %.08f %s (Balance: %+.08f %s)",
+            highestBuyAsset.investComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price,
+            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm, (const char_t*)broker.getCurrencyComm(),
+            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm + gainComm, (const char_t*)broker.getCurrencyComm(),
+            gainComm, (const char_t*)broker.getCurrencyComm());
           broker.warning(message);
 
           highestBuyAsset.balanceComm += gainComm;
@@ -331,7 +349,11 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           gainBase *= 0.5;
 
           String message;
-          message.printf("Gave %.02f %s to asset %.02f", gainBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price);
+          message.printf("Updated asset:  %.02f %s @ %.02f => %.08f %s + %.02f %s => %.08f %s + %.02f %s (Balance: %+.02f %s)",
+            lowestSellAsset.investBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
+            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase, (const char_t*)broker.getCurrencyBase(),
+            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase + gainBase, (const char_t*)broker.getCurrencyBase(),
+            gainBase, (const char_t*)broker.getCurrencyBase());
           broker.warning(message);
 
           lowestSellAsset.balanceBase += gainBase;

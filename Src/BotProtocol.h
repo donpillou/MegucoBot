@@ -232,7 +232,7 @@ public:
   struct SessionLogMessage : public Entity
   {
     int64_t date;
-    char_t message[129];
+    char_t message[257];
   };
 
   struct SessionAsset : public Entity
