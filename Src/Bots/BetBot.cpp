@@ -121,7 +121,7 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
   if(orderId == buyInOrderId)
   {
     String message;
-    message.printf("Bought asset: %.02f %s @ %.02f => %.08f %s (Balance: %+.08f %s)",
+    message.printf("Bought asset: %.02f %s @ %.02f => %.08f %s (Balance: %+.02f %s)",
       transaction.total, (const char_t*)broker.getCurrencyBase(), transaction.price,
       transaction.amount, (const char_t*)broker.getCurrencyComm(),
       -transaction.total, (const char_t*)broker.getCurrencyBase());
