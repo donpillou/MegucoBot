@@ -173,6 +173,11 @@ bool_t BitstampBtcUsd::cancelOrder(uint32_t entityId)
   Variant result;
   if(!request("https://www.bitstamp.net/api/cancel_order/", false, args, result))
     return false;
+  if(!result.toBool())
+  {
+    error = "Could not find or cancel order.";
+    return false;
+  }
 
   // update balance
   if(order.type == BotProtocol::Order::buy) // buy order
