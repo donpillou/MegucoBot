@@ -1360,6 +1360,8 @@ void_t ClientHandler::handleUserCreateSessionAsset(uint32_t requestId, BotProtoc
   }
 
   sessionAssetArgs.state = sessionAssetArgs.type == BotProtocol::SessionAsset::buy ? BotProtocol::SessionAsset::waitBuy : BotProtocol::SessionAsset::waitSell;
+  sessionAssetArgs.investComm = 0.;
+  sessionAssetArgs.investBase = 0.;
   sessionAssetArgs.price = 0.;
   sessionAssetArgs.profitablePrice = 0.;
   sessionAssetArgs.orderId = 0;

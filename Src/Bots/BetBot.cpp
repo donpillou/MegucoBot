@@ -592,7 +592,7 @@ void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
       }
       double buyAmountComm = 0.;
       double buyAmountBase = asset.balanceBase;
-      if(waitingForSell)
+      if(waitingForSell && asset.investComm > 0.)
       {
         buyAmountComm = asset.investComm - asset.balanceComm;
         buyAmountBase = 0.;
@@ -640,7 +640,7 @@ void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
       }
       double buyAmountComm = asset.balanceComm;
       double buyAmountBase = 0.;
-      if(waitingForBuy)
+      if(waitingForBuy && asset.investBase > 0.)
       {
         buyAmountComm = 0.;
         buyAmountBase = asset.investBase - asset.balanceBase;
