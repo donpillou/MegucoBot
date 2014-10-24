@@ -9,17 +9,14 @@
 #ifdef BOT_BETBOT
 #include "Bots/BetBot.h"
 typedef BetBot BotFactory;
-const char* botName = "BetBot";
 #endif
 #ifdef BOT_FLIPBOT
 #include "Bots/FlipBot.h"
 typedef FlipBot BotFactory;
-const char* botName = "FlipBot";
 #endif
 #ifdef BOT_TESTBOT
 #include "Bots/TestBot.h"
 typedef TestBot BotFactory;
-const char* botName = "TestBot";
 #endif
 
 bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t dataPort)
