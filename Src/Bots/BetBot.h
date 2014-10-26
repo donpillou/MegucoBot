@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Tools/Bot.h"
+#include "Tools/TradeHandler.h"
 
 class BetBot : public Bot
 {
@@ -33,11 +34,12 @@ private:
     double balanceComm;
     double availableBalanceBase;
     double availableBalanceComm;
+    TradeHandler tradeHandler;
 
     virtual ~Session() {}
 
-    void_t checkBuyIn(const DataProtocol::Trade& trade, const Values& values);
-    void_t checkSellIn(const DataProtocol::Trade& trade, const Values& values);
+    void_t checkBuyIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values);
+    void_t checkSellIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values);
 
     void_t checkAssetBuy(const DataProtocol::Trade& trade);
     void_t checkAssetSell(const DataProtocol::Trade& trade);
@@ -46,11 +48,11 @@ private:
     void_t updateAvailableBalance();
     void_t applyBalanceUpdate(double base, double comm);
 
-    double getBuyInBase(double currentPrice, const Values& values) const;
-    double getSellInComm(double currentPrice, const Values& values) const;
+    double getBuyInBase(double currentPrice, const TradeHandler::Values& values) const;
+    double getSellInComm(double currentPrice, const TradeHandler::Values& values) const;
 
   private: // Bot::Session
-    virtual void_t handleTrade(const DataProtocol::Trade& trade, const Values& values);
+    virtual void_t handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge);
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleBuyTimeout(uint32_t orderId);
@@ -62,4 +64,5 @@ private:
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
+  virtual timestamp_t getMaxTradeAge() const {return TradeHandler::getMaxTradeAge();}
 };

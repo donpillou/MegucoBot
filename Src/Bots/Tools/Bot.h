@@ -11,52 +11,6 @@
 class Bot
 {
 public:
-  enum Regressions
-  {
-    regression1m,
-    regression3m,
-    regression5m,
-    regression10m,
-    regression15m,
-    regression20m,
-    regression30m,
-    regression1h,
-    regression2h,
-    regression4h,
-    regression6h,
-    regression12h,
-    regression24h,
-    numOfRegressions,
-  };
-
-  enum BellRegressions
-  {
-    bellRegression1m,
-    bellRegression3m,
-    bellRegression5m,
-    bellRegression10m,
-    bellRegression15m,
-    bellRegression20m,
-    bellRegression30m,
-    bellRegression1h,
-    bellRegression2h,
-    numOfBellRegressions,
-  };
-
-  struct Values
-  {
-    struct RegressionLine
-    {
-      double price; // a
-      double incline; // b
-      double average;
-      double min;
-      double max;
-    };
-    RegressionLine regressions[(int)numOfRegressions];
-    RegressionLine bellRegressions[(int)numOfBellRegressions];
-  };
-
   class Broker
   {
   public:
@@ -100,7 +54,7 @@ public:
   {
   public:
     virtual ~Session() {};
-    virtual void_t handleTrade(const DataProtocol::Trade& trade, const Values& values) = 0;
+    virtual void_t handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge) = 0;
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction) = 0;
     virtual void_t handleBuyTimeout(uint32_t orderId) = 0;
@@ -112,4 +66,5 @@ public:
   
   virtual ~Bot() {}
   virtual Session* createSession(Broker& broker) = 0;
+  virtual timestamp_t getMaxTradeAge() const = 0;
 };

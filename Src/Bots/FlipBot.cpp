@@ -38,10 +38,10 @@ void_t FlipBot::Session::updateBalance()
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
 }
 
-void FlipBot::Session::handleTrade(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
 {
-  checkBuy(trade, values);
-  checkSell(trade, values);
+  checkBuy(trade);
+  checkSell(trade);
 }
 
 void FlipBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction2)
@@ -152,7 +152,7 @@ void_t FlipBot::Session::handleAssetRemoval(const BotProtocol::SessionAsset& ass
   updateBalance();
 }
 
-void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade)
 {
   if(broker.getOpenBuyOrderCount() > 0)
     return; // there is already an open buy order
@@ -184,7 +184,7 @@ void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade, const Values& 
   }
 }
 
-void FlipBot::Session::checkSell(const DataProtocol::Trade& trade, const Values& values)
+void FlipBot::Session::checkSell(const DataProtocol::Trade& trade)
 {
   if(broker.getOpenSellOrderCount() > 0)
     return; // there is already an open sell order

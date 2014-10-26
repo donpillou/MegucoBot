@@ -6,9 +6,9 @@
 #include "SimBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFee, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties) :
+SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFee, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties, timestamp_t maxTradeAge) :
   botConnection(botConnection), currencyBase(currencyBase), currencyComm(currencyComm),
-  time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0)
+  time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0), maxTradeAge(maxTradeAge)
 {
   for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
   {
@@ -34,20 +34,16 @@ SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, c
 
 void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trade& trade)
 {
-  static const timestamp_t warmupTime = 60 * 60 * 1000LL; // wait for 60 minutes of trade data to be evaluated
-
   if(startTime == 0)
     startTime = trade.time;
-  if((timestamp_t)(trade.time - startTime) <= warmupTime)
+  if((timestamp_t)(trade.time - startTime) <= maxTradeAge)
   {
-    tradeHandler.add(trade, startTime + warmupTime - trade.time);
+    botSession.handleTrade(trade, startTime + maxTradeAge - trade.time);
     return; 
   }
 
   if(trade.flags & DataProtocol::syncFlag)
     warning("sync");
-
-  tradeHandler.add(trade, 0LL);
 
   time = trade.time;
 
@@ -107,7 +103,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
     }
   }
 
-  botSession.handleTrade(trade, tradeHandler.values);
+  botSession.handleTrade(trade, 0);
 }
 
 bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)

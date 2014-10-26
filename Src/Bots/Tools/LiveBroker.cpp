@@ -39,11 +39,10 @@ void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Tra
     timestamp_t tradeAge = Time::time() - trade.time;
     if(tradeAge <= 0LL)
       tradeAge = 1LL;
-    tradeHandler.add(trade, tradeAge);
+    botSession.handleTrade(trade, tradeAge);
     return;
   }
 
-  tradeHandler.add(trade, 0LL);
   time = trade.time;
 
   for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
@@ -69,7 +68,7 @@ doneRefreshing:
 
   cancelTimedOutOrders(botSession);
 
-  botSession.handleTrade(trade, tradeHandler.values);
+  botSession.handleTrade(trade, 0);
 }
 
 void_t LiveBroker::refreshOrders(Bot::Session& botSession)

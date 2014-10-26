@@ -187,7 +187,7 @@ bool DataConnection::loadChannelList()
   return true;
 }
 
-bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTradeId)
+bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTradeId, timestamp_t maxAge)
 {
   byte_t message[sizeof(DataProtocol::Header) + sizeof(DataProtocol::SubscribeRequest)];
   DataProtocol::Header* header = (DataProtocol::Header*)message;
@@ -204,8 +204,7 @@ bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTrade
   }
   else
   {
-    subscribeRequest->maxAge = 24ULL * 60ULL * 60ULL * 1000ULL * 7ULL;
-    //subscribeRequest->maxAge = 60ULL * 60ULL * 1000ULL;
+    subscribeRequest->maxAge = maxAge;
     subscribeRequest->sinceId =  0;
   }
   if(socket.send(message, sizeof(message)) != sizeof(message))

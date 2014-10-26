@@ -68,6 +68,8 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
   }
 
   // create broker
+  BotFactory botFactory;
+  maxTradeAge = botFactory.getMaxTradeAge();
   if(handlerConnection.isSimulation())
   {
     // get market fee
@@ -79,13 +81,12 @@ bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t da
     }
 
     //
-    broker = new SimBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), marketBalance.fee, sessionBalance, sessionTransactions, sessionAssets, sessionOrders, sessionProperties);
+    broker = new SimBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), marketBalance.fee, sessionBalance, sessionTransactions, sessionAssets, sessionOrders, sessionProperties, maxTradeAge);
   }
   else
     broker = new LiveBroker(botConnection, handlerConnection.getCurrencyBase(), handlerConnection.getCurrencyComm(), sessionBalance, sessionTransactions, sessionAssets, sessionOrders, sessionProperties);
 
   // instantiate bot implementation
-  BotFactory botFactory;
   botSession = botFactory.createSession(*broker);
 
   return true;
@@ -97,7 +98,8 @@ bool_t ConnectionHandler::process()
   {
     if(!dataConnection.connect(dataIp, dataPort))
       continue;
-    if(!dataConnection.subscribe(handlerConnection.getMarketAdapterName(), lastReceivedTradeId))
+    if(!dataConnection.subscribe(handlerConnection.getMarketAdapterName(), lastReceivedTradeId,
+      handlerConnection.isSimulation() ? (6ULL * 31ULL * 24ULL * 60ULL * 60ULL * 1000ULL) : (maxTradeAge + 10 * 60 * 1000)))
       continue;
     Socket::Selector selector;
     Socket* dataSocket = &dataConnection.getSocket();

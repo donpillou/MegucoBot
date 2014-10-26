@@ -1,7 +1,7 @@
 
 #include "TestBot.h"
 
-void TestBot::Session::handleTrade(const DataProtocol::Trade& trade, const Values& values)
+void TestBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
 {
   if(updateCount++ == 0)
   {

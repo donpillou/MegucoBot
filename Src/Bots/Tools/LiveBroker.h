@@ -26,7 +26,6 @@ private:
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionAsset> assets;
   HashMap<String, BotProtocol::SessionProperty> properties;
-  TradeHandler tradeHandler;
 
 private:
   void_t refreshOrders(Bot::Session& botSession);

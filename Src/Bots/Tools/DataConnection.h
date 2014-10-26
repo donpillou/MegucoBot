@@ -31,7 +31,7 @@ public:
 
   bool_t loadChannelList();
 
-  bool_t subscribe(const String& channel, uint64_t lastReceivedTradeId);
+  bool_t subscribe(const String& channel, uint64_t lastReceivedTradeId, timestamp_t maxAge);
   bool_t unsubscribe(const String& channel);
 
   //bool readTrade(uint64_t& channelId, DataProtocol::Trade& trade);

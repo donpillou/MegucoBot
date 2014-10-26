@@ -78,10 +78,10 @@ void_t BetBot::Session::applyBalanceUpdate(double base, double comm)
   updateAvailableBalance();
 }
 
-double BetBot::Session::getBuyInBase(double currentPrice, const Values& values) const
+double BetBot::Session::getBuyInBase(double currentPrice, const TradeHandler::Values& values) const
 {
   int bottomness = 1;
-  if(currentPrice <= values.regressions[regression24h].min)
+  if(currentPrice <= values.regressions[TradeHandler::regression24h].min)
       ++bottomness;
 
   double botValueBase = balanceBase + balanceComm * currentPrice;
@@ -92,10 +92,10 @@ double BetBot::Session::getBuyInBase(double currentPrice, const Values& values) 
   return base;
 }
 
-double BetBot::Session::getSellInComm(double currentPrice, const Values& values) const
+double BetBot::Session::getSellInComm(double currentPrice, const TradeHandler::Values& values) const
 {
   int topness = 1;
-  if(currentPrice >= values.regressions[regression24h].max)
+  if(currentPrice >= values.regressions[TradeHandler::regression24h].max)
       ++topness;
 
   double botValueComm = balanceComm + balanceBase / currentPrice;
@@ -106,12 +106,16 @@ double BetBot::Session::getSellInComm(double currentPrice, const Values& values)
   return comm;
 }
 
-void BetBot::Session::handleTrade(const DataProtocol::Trade& trade, const Values& values)
+void BetBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
 {
+  tradeHandler.add(trade, tradeAge);
+  if(!tradeHandler.isComplete())
+    return;
+
   checkAssetBuy(trade);
   checkAssetSell(trade);
-  checkBuyIn(trade, values);
-  checkSellIn(trade, values);
+  checkBuyIn(trade, tradeHandler.getValues());
+  checkSellIn(trade, tradeHandler.getValues());
 }
 
 void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
@@ -427,7 +431,7 @@ void_t BetBot::Session::handleSellTimeout(uint32_t orderId)
 }
 
 #include <cmath>
-void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values& values)
+void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values)
 {
   timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
   if((timestamp_t)trade.time - lastBuyInTime < buyCooldown * 1000)
@@ -439,9 +443,9 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
     //if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
     //  return; // do not buy too often
 
-    if(trade.price > values.regressions[regression12h].min || trade.price > values.regressions[regression12h].max * (1. - broker.getProperty("Buy Min Price Shift", DEFAULT_BUY_MIN_PRICE_SHIFT)))
+    if(trade.price > values.regressions[TradeHandler::regression12h].min || trade.price > values.regressions[TradeHandler::regression12h].max * (1. - broker.getProperty("Buy Min Price Shift", DEFAULT_BUY_MIN_PRICE_SHIFT)))
       return;
-    buyInIncline = values.regressions[regression6h].incline;
+    buyInIncline = values.regressions[TradeHandler::regression6h].incline;
     buyInStartPrice = trade.price;
     maxBuyInPrice = buyInStartPrice + buyInIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
     if(!std::isnormal(maxBuyInPrice))
@@ -456,7 +460,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
   }
   else
   {
-    double newBuyIncline = values.regressions[regression6h].incline;
+    double newBuyIncline = values.regressions[TradeHandler::regression6h].incline;
     if(newBuyIncline < buyInIncline)
     {
       double newMaxBuyPrice = buyInStartPrice + newBuyIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
@@ -490,7 +494,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const Values&
   broker.addMarker(BotProtocol::Marker::goodBuy);
 }
 
-void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values& values)
+void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values)
 {
   timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
   if((timestamp_t)trade.time - lastSellInTime < sellCooldown * 1000)
@@ -502,9 +506,9 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
     //if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
     //  return; // do not sell too often
 
-    if(trade.price < values.regressions[regression12h].max || trade.price < values.regressions[regression12h].min * (1. + broker.getProperty("Sell Min Price Shift", DEFAULT_SELL_MIN_PRICE_SHIFT)))
+    if(trade.price < values.regressions[TradeHandler::regression12h].max || trade.price < values.regressions[TradeHandler::regression12h].min * (1. + broker.getProperty("Sell Min Price Shift", DEFAULT_SELL_MIN_PRICE_SHIFT)))
       return;
-    sellInIncline = values.regressions[regression6h].incline;
+    sellInIncline = values.regressions[TradeHandler::regression6h].incline;
     sellInStartPrice = trade.price;
     minSellInPrice = sellInStartPrice + sellInIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
     if(!std::isnormal(minSellInPrice))
@@ -519,7 +523,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const Values
   }
   else
   {
-    double newSellIncline = values.regressions[regression6h].incline;
+    double newSellIncline = values.regressions[TradeHandler::regression6h].incline;
     if(newSellIncline > sellInIncline)
     {
       double newMinSellPrice = sellInStartPrice + newSellIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);

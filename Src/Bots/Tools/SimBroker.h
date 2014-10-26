@@ -4,14 +4,13 @@
 #include <nstd/HashMap.h>
 
 #include "Tools/Broker.h"
-#include "Tools/TradeHandler.h"
 
 class BotConnection;
 
 class SimBroker : public Broker
 {
 public:
-  SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFree, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties);
+  SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFree, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties, timestamp_t maxTradeAge);
 
 private:
   BotConnection& botConnection;
@@ -26,8 +25,8 @@ private:
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionAsset> assets;
   HashMap<String, BotProtocol::SessionProperty> properties;
-  TradeHandler tradeHandler;
   timestamp_t startTime;
+  timestamp_t maxTradeAge;
 
 private: // Bot::Broker
   virtual const String& getCurrencyBase() const {return currencyBase;};
