@@ -330,8 +330,7 @@ bool_t Session::stop()
     // restore backup of orders, transactions, log messages, and markers
     backupTransactions.swap(transactions);
     backupAssets.swap(assets);
-    if(!backupProperties.isEmpty())
-      backupProperties.swap(properties);
+    backupProperties.swap(properties);
     backupOrders.swap(orders);
     backupMarkers.swap(markers);
     backupLogMessages.swap(logMessages);
@@ -438,6 +437,8 @@ BotProtocol::SessionProperty& Session::createProperty(const BotProtocol::Session
   uint32_t entityId = nextEntityId++;
   BotProtocol::SessionProperty& result = properties.append(entityId, property);
   result.entityId = entityId;
+  if(simulation)
+    backupProperties.append(entityId, result);
   return result;
 }
 
