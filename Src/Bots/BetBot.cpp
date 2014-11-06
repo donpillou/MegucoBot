@@ -538,7 +538,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeH
           newSellInComm = sellInComm;
         if(!broker.cancelOder(sellInOrderId))
           return;
-        buyInOrderId = 0;
+        sellInOrderId = 0;
         updateAvailableBalance();
         minSellInPrice = newMinSellPrice;
         sellInIncline = newSellIncline;
