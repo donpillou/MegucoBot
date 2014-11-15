@@ -123,9 +123,9 @@ public:
     char_t secret[65];
   };
 
-  struct ErrorResponse : public Entity
+  struct ErrorResponse : public Entity // todo: do i need this?
   {
-    uint16_t messageType;
+    uint16_t messageType; // todo: do i need this?
     char_t errorMessage[129];
   };
 
