@@ -62,8 +62,9 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
       else
         botSession.handleSellTimeout(order.entityId);
 
+      next = i; // update next since order list may have changed in bot session handler
+      ++next;
       openOrders.remove(i);
-      continue;
     }
     else if((order.type == BotProtocol::Order::buy && trade.price < order.price) ||
             ( order.type == BotProtocol::Order::sell && trade.price > order.price) )
@@ -99,6 +100,9 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
         botSession.handleSell(order.entityId, transaction);
       }
       botConnection.createSessionMarker(marker);
+
+      next = i; // update next since order list may have changed in bot session handler
+      ++next;
       openOrders.remove(i);
     }
   }

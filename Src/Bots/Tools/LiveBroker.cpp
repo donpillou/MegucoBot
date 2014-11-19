@@ -121,6 +121,9 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
         botSession.handleSell(order.entityId, transaction);
       }
       botConnection.createSessionMarker(marker);
+
+      next = i; // update next since order list may have changed in bot session handler
+      ++next;
       openOrders.remove(i);
 
       // update balance
@@ -149,6 +152,8 @@ void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
         else
           botSession.handleSellTimeout(order.entityId);
 
+        next = i; // update next since order list may have changed in bot session handler
+        ++next;
         openOrders.remove(i);
         continue;
       }
