@@ -138,7 +138,7 @@ int_t main(int_t argc, char_t* argv[])
           )
         {
           String name = File::basename(path, ".exe");
-          if(name.endsWith("Bot"))
+          if(name.endsWith("Bot") || name.endsWith("Bot2"))
             serverHandler.addBotEngine(name, binaryDir + "/" + path);
         }
     }

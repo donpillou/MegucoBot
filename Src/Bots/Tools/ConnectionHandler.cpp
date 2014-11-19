@@ -10,6 +10,10 @@
 #include "Bots/BetBot.h"
 typedef BetBot BotFactory;
 #endif
+#ifdef BOT_BETBOT2
+#include "Bots/BetBot2.h"
+typedef BetBot2 BotFactory;
+#endif
 #ifdef BOT_FLIPBOT
 #include "Bots/FlipBot.h"
 typedef FlipBot BotFactory;
