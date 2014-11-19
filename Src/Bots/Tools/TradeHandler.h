@@ -50,6 +50,8 @@ public:
       double average;
       double min;
       double max;
+      double front;
+      double back;
     };
     RegressionLine regressions[(int)numOfRegressions];
     RegressionLine bellRegressions[(int)numOfBellRegressions];
@@ -149,6 +151,8 @@ private:
         updateMinMax();
       rl.min = minPrice;
       rl.max = maxPrice;
+      rl.back = data.back().y;
+      rl.front = data.front().y;
     }
 
   private:
