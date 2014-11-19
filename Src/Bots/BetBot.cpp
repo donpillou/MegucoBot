@@ -114,8 +114,9 @@ void BetBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t 
 
   checkAssetBuy(trade);
   checkAssetSell(trade);
-  checkBuyIn(trade, tradeHandler.getValues());
-  checkSellIn(trade, tradeHandler.getValues());
+  TradeHandler::Values& values = tradeHandler.getValues();
+  checkBuyIn(trade, values);
+  checkSellIn(trade, values);
 }
 
 void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
