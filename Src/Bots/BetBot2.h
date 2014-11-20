@@ -36,7 +36,7 @@ private:
     double availableBalanceBase;
     double availableBalanceComm;
     TradeHandler tradeHandler;
-    List<ValueSample> ranges;
+    //List<ValueSample> ranges;
     List<ValueSample> inclines;
 
     enum State

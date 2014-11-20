@@ -8,8 +8,9 @@
 #define DEFAULT_BUYIN_TIMEOUT (12 * 60 * 60)
 #define DEFAULT_BUYIN_PRICE_DROP 1.
 #define DEFAULT_BUYIN_PRICE_RISE 1.
-#define DEFAULT_BUYIN_PRICE_SCALE 100.
-#define DEFAULT_BUYIN_PRICE_AGE (12 * 60 * 60)
+//#define DEFAULT_BUYIN_PRICE_SCALE 100.
+//#define DEFAULT_BUYIN_PRICE_AGE (12 * 60 * 60)
+#define DEFAULT_BUYIN_PREDICT_TIME (2 * 60 * 60)
 #define DEFAULT_BUYIN_MIN_AMOUNT 7.
 #define DEFAULT_SELL_COOLDOWN (60 * 60)
 #define DEFAULT_SELL_TIMEOUT (30 * 60)
@@ -23,10 +24,11 @@ BetBot2::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sel
 
   broker.registerProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Timeout", DEFAULT_BUYIN_TIMEOUT, BotProtocol::SessionProperty::none, "s");
-  broker.registerProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE, BotProtocol::SessionProperty::none, "s");
+  //broker.registerProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Price Drop", DEFAULT_BUYIN_PRICE_DROP, BotProtocol::SessionProperty::none, "%");
   broker.registerProperty("BuyIn Price Rise", DEFAULT_BUYIN_PRICE_RISE, BotProtocol::SessionProperty::none, "%");
-  broker.registerProperty("BuyIn Price Scale", DEFAULT_BUYIN_PRICE_SCALE, BotProtocol::SessionProperty::none, "%");
+  //broker.registerProperty("BuyIn Price Scale", DEFAULT_BUYIN_PRICE_SCALE, BotProtocol::SessionProperty::none, "%");
+  broker.registerProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
   broker.registerProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT, BotProtocol::SessionProperty::none, "s");
@@ -118,12 +120,14 @@ void BetBot2::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t
     return;
 
   TradeHandler::Values& values = tradeHandler.getValues();
+  /*
   ValueSample& range = ranges.append(ValueSample());
   range.time = trade.time;
   range.value = values.regressions[TradeHandler::regression12h].max - values.regressions[TradeHandler::regression12h].min;
   //while(trade.time - ranges.front().time > 12 * 60 * 60 * 1000)
   while(trade.time - ranges.front().time > 20 * 60 * 1000)
     ranges.removeFront();
+    */
 
   ValueSample& incline = inclines.append(ValueSample());
   incline.time = trade.time;
@@ -460,11 +464,11 @@ void_t BetBot2::Session::handleSellTimeout(uint32_t orderId)
 void BetBot2::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values)
 {
   double buyInPriceDrop = broker.getProperty("BuyIn Price Drop", DEFAULT_BUYIN_PRICE_DROP) * 0.01;
-  timestamp_t buyInPriceAge =  (timestamp_t)broker.getProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE) * 1000;
+  //timestamp_t buyInPriceAge =  (timestamp_t)broker.getProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE) * 1000;
   double range = (values.regressions[TradeHandler::regression12h].max - values.regressions[TradeHandler::regression12h].min);
   double incline = values.regressions[TradeHandler::regression12h].incline;
-  double newBuyInPrice = values.regressions[TradeHandler::regression12h].max / (1. + buyInPriceDrop) - range;
-  newBuyInPrice -= (range - ranges.front().value);
+  timestamp_t buyInPredictTime = (timestamp_t)broker.getProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME);
+  double newBuyInPrice = trade.price + incline * buyInPredictTime;
 
   timestamp_t buyInCooldown = (timestamp_t)broker.getProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN) * 1000;
   if((timestamp_t)trade.time - lastBuyInTime < buyInCooldown)
@@ -489,10 +493,6 @@ void BetBot2::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeH
       if(/*range < ranges.front().price*/
          incline > inclines.front().value)
       {
-        //double buyInPrice = values.regressions[TradeHandler::regression12h].max / (1. + buyInPriceDrop);
-        double buyInPriceScale = broker.getProperty("BuyIn Price Scale", DEFAULT_BUYIN_PRICE_SCALE) * 0.01;
-        buyInPrice = (buyInPrice - values.regressions[TradeHandler::regression12h].min) * buyInPriceScale + values.regressions[TradeHandler::regression12h].min;
-
         double buyInBase = getBuyInBase(trade.price, values);
         if(buyInBase == 0.)
           return;
@@ -523,11 +523,11 @@ void BetBot2::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeH
 void BetBot2::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values)
 {
   double buyInPriceRise = broker.getProperty("BuyIn Price Rise", DEFAULT_BUYIN_PRICE_RISE) * 0.01;
-  timestamp_t buyInPriceAge =  (timestamp_t)broker.getProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE) * 1000;
+  //timestamp_t buyInPriceAge =  (timestamp_t)broker.getProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE) * 1000;
   double range = (values.regressions[TradeHandler::regression12h].max - values.regressions[TradeHandler::regression12h].min);
   double incline = values.regressions[TradeHandler::regression12h].incline;
-  double newSellInPrice = values.regressions[TradeHandler::regression12h].min * (1. + buyInPriceRise) + range;
-  newSellInPrice += (range - ranges.front().value);
+  timestamp_t buyInPredictTime = (timestamp_t)broker.getProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME);
+  double newSellInPrice = trade.price + incline * buyInPredictTime;
 
   timestamp_t buyInCooldown = (timestamp_t)broker.getProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN) * 1000;
   if((timestamp_t)trade.time - lastSellInTime < buyInCooldown)
@@ -552,10 +552,6 @@ void BetBot2::Session::checkSellIn(const DataProtocol::Trade& trade, const Trade
       if(/*range < ranges.front().price*/
         incline < inclines.front().value)
       {
-        //double sellInPrice = values.regressions[TradeHandler::regression12h].min * (1. + buyInPriceRise);
-        double buyInPriceScale = broker.getProperty("BuyIn Price Scale", DEFAULT_BUYIN_PRICE_SCALE) * 0.01;
-        sellInPrice = (sellInPrice - values.regressions[TradeHandler::regression12h].max) * buyInPriceScale + values.regressions[TradeHandler::regression12h].max;
-
         double sellInComm = getSellInComm(trade.price, values);
         if(sellInComm == 0.)
           return;
