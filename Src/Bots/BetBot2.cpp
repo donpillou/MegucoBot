@@ -218,6 +218,8 @@ void BetBot2::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
         {
           BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
 
+          gainBase *= 0.5;
+
           String message;
           message.printf("Updated asset:  %.02f %s @ %.02f => %.08f %s + %.02f %s => %.08f %s + %.02f %s (Balance: %+.02f %s)",
             lowestSellAsset.investBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
@@ -351,6 +353,8 @@ void BetBot2::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
         if(!sortedBuyAssets.isEmpty())
         {
           BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
+
+          gainComm *= 0.5;
 
           String message;
           message.printf("Updated asset:  %.08f %s @ %.02f => %.02f %s + %.08f %s => %.02f %s + %.08f %s (Balance: %+.08f %s)",
