@@ -5,18 +5,16 @@
 #include "BetBot2.h"
 
 #define DEFAULT_BUYIN_COOLDOWN (60 * 60)
-#define DEFAULT_BUYIN_TIMEOUT (12 * 60 * 60)
-#define DEFAULT_BUYIN_PRICE_DROP 1.
-#define DEFAULT_BUYIN_PRICE_RISE 1.
-//#define DEFAULT_BUYIN_PRICE_SCALE 100.
-//#define DEFAULT_BUYIN_PRICE_AGE (12 * 60 * 60)
-#define DEFAULT_BUYIN_PREDICT_TIME (2 * 60 * 60)
+#define DEFAULT_BUYIN_TIMEOUT (6 * 60 * 60)
+#define DEFAULT_BUYIN_PRICE_DROP 5.
+#define DEFAULT_BUYIN_PRICE_RISE 5.
+#define DEFAULT_BUYIN_PREDICT_TIME (60 * 60)
 #define DEFAULT_BUYIN_MIN_AMOUNT 7.
-#define DEFAULT_BUYIN_BALANCE_DIVIDER 10.
+#define DEFAULT_BUYIN_BALANCE_DIVIDER 5.
 #define DEFAULT_SELL_COOLDOWN (60 * 60)
-#define DEFAULT_SELL_TIMEOUT (30 * 60)
-#define DEFAULT_SELL_PRICE_DROP 5.
-#define DEFAULT_SELL_PRICE_RISE 5.
+#define DEFAULT_SELL_TIMEOUT (60 * 60)
+#define DEFAULT_SELL_PRICE_DROP 6.
+#define DEFAULT_SELL_PRICE_RISE 6.
 
 BetBot2::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sellInOrderId(0), lastBuyInTime(0), lastSellInTime(0), lastAssetBuyTime(0), lastAssetSellTime(0)
 {
@@ -25,10 +23,8 @@ BetBot2::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sel
 
   broker.registerProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Timeout", DEFAULT_BUYIN_TIMEOUT, BotProtocol::SessionProperty::none, "s");
-  //broker.registerProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Price Drop", DEFAULT_BUYIN_PRICE_DROP, BotProtocol::SessionProperty::none, "%");
   broker.registerProperty("BuyIn Price Rise", DEFAULT_BUYIN_PRICE_RISE, BotProtocol::SessionProperty::none, "%");
-  //broker.registerProperty("BuyIn Price Scale", DEFAULT_BUYIN_PRICE_SCALE, BotProtocol::SessionProperty::none, "%");
   broker.registerProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
   broker.registerProperty("BuyIn Balance Divider", DEFAULT_BUYIN_BALANCE_DIVIDER, BotProtocol::SessionProperty::none);
