@@ -90,8 +90,13 @@ double BetBot2::Session::getBuyInBase(double currentPrice, const TradeHandler::V
   double botValueBase = balanceBase + balanceComm * currentPrice;
   double maxBase = botValueBase / broker.getProperty("BuyIn Balance Divider", DEFAULT_BUYIN_BALANCE_DIVIDER);
   double base = Math::min(availableBalanceBase / 2., maxBase) * 0.5 * bottomness;
-  if(base < broker.getProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT))
+  double minBuyInAmount = broker.getProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT);
+  if(base < minBuyInAmount)
+  {
+    if(availableBalanceBase >= minBuyInAmount)
+      return minBuyInAmount;
     return 0;
+  }
   return base;
 }
 
@@ -104,8 +109,13 @@ double BetBot2::Session::getSellInComm(double currentPrice, const TradeHandler::
   double botValueComm = balanceComm + balanceBase / currentPrice;
   double maxComm = botValueComm / broker.getProperty("BuyIn Balance Divider", DEFAULT_BUYIN_BALANCE_DIVIDER);
   double comm = Math::min(availableBalanceComm / 2., maxComm) * 0.5 * topness;
-  if(comm * currentPrice < broker.getProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT))
+  double minBuyInAmount = broker.getProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT);
+  if(comm * currentPrice < minBuyInAmount)
+  {
+    if(availableBalanceComm * currentPrice >= minBuyInAmount)
+      return minBuyInAmount / currentPrice;
     return 0;
+  }
   return comm;
 }
 
