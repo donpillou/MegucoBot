@@ -12,6 +12,7 @@
 //#define DEFAULT_BUYIN_PRICE_AGE (12 * 60 * 60)
 #define DEFAULT_BUYIN_PREDICT_TIME (2 * 60 * 60)
 #define DEFAULT_BUYIN_MIN_AMOUNT 7.
+#define DEFAULT_BUYIN_BALANCE_DIVIDER 10.
 #define DEFAULT_SELL_COOLDOWN (60 * 60)
 #define DEFAULT_SELL_TIMEOUT (30 * 60)
 #define DEFAULT_SELL_PRICE_DROP 5.
@@ -30,6 +31,7 @@ BetBot2::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sel
   //broker.registerProperty("BuyIn Price Scale", DEFAULT_BUYIN_PRICE_SCALE, BotProtocol::SessionProperty::none, "%");
   broker.registerProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
+  broker.registerProperty("BuyIn Balance Divider", DEFAULT_BUYIN_BALANCE_DIVIDER, BotProtocol::SessionProperty::none);
   broker.registerProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT, BotProtocol::SessionProperty::none, "s");
   broker.registerProperty("Sell Price Drop", DEFAULT_SELL_PRICE_DROP, BotProtocol::SessionProperty::none, "%");
@@ -90,8 +92,7 @@ double BetBot2::Session::getBuyInBase(double currentPrice, const TradeHandler::V
       ++bottomness;
 
   double botValueBase = balanceBase + balanceComm * currentPrice;
-  double maxBase = botValueBase / 10.;
-  //double maxBase = botValueBase / 3.;
+  double maxBase = botValueBase / broker.getProperty("BuyIn Balance Divider", DEFAULT_BUYIN_BALANCE_DIVIDER);
   double base = Math::min(availableBalanceBase / 2., maxBase) * 0.5 * bottomness;
   if(base < broker.getProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT))
     return 0;
@@ -105,8 +106,7 @@ double BetBot2::Session::getSellInComm(double currentPrice, const TradeHandler::
       ++topness;
 
   double botValueComm = balanceComm + balanceBase / currentPrice;
-  double maxComm = botValueComm / 10.;
-  //double maxComm = botValueComm / 3.;
+  double maxComm = botValueComm / broker.getProperty("BuyIn Balance Divider", DEFAULT_BUYIN_BALANCE_DIVIDER);
   double comm = Math::min(availableBalanceComm / 2., maxComm) * 0.5 * topness;
   if(comm * currentPrice < broker.getProperty("BuyIn Min Amount", DEFAULT_BUYIN_MIN_AMOUNT))
     return 0;
@@ -216,7 +216,7 @@ void BetBot2::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
 
         if(!sortedSellAssets.isEmpty())
         {
-          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
+          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.back();
 
           gainBase *= 0.5;
 
@@ -236,13 +236,15 @@ void BetBot2::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee) - lowestSellAsset.balanceBase) * (1. + fee);
           // approx:
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
-          lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+          double newProfitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+          lowestSellAsset.flipPrice += (newProfitablePrice - lowestSellAsset.profitablePrice);
+          lowestSellAsset.profitablePrice = newProfitablePrice;
 
           broker.updateAsset(lowestSellAsset);
         }
         if(!sortedBuyAssets.isEmpty())
         {
-          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
+          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.front();
 
           gainComm *= 0.5;
 
@@ -263,7 +265,9 @@ void BetBot2::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
           // approx:
           // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee);
           // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
-          highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+          double newProfitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+          highestBuyAsset.flipPrice += (newProfitablePrice - highestBuyAsset.profitablePrice);
+          highestBuyAsset.profitablePrice = newProfitablePrice;
 
           broker.updateAsset(highestBuyAsset);
         }
@@ -352,7 +356,7 @@ void BetBot2::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
 
         if(!sortedBuyAssets.isEmpty())
         {
-          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
+          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.front();
 
           gainComm *= 0.5;
 
@@ -373,13 +377,15 @@ void BetBot2::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
           // approx:
           // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee);
           // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
-          highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+          double newProfitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+          highestBuyAsset.flipPrice += (newProfitablePrice - highestBuyAsset.profitablePrice);
+          highestBuyAsset.profitablePrice = newProfitablePrice;
 
           broker.updateAsset(highestBuyAsset);
         }
         if(!sortedSellAssets.isEmpty())
         {
-          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
+          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.back();
 
           gainBase *= 0.5;
 
@@ -399,7 +405,9 @@ void BetBot2::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee) - lowestSellAsset.balanceBase) * (1. + fee);
           // approx:
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
-          lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+          double newProfitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+          lowestSellAsset.flipPrice += (newProfitablePrice - lowestSellAsset.profitablePrice);
+          lowestSellAsset.profitablePrice = newProfitablePrice;
 
           broker.updateAsset(lowestSellAsset);
         }
