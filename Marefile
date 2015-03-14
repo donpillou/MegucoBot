@@ -13,6 +13,8 @@ if configuration == "Debug" {
   defines += { "NDEBUG" }
 }
 
+buildDir = "Build/$(configuration)/$(target)"
+
 targets = {
 
   MegucoBot = cppApplication + {
@@ -45,7 +47,7 @@ targets = {
     dependencies = { "libnstd" }
     defines += { "BOT_$(upper $(target))" }
     buildDir = "Build/$(configuration)/Bots/$(target)"
-    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    outputDir = "Build/$(configuration)/"
     includePaths = {
       "Ext/libnstd/include"
       "Src",
@@ -120,17 +122,23 @@ targets = {
     }
   }
 
-  libnstd = cppStaticLibrary + {
+  include "Ext/libnstd/libnstd.mare"
+  libnstd += {
     folder = "Libraries"
-    includePaths = { "Ext/libnstd/include" }
-    buildDir = "Build/$(configuration)/$(target)"
-    root = { "Ext/libnstd/src", "Ext/libnstd/include/nstd" }
+  }
+
+  include "Ext/libzlimdbclient/libzlimdbclient.mare"
+  libzlimdbclient += {
+    folder = "Libraries"
+  }
+
+  liblz4 = cppStaticLibrary + {
+    folder = "Libraries"
+    includePaths = { "Ext/lz4" }
+    root = { "Ext/lz4" }
     files = {
-      "Ext/libnstd/src/*.cpp" = cppSource,
-      "Ext/libnstd/include/nstd/*.h"
-    }
-    if tool == "vcxproj" {
-      defines += { "_CRT_SECURE_NO_WARNINGS" }
+      "Ext/lz4/lz4.c" = cSource,
+      "Ext/lz4/lz4.h"
     }
   }
 

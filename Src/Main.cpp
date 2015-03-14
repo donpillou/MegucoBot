@@ -1,108 +1,60 @@
 
-#ifndef _WIN32
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <cstring>
-#endif
-
 #include <nstd/Console.h>
 #include <nstd/Debug.h>
 #include <nstd/Directory.h>
 #include <nstd/File.h>
 #include <nstd/Error.h>
+#include <nstd/Process.h>
 
 #include "Tools/Server.h"
 #include "ServerHandler.h"
 
 int_t main(int_t argc, char_t* argv[])
 {
-  static const uint16_t port = 40124;
-  bool background = true;
-  String dataDir("Data");
-#ifdef _DEBUG
-  String defaultBinaryDir("Build/Debug");
-#else
-  String defaultBinaryDir("Build/Release");
-#endif
-  String binaryDir = defaultBinaryDir;
+  String logFile;
 
   // parse parameters
-  for(int i = 1; i < argc; ++i)
-    if(String::compare(argv[i], "-f") == 0)
-      background = false;
-    else if(String::compare(argv[i], "-c") == 0&& i + 1 < argc)
-    {
-      ++i;
-      dataDir = String(argv[i], String::length(argv[i]));
-    }
-    else if(String::compare(argv[i], "-b") == 0&& i + 1 < argc)
-    {
-      ++i;
-      binaryDir = String(argv[i], String::length(argv[i]));
-    }
-    else
-    {
-      Console::errorf("Usage: %s [-f] [-c <dir>] [-b <dir>]\n\
-  -f            run in foreground (not as daemon)\n\
-  -c <dir>      set data directory (default is ./Data)\n\
-  -b <dir>      set binary directory (default is ./%s)\n", argv[0], (const char_t*)defaultBinaryDir);
-      return -1;
-    }
-
-  // change working directory
-  if(!Directory::exists(dataDir) && !Directory::create(dataDir))
   {
-    Console::errorf("error: Could not create data directory: %s\n", (const tchar_t*)Error::getErrorString());
-    return -1;
+    Process::Option options[] = {
+        {'b', "daemon", Process::argumentFlag | Process::optionalFlag},
+        {'h', "help", Process::optionFlag},
+    };
+    Process::Arguments arguments(argc, argv, options);
+    int_t character;
+    String argument;
+    while(arguments.read(character, argument))
+      switch(character)
+      {
+      case 'b':
+        logFile = argument.isEmpty() ? String("MegucoBot.log") : argument;
+        break;
+      case '?':
+        Console::errorf("Unknown option: %s.\n", (const char_t*)argument);
+        return -1;
+      case ':':
+        Console::errorf("Option %s required an argument.\n", (const char_t*)argument);
+        return -1;
+      default:
+        Console::errorf("Usage: %s [-b]\n\
+  -b, --daemon[=<file>]   Detach from calling shell and write output to <file>.\n", argv[0]);
+        return -1;
+      }
   }
-  if(!File::isAbsolutePath(binaryDir))
-    binaryDir = Directory::getCurrent() + "/" + binaryDir;
-  if(!dataDir.isEmpty() && !Directory::change(dataDir))
-  {
-    Console::errorf("error: Could not enter data directory: %s\n", (const tchar_t*)Error::getErrorString());
-    return -1;
-  }
-  binaryDir = File::getRelativePath(Directory::getCurrent(), binaryDir);
 
-#ifndef _WIN32
   // daemonize process
-  if(background)
+#ifndef _WIN32
+  if(!logFile.isEmpty())
   {
-    const char* logFile = "MegucoBot.log";
-
     Console::printf("Starting as daemon...\n");
-
-    int fd = open(logFile, O_CREAT | O_WRONLY | O_CLOEXEC, S_IRUSR | S_IWUSR);
-    if(fd == -1)
+    if(!Process::daemonize(logFile))
     {
-      Console::errorf("error: Could not open file %s: %s\n", logFile, strerror(errno));
+      Console::errorf("error: Could not daemonize process: %s\n", (const char_t*)Error::getErrorString());
       return -1;
     }
-    if(dup2(fd, STDOUT_FILENO) == -1)
-    {
-      Console::errorf("error: Could not reopen stdout: %s\n", strerror(errno));
-      return 0;
-    }
-    if(dup2(fd, STDERR_FILENO) == -1)
-    {
-      Console::errorf("error: Could not reopen stderr: %s\n", strerror(errno));
-      return 0;
-    }
-    close(fd);
-
-    pid_t childPid = fork();
-    if(childPid == -1)
-      return -1;
-    if(childPid != 0)
-      return 0;
   }
 #endif
 
-  Console::printf("Starting bot server...\n", port);
-
+#if 0
   // initialize listen server
   Server server;
   ServerHandler serverHandler(port);
@@ -162,6 +114,7 @@ int_t main(int_t argc, char_t* argv[])
     Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getLastErrorString());
     return -1;
   }
+#endif
   return 0;
 }
 
