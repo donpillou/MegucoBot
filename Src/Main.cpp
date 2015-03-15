@@ -4,6 +4,7 @@
 #include <nstd/File.h>
 #include <nstd/Thread.h>
 #include <nstd/Process.h>
+#include <nstd/Error.h>
 
 #include "ConnectionHandler.h"
 

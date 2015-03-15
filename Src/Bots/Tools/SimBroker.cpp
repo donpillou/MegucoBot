@@ -217,7 +217,7 @@ const BotProtocol::Order* SimBroker::getOrder(uint32_t id) const
   return &*it;
 }
 
-uint_t SimBroker::getOpenBuyOrderCount() const
+size_t SimBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
   for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
@@ -229,7 +229,7 @@ uint_t SimBroker::getOpenBuyOrderCount() const
   return openBuyOrders;
 }
 
-uint_t SimBroker::getOpenSellOrderCount() const
+size_t SimBroker::getOpenSellOrderCount() const
 {
   size_t openSellOrders = 0;
   for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)

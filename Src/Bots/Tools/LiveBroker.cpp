@@ -286,7 +286,7 @@ const BotProtocol::Order* LiveBroker::getOrder(uint32_t id) const
   return &*it;
 }
 
-uint_t LiveBroker::getOpenBuyOrderCount() const
+size_t LiveBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
   for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
@@ -298,7 +298,7 @@ uint_t LiveBroker::getOpenBuyOrderCount() const
   return openBuyOrders;
 }
 
-uint_t LiveBroker::getOpenSellOrderCount() const
+size_t LiveBroker::getOpenSellOrderCount() const
 {
   size_t openSellOrders = 0;
   for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
