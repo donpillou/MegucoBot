@@ -18,11 +18,19 @@ buildDir = "Build/$(configuration)/$(target)"
 targets = {
 
   MegucoBot = cppApplication + {
-    dependencies = { "libnstd" } + bots + markets
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + markets
     buildDir = "Build/$(configuration)"
-    includePaths = { "Ext/libnstd/include" }
-    libPaths = { "Build/$(configuration)/libnstd" }
-    libs = { "nstd" }
+    includePaths = {
+      "Ext/libnstd/include"
+      "Ext/libzlimdbclient/include"
+      "Ext/libmegucoprotocol/include"
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/libzlimdbclient"
+      "Build/$(configuration)/liblz4"
+    }
+    libs = { "nstd", "zlimdbclient", "lz4" }
     root = "Src"
     files = {
       "Src/**.cpp" = cppSource
@@ -44,25 +52,31 @@ targets = {
   
   "$(bots)" = cppApplication + {
     folder = "Bots"
-    dependencies = { "libnstd" }
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "BOT_$(upper $(target))" }
     buildDir = "Build/$(configuration)/Bots/$(target)"
     outputDir = "Build/$(configuration)/"
     includePaths = {
-      "Ext/libnstd/include"
       "Src",
       "Src/Bots",
+      "Ext/libnstd/include"
+      "Ext/libzlimdbclient/include"
+      "Ext/libmegucoprotocol/include"
     }
     libPaths = {
       "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/libzlimdbclient"
+      "Build/$(configuration)/liblz4"
     }
-    libs = { "nstd" }
+    libs = { "nstd", "zlimdbclient", "lz4" }
     root = { "Src/Bots", "Src" }
     files = {
       "Src/Bots/$(target).cpp" = cppSource
       "Src/Bots/$(target).h"
       "Src/Tools/Socket.cpp" = cppSource
       "Src/Tools/Socket.h"
+      "Src/Tools/ZlimdbConnection.cpp" = cppSource
+      "Src/Tools/ZlimdbConnection.h"
       "Src/BotProtocol.h"
       "Src/Bots/Tools/**.cpp" = cppSource
       "Src/Bots/Tools/**.h"
@@ -79,19 +93,23 @@ targets = {
 
   "$(markets)" = cppApplication + {
     folder = "Markets"
-    dependencies = { "libnstd" }
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "MARKET_$(upper $(target))" }
     buildDir = "Build/$(configuration)/Markets/$(target)"
     output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
     includePaths = {
-      "Ext/libnstd/include"
       "Src",
       "Src/Markets",
+      "Ext/libnstd/include"
+      "Ext/libzlimdbclient/include"
+      "Ext/libmegucoprotocol/include"
     }
     libPaths = {
       "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/libzlimdbclient"
+      "Build/$(configuration)/liblz4"
     }
-    libs = { "nstd", "curl" }
+    libs = { "nstd", "zlimdbclient", "lz4", "curl" }
     root = { "Src/Markets", "Src" }
     files = {
       "Src/Markets/$(target).cpp" = cppSource

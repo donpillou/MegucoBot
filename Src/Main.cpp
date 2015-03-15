@@ -1,17 +1,16 @@
 
 #include <nstd/Console.h>
-#include <nstd/Debug.h>
 #include <nstd/Directory.h>
 #include <nstd/File.h>
-#include <nstd/Error.h>
+#include <nstd/Thread.h>
 #include <nstd/Process.h>
 
-#include "Tools/Server.h"
-#include "ServerHandler.h"
+#include "ConnectionHandler.h"
 
 int_t main(int_t argc, char_t* argv[])
 {
   String logFile;
+  String binaryDir = File::dirname(String(argv[0], String::length(argv[0])));
 
   // parse parameters
   {
@@ -54,67 +53,34 @@ int_t main(int_t argc, char_t* argv[])
   }
 #endif
 
-#if 0
-  // initialize listen server
-  Server server;
-  ServerHandler serverHandler(port);
-  server.setListener(&serverHandler);
+  // initialize connection handler
+  ConnectionHandler connectionHandler;
 
   // load market list
-#ifdef _WIN32
-  serverHandler.addMarketAdapter("Bitstamp BTC/USD", binaryDir + "/BitstampBtcUsd.exe", "USD", "BTC");
-#else
-  serverHandler.addMarketAdapter("Bitstamp BTC/USD", binaryDir + "/BitstampBtcUsd", "USD", "BTC");
-#endif
+  connectionHandler.addMarketAdapter("Bitstamp/BTC/USD", binaryDir + "/BitstampBtcUsd");
 
-  // load bot engine list
+  // load bots
+  connectionHandler.addBotEngine("BetBot", binaryDir + "/BetBot");
+  connectionHandler.addBotEngine("BetBot2", binaryDir + "/BetBot2");
+  connectionHandler.addBotEngine("FlipBot", binaryDir + "/FlipBot");
+  connectionHandler.addBotEngine("TestBot", binaryDir + "/TestBot");
+
+  // main loop
+  for(;; Thread::sleep(10 * 1000))
   {
-    Directory dir;
-#ifdef _WIN32
-    String pattern("*.exe");
-#else
-    String pattern;
-#endif
-    String cd = Directory::getCurrent();
-    if(dir.open(binaryDir, pattern, false))
+    // connect to zlimdb server
+    if(!connectionHandler.connect())
     {
-      String path;
-      bool_t isDir;
-      while(dir.read(path, isDir))
-        if(!isDir && path != 
-#ifdef _WIN32
-          "MegucoBot.exe"
-#else
-          "MegucoBot"
-#endif
-          )
-        {
-          String name = File::basename(path, ".exe");
-          if(name.endsWith("Bot") || name.endsWith("Bot2"))
-            serverHandler.addBotEngine(name, binaryDir + "/" + path);
-        }
+        Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)connectionHandler.getErrorString());
+        return -1;
     }
+    Console::printf("Connected to zlimdb server.\n");
+
+    // run connection handler loop
+    connectionHandler.process();
+
+    Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)connectionHandler.getErrorString());
   }
-
-  // start listen server
-  if(!server.listen(port))
-  {
-    Console::errorf("error: Could not listen on port %hu: %s\n", port, (const char_t*)Socket::getLastErrorString());
-    return -1;
-  }
-
-  // load users
-  //serverHandler.addUser("donpillou", "1234");
-  serverHandler.loadData();
-
-  Console::printf("Listening on port %hu.\n", port);
-
-  if(!server.process())
-  {
-    Console::errorf("error: Could not run select loop: %s\n", (const char_t*)Socket::getLastErrorString());
-    return -1;
-  }
-#endif
   return 0;
 }
 
