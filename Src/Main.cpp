@@ -58,7 +58,7 @@ int_t main(int_t argc, char_t* argv[])
   ConnectionHandler connectionHandler;
 
   // load market list
-  connectionHandler.addMarketAdapter("Bitstamp/BTC/USD", binaryDir + "/BitstampBtcUsd");
+  connectionHandler.addBotMarket("Bitstamp/BTC/USD", binaryDir + "/BitstampBtcUsd");
 
   // load bots
   connectionHandler.addBotEngine("BetBot", binaryDir + "/BetBot");

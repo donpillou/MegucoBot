@@ -20,17 +20,14 @@ public:
   }
 } zlimdbFramework;
 
-bool_t ZlimdbConnection::connect()
+bool_t ZlimdbConnection::connect(Callback& callback)
 {
   close();
 
   // connect to server
   zdb = zlimdb_create(0, 0);
   if(!zdb)
-  {
-    error = getZlimdbError();
-    return false;
-  }
+    return error = getZlimdbError(), false;
   if(zlimdb_connect(zdb, 0, 0, "root", "root") != 0)
   {
     error = getZlimdbError();
@@ -38,7 +35,7 @@ bool_t ZlimdbConnection::connect()
     zdb = 0;
     return false;
   }
-
+  this->callback = &callback;
   return true;
 }
 
@@ -54,6 +51,56 @@ void_t ZlimdbConnection::close()
 bool_t ZlimdbConnection::isOpen() const
 {
   return zlimdb_is_connected(zdb) == 0;
+}
+
+int ZlimdbConnection::getErrno()
+{
+  return zlimdb_errno();
+}
+
+bool_t ZlimdbConnection::subscribe(uint32_t tableId)
+{
+  if(zlimdb_subscribe(zdb, tableId, zlimdb_query_type_all, 0) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::query(uint32_t tableId)
+{
+  if(zlimdb_query(zdb, tableId, zlimdb_query_type_all, 0) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::getResponse(Buffer& buffer)
+{
+  buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
+  uint32_t size = ZLIMDB_MAX_MESSAGE_SIZE;
+  if(zlimdb_get_response(zdb, buffer, &size) != 0)
+    return error = getZlimdbError(), false;
+  buffer.resize(size);
+  return true;
+}
+
+bool_t ZlimdbConnection::createTable(const String& name, uint32_t& tableId)
+{
+  if(zlimdb_add_table(zdb, name, &tableId) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id)
+{
+  if(zlimdb_add(zdb, tableId, &entity, &id) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::remove(uint32_t tableId, uint64_t entityId)
+{
+  if(zlimdb_remove(zdb, tableId, entityId) != 0)
+    return error = getZlimdbError(), false;
+  return true;
 }
 
 bool_t ZlimdbConnection::process()
