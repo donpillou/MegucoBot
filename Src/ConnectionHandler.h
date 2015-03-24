@@ -8,11 +8,13 @@
 
 class User2;
 
-class ConnectionHandler : public ZlimdbConnection::Callback
+class ConnectionHandler : public ZlimdbConnection::Callback, public ProcessManager::Callback
 {
 public:
   ConnectionHandler() {}
   ~ConnectionHandler();
+
+  bool_t init();
 
   const String& getErrorString() const {return error;}
 
@@ -43,10 +45,6 @@ private:
   HashMap<String, BotEngine> botEnginesByName;
   HashMap<uint64_t, BotMarket*> botMarkets;
   HashMap<uint64_t, BotEngine*> botEngines;
-  //uint32_t botMarketsTableId;
-  //uint32_t botEnginesTableId;
-  //HashMap<uint64_t, String> userMarkets;
-  //HashMap<uint64_t, String> userSessions;
   HashMap<String, User2*> users;
 
 private:
@@ -57,4 +55,7 @@ private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);
   virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity);
   virtual void_t removedEntity(uint32_t tableId, const zlimdb_entity& entity);
+
+private: // ProcessManager::Callback
+  virtual void_t processTerminated(uint32_t pid);
 };

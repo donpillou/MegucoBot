@@ -5,7 +5,9 @@
 
 bool_t Market2::startProcess()
 {
-  if(!processManager.startProcess(executable))
+  if(id)
+    return false;
+  if(!processManager.startProcess(executable, id))
     return false;
   return true;
 }

@@ -35,6 +35,7 @@ public:
   bool_t remove(uint32_t tableId, uint64_t entityId);
 
   bool_t process();
+  void_t interrupt();
 
 private:
   String error;

@@ -119,6 +119,11 @@ bool_t ZlimdbConnection::process()
     }
 }
 
+void_t ZlimdbConnection::interrupt()
+{
+  zlimdb_interrupt(zdb);
+}
+
 String ZlimdbConnection::getZlimdbError()
 {
   int err = zlimdb_errno();

@@ -66,6 +66,13 @@ int_t main(int_t argc, char_t* argv[])
   connectionHandler.addBotEngine("FlipBot", binaryDir + "/FlipBot");
   connectionHandler.addBotEngine("TestBot", binaryDir + "/TestBot");
 
+  // initialize process manager
+  if(!connectionHandler.init())
+  {
+    Console::errorf("error: Could not initialize process: %s\n", (const char_t*)connectionHandler.getErrorString());
+    return -1;
+  }
+
   // main loop
   for(;; Thread::sleep(10 * 1000))
   {

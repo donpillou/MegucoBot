@@ -1,4 +1,6 @@
 
+#include <nstd/Error.h>
+
 #include "Tools/ZlimdbProtocol.h"
 
 #include "ConnectionHandler.h"
@@ -9,10 +11,13 @@ ConnectionHandler::~ConnectionHandler()
 {
   for(HashMap<String, User2*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
     delete *i;
-  //for(HashMap<String, BotMarket*>::Iterator i = botMarketsByName.begin(), end = botMarketsByName.end(); i != end; ++i)
-  //  delete *i;
-  //for(HashMap<String, BotEngine*>::Iterator i = botEnginesByName.begin(), end = botEnginesByName.end(); i != end; ++i)
-  //  delete *i;
+}
+
+bool_t ConnectionHandler::init()
+{
+  if(!processManager.start(*this))
+    return error = Error::getErrorString(), false;
+  return true;
 }
 
 void_t ConnectionHandler::addBotMarket(const String& name, const String& executable)
@@ -258,4 +263,9 @@ void_t ConnectionHandler::updatedEntity(uint32_t tableId, const zlimdb_entity& e
 
 void_t ConnectionHandler::removedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
+}
+
+void_t ConnectionHandler::processTerminated(uint32_t pid)
+{
+  connection.interrupt();
 }
