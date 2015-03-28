@@ -12,7 +12,7 @@ public:
   class Callback
   {
   public:
-    virtual void_t processTerminated(uint32_t pid) = 0;
+    virtual void_t terminatedProcess(uint32_t pid) = 0;
   };
 
 public:

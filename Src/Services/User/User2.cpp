@@ -8,9 +8,9 @@ User2::~User2()
     delete *i;
 }
 
-Market2* User2::createMarket(ProcessManager& processManager, const meguco_user_market_entity& marketEntity, const String& executable)
+Market2* User2::createMarket(const meguco_user_market_entity& marketEntity, const String& executable)
 {
-  Market2* market = new Market2(processManager, marketEntity, executable);
+  Market2* market = new Market2(marketEntity, executable);
   markets.append(market);
   return market;
 }

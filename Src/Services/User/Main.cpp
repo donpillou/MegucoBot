@@ -1,10 +1,12 @@
 
 #include <nstd/Console.h>
-//#include <nstd/Directory.h>
+#include <nstd/Directory.h>
 #include <nstd/File.h>
-//#include <nstd/Thread.h>
+#include <nstd/Thread.h>
 #include <nstd/Process.h>
-//#include <nstd/Error.h>
+#include <nstd/Error.h>
+
+#include "ConnectionHandler.h"
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -24,7 +26,7 @@ int_t main(int_t argc, char_t* argv[])
       switch(character)
       {
       case 'b':
-        logFile = argument.isEmpty() ? String("MegucoServer.log") : argument;
+        logFile = argument.isEmpty() ? String("MegucoBot.log") : argument;
         break;
       case '?':
         Console::errorf("Unknown option: %s.\n", (const char_t*)argument);
@@ -52,7 +54,6 @@ int_t main(int_t argc, char_t* argv[])
   }
 #endif
 
-/*
   // initialize connection handler
   ConnectionHandler connectionHandler;
 
@@ -88,7 +89,6 @@ int_t main(int_t argc, char_t* argv[])
 
     Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)connectionHandler.getErrorString());
   }
-  */
   return 0;
 }
 

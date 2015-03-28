@@ -58,7 +58,7 @@ uint_t ProcessManager::proc()
     if(process)
     {
       uint32_t id = *processIdMap.find(process);
-      callback->processTerminated(id);
+      callback->terminatedProcess(id);
       Array<Process*>::Iterator it = processes.find(process);
       if(it != processes.end())
       {
@@ -86,7 +86,7 @@ uint_t ProcessManager::proc()
           Process* process = new Process();
           if(!process->start(action.commandLine))
           {
-            callback->processTerminated(action.id);
+            callback->terminatedProcess(action.id);
             delete process;
           }
           else
@@ -111,7 +111,7 @@ uint_t ProcessManager::proc()
               Process* process = *it;
               if(process->kill())
               {
-                callback->processTerminated(action.id);
+                callback->terminatedProcess(action.id);
                 processes.remove(it);
                 processIdMap.remove(itMap);
                 delete process;

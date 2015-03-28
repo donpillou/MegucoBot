@@ -7,6 +7,8 @@ markets = "Src/Markets/*.cpp"
 markets = "$(patsubst Src/Markets/%.cpp,%,$(markets))"
 markets -= "Main"
 
+services = "User"
+
 if configuration == "Debug" {
   defines += { "_DEBUG", "DEBUG" }
 } else {
@@ -17,8 +19,8 @@ buildDir = "Build/$(configuration)/$(target)"
 
 targets = {
 
-  MegucoBot = cppApplication + {
-    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + markets
+  MegucoServer = cppApplication + {
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + markets + services
     buildDir = "Build/$(configuration)"
     includePaths = {
       "Ext/libnstd/include"
@@ -39,6 +41,40 @@ targets = {
     files -= {
       "Src/Bots/**"
       "Src/Markets/**"
+      "Src/Services/**"
+    }
+    if tool == "vcxproj" {
+      libs += { "ws2_32" }
+      linkFlags += { "/SUBSYSTEM:CONSOLE" }
+    }
+    if platform == "Linux" {
+      libs += { "pthread", "rt" }
+      cppFlags += { "-Wno-delete-non-virtual-dtor" }
+    }
+  }
+
+  "$(services)" = cppApplication + {
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
+    folder = "Services"
+    buildDir = "Build/$(configuration)/Services/$(target)"
+    includePaths = {
+      "Src",
+      "Ext/libnstd/include"
+      "Ext/libzlimdbclient/include"
+      "Ext/libmegucoprotocol/include"
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/libzlimdbclient"
+      "Build/$(configuration)/liblz4"
+    }
+    libs = { "nstd", "zlimdbclient", "lz4" }
+    root = { "Src/Services/$(target)", "Src" }
+    files = {
+      "Src/Services/$(target)/**.cpp" = cppSource
+      "Src/Services/$(target)/**.h"
+      "Src/Tools/*.cpp" = cppSource
+      "Src/Tools/*.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }

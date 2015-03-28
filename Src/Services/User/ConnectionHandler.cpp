@@ -196,7 +196,7 @@ bool_t ConnectionHandler::connect()
         User2* user = findUser(*i);
         if(!user)
           user = createUser(*i);
-        Market2* market = user->createMarket(processManager, *userMarket, botMarket ? botMarket->executable : String());
+        Market2* market = user->createMarket(*userMarket, botMarket ? botMarket->executable : String());
         markets.append(market);
       }
     }
@@ -206,7 +206,7 @@ bool_t ConnectionHandler::connect()
   for(List<Market2*>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
   {
     Market2* market = *i;
-    market->startProcess();
+    //market->startProcess();
     // todo: update entity
   }
 
@@ -225,7 +225,12 @@ bool_t ConnectionHandler::process()
   {
     if(!connection.process())
       return false;
-    // todo: check for terminated processes
+    List<uint32_t> terminatedProcesses;
+    mutex.lock();
+    terminatedProcesses.swap(this->terminatedProcesses);
+    mutex.unlock();
+    for(List<uint32_t>::Iterator i = terminatedProcesses.begin(), end = terminatedProcesses.end(); i != end; ++i)
+      unregisterMarketProcess(*i);
   }
 }
 
@@ -234,6 +239,16 @@ User2* ConnectionHandler::createUser(const String& name)
   User2* user = new User2();
   users.append(name, user);
   return user;
+}
+
+void_t ConnectionHandler::registerMarketProcess(uint32_t pid, Market2& market)
+{
+  //??
+}
+
+void_t ConnectionHandler::unregisterMarketProcess(uint32_t pid)
+{
+  //??
 }
 
 void_t ConnectionHandler::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
@@ -265,7 +280,10 @@ void_t ConnectionHandler::removedEntity(uint32_t tableId, const zlimdb_entity& e
 {
 }
 
-void_t ConnectionHandler::processTerminated(uint32_t pid)
+void_t ConnectionHandler::terminatedProcess(uint32_t pid)
 {
+  mutex.lock();
+  terminatedProcesses.append(pid);
+  mutex.unlock();
   connection.interrupt();
 }
