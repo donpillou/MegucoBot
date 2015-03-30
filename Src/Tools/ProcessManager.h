@@ -18,6 +18,8 @@ public:
 public:
   ProcessManager() : nextId(1) {}
 
+  const String& getErrorString() const {return error;}
+
   bool_t start(Callback& callback);
   void_t stop();
 
@@ -38,6 +40,7 @@ private:
   };
 
 private:
+  String error;
   Thread thread;
   Callback* callback;
   uint32_t nextId;
