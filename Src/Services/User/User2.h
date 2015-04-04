@@ -1,11 +1,12 @@
 
 #pragma once
 
-#include <nstd/List.h>
+#include <nstd/HashSet.h>
 
 #include "Tools/ZlimdbProtocol.h"
 
 class Market2;
+class Session2;
 
 class User2
 {
@@ -13,8 +14,12 @@ public:
   User2() {}
   ~User2();
 
-  Market2* createMarket(const meguco_user_market_entity& marketEntity, const String& executable);
+  Market2* createMarket(uint32_t tableId, const meguco_user_market_entity& marketEntity, const String& executable);
+  Session2* createSession(uint32_t tableId, const meguco_user_session_entity& sessionEntity, const String& executable);
+  void_t deleteMarket(Market2& market);
+  void_t deleteSession(Session2& session);
 
 private:
-  List<Market2*> markets;
+  HashSet<Market2*> markets;
+  HashSet<Session2*> sessions;
 };

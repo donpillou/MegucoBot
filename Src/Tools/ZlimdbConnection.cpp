@@ -25,7 +25,7 @@ bool_t ZlimdbConnection::connect(Callback& callback)
   close();
 
   // connect to server
-  zdb = zlimdb_create(0, 0);
+  zdb = zlimdb_create(zlimdbCallback, this);
   if(!zdb)
     return error = getZlimdbError(), false;
   if(zlimdb_connect(zdb, 0, 0, "root", "root") != 0)
@@ -96,6 +96,13 @@ bool_t ZlimdbConnection::add(uint32_t tableId, const zlimdb_entity& entity, uint
   return true;
 }
 
+bool_t ZlimdbConnection::update(uint32_t tableId, const zlimdb_entity& entity)
+{
+  if(zlimdb_update(zdb, tableId, &entity) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
 bool_t ZlimdbConnection::remove(uint32_t tableId, uint64_t entityId)
 {
   if(zlimdb_remove(zdb, tableId, entityId) != 0)
@@ -133,5 +140,35 @@ String ZlimdbConnection::getZlimdbError()
   {
     const char* errstr = zlimdb_strerror(err);
     return String(errstr, String::length(errstr));
+  }
+}
+
+void ZlimdbConnection::zlimdbCallback(const zlimdb_header& message)
+{
+  switch(message.message_type)
+  {
+  case zlimdb_message_add_request:
+    if(message.size >= sizeof(zlimdb_add_request) + sizeof(zlimdb_entity))
+    {
+      const zlimdb_add_request* addRequest = (const zlimdb_add_request*)&message;
+      callback->addedEntity(addRequest->table_id, *(const zlimdb_entity*)(addRequest + 1));
+    }
+    break;
+  case zlimdb_message_update_request:
+    if(message.size >= sizeof(zlimdb_update_request) + sizeof(zlimdb_entity))
+    {
+      const zlimdb_update_request* updateRequest = (const zlimdb_update_request*)&message;
+      callback->updatedEntity(updateRequest->table_id, *(const zlimdb_entity*)(updateRequest + 1));
+    }
+    break;
+  case zlimdb_message_remove_request:
+    if(message.size >= sizeof(zlimdb_remove_request))
+    {
+      const zlimdb_remove_request* removeRequest = (const zlimdb_remove_request*)&message;
+      callback->removedEntity(removeRequest->table_id, removeRequest->id);
+    }
+    break;
+  default:
+    break;
   }
 }

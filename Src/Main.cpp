@@ -51,6 +51,8 @@ public:
         processInfo.processId = process->process_id;
       }
     }
+    if(connection.getErrno() != 0)
+      return error = connection.getErrorString(), false;
 
     // start unknown processes from processes table
     for(HashMap<uint32_t, Process>::Iterator i = processes.begin(), end = processes.end(), next; i != end; i = next)
@@ -58,8 +60,8 @@ public:
       next = i;
       ++next;
       Process& process = *i;
-      HashMap<uint32_t, Process>::Iterator it = this->processes.find(process.processId);
-      if(it == this->processes.end())
+      HashMap<uint32_t, Process>::Iterator it = this->processesById.find(process.processId);
+      if(it == this->processesById.end())
       {
         if(!startProcess(process.entityId, process.command))
           return false;
@@ -69,6 +71,7 @@ public:
         Process& knownProcess = *it;
         if(process.entityId != knownProcess.entityId)
         {
+          knownProcess.entityId = 0;
           if(!connection.remove(processesTableId, process.entityId))
             return error = connection.getErrorString(), false;
           processes.remove(i);
@@ -77,7 +80,7 @@ public:
     }
 
     // add known processes not in processes table to processes table
-    for(HashMap<uint32_t, Process>::Iterator i = this->processes.begin(), end = this->processes.end(); i != end; ++i)
+    for(HashMap<uint32_t, Process>::Iterator i = this->processesById.begin(), end = this->processesById.end(); i != end; ++i)
     {
       Process& process = *i;
       if(processes.find(process.processId) == processes.end())
@@ -91,6 +94,7 @@ public:
         if(!connection.add(processesTableId, processEntity->entity, entityId))
           return error = connection.getErrorString(), false;
         process.entityId = entityId;
+        this->processes.append(entityId, &process);
       }
     }
     return true;
@@ -124,19 +128,21 @@ private:
   ZlimdbConnection connection;
   uint32_t processesTableId;
   ProcessManager processManager;
-  HashMap<uint32_t, Process> processes;
+  HashMap<uint32_t, Process> processesById;
+  HashMap<uint64_t, Process*> processes;
   Mutex mutex;
   List<uint32_t> terminatedProcesses;
 
 private:
   void_t removeProcess(uint32_t processId)
   {
-    HashMap<uint32_t, Process>::Iterator it = processes.find(processId);
-    if(it == processes.end())
+    HashMap<uint32_t, Process>::Iterator it = processesById.find(processId);
+    if(it == processesById.end())
       return;
-    Process& process = *it;
+    const Process& process = *it;
     connection.remove(processesTableId, process.entityId);
-    processes.remove(it);
+    processes.remove(process.entityId);
+    processesById.remove(it);
   }
 
   bool_t startProcess(uint64_t& entityId, const String& command)
@@ -144,7 +150,7 @@ private:
     uint32_t processId;
     if(!processManager.startProcess(command, processId))
       return error = processManager.getErrorString(), false;
-    Process& process = processes.append(processId, Process());
+    Process& process = processesById.append(processId, Process());
     process.processId = processId;
     process.command = command;
     process.entityId = entityId;
@@ -158,8 +164,8 @@ private:
       ZlimdbProtocol::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), command);
       if(!connection.add(processesTableId, processEntity->entity, entityId))
         return error = connection.getErrorString(), false;
-      process.entityId = entityId;
     }
+    process.entityId = entityId;
     return true;
   }
 
@@ -185,7 +191,7 @@ private: // ZlimdbConnection::Callback
     if(tableId == processesTableId && entity.size >= sizeof(meguco_process_entity))
     {
       meguco_process_entity& process = (meguco_process_entity&)entity;
-      if(processes.find(process.process_id) != processes.end())
+      if(processesById.find(process.process_id) != processesById.end())
         return;
       String command;
       if(!ZlimdbProtocol::getString(process.entity, sizeof(meguco_process_entity), process.cmd_size, command))
@@ -197,17 +203,18 @@ private: // ZlimdbConnection::Callback
 
   virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) {}
 
-  virtual void_t removedEntity(uint32_t tableId, const zlimdb_entity& entity)
+  virtual void_t removedEntity(uint32_t tableId, uint64_t entityId)
   {
-    if(tableId == processesTableId && entity.size >= sizeof(meguco_process_entity))
+    if(tableId == processesTableId)
     {
-      meguco_process_entity& process = (meguco_process_entity&)entity;
-      HashMap<uint32_t, Process>::Iterator it = processes.find(process.process_id);
+      HashMap<uint64_t, Process*>::Iterator it = processes.find(entityId);
       if(it == processes.end())
         return;
-      if(!killProcess(process.process_id))
+      const Process* process = *it;
+      if(!killProcess(process->processId))
         return;
       processes.remove(it);
+      processesById.remove(process->processId);
     }
   }
 } server;
