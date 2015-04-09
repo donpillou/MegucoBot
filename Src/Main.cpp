@@ -217,6 +217,8 @@ private: // ZlimdbConnection::Callback
       processesById.remove(process->processId);
     }
   }
+
+  virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer) {}
 } server;
 
 int_t main(int_t argc, char_t* argv[])

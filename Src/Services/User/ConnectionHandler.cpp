@@ -263,9 +263,11 @@ void_t ConnectionHandler::addedTable(uint32_t entityId, const String& tableName)
 {
   if(tableName.startsWith("users/") && tableName.endsWith("/market"))
   {
-    String userName = tableName.substr(6, tableName.length() - (6 + 7));
-    if(userName.find('/'))
+    String userTable = tableName.substr(6, tableName.length() - (6 + 7));
+    const char_t* userNameEnd = userTable.find('/');
+    if(!userNameEnd)
       return;
+    String userName = userTable.substr(0, userNameEnd - userTable);
 
     // subscribe to market
     if(!connection.subscribe(entityId))
@@ -287,9 +289,11 @@ void_t ConnectionHandler::addedTable(uint32_t entityId, const String& tableName)
   }
   if(tableName.startsWith("users/") && tableName.endsWith("/session"))
   {
-    String userName = tableName.substr(6, tableName.length() - (6 + 8));
-    if(userName.find('/'))
+    String userTable = tableName.substr(6, tableName.length() - (6 + 8));
+    const char_t* userNameEnd = userTable.find('/');
+    if(!userNameEnd)
       return;
+    String userName = userTable.substr(0, userNameEnd - userTable);
 
     // subscribe to session
     if(!connection.subscribe(entityId))

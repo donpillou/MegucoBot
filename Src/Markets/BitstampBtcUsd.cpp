@@ -6,29 +6,30 @@
 #include "Tools/Sha256.h"
 #include "Tools/Hex.h"
 #include "Tools/Json.h"
+#include "Tools/ZlimdbProtocol.h"
 
 #include "BitstampBtcUsd.h"
 
 BitstampBtcUsd::BitstampBtcUsd(const String& clientId, const String& key, const String& secret) :
   clientId(clientId), key(key), secret(secret),
-  balanceLoaded(false), lastRequestTime(0), lastNonce(0), lastLiveTradeUpdateTime(0), nextEntityId(1) {}
+  balanceLoaded(false), lastRequestTime(0), lastNonce(0), lastLiveTradeUpdateTime(0)/*, nextEntityId(1)*/ {}
 
 bool_t BitstampBtcUsd::loadBalanceAndFee()
 {
   if(balanceLoaded)
     return true;
-  BotProtocol::Balance balance;
+  meguco_user_market_balance_entity balance;
   if(!loadBalance(balance))
     return false;
   return true;
 }
 
-bool_t BitstampBtcUsd::createOrder(uint32_t entityId, BotProtocol::Order::Type type, double price, double amount, double total, BotProtocol::Order& order)
+bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_market_order_type type, double price, double amount, double total, meguco_user_market_order_entity& order)
 {
   if(!loadBalanceAndFee())
     return false;
 
-  bool buy = type == BotProtocol::Order::buy;
+  bool buy = type == meguco_user_market_order_buy;
 
   if(amount == 0.)
   { // compute amount based on total
@@ -88,15 +89,8 @@ bool_t BitstampBtcUsd::createOrder(uint32_t entityId, BotProtocol::Order::Type t
 
   const HashMap<String, Variant>& orderData = result.toMap();
 
-  String bitstampId = String("order_") + orderData.find("id")->toString();
-  order.entityType = BotProtocol::marketOrder;
-  if(entityId != 0)
-  {
-    setEntityId(bitstampId, entityId);
-    order.entityId = entityId;
-  }
-  else
-    order.entityId = getNewEntityId(bitstampId);
+  ZlimdbProtocol::setEntityHeader(order.entity, 0, 0, sizeof(order));
+  order.raw_id = orderData.find("id")->toUInt64();
   String btype = orderData.find("type")->toString();
   if(btype != "0" && btype != "1")
   {
@@ -105,7 +99,7 @@ bool_t BitstampBtcUsd::createOrder(uint32_t entityId, BotProtocol::Order::Type t
   }
 
   buy = btype == "0";
-  order.type = buy ? BotProtocol::Order::buy : BotProtocol::Order::sell;
+  order.type = buy ? meguco_user_market_order_buy : meguco_user_market_order_sell;
 
   String dateStr = orderData.find("datetime")->toString();
   const tchar_t* lastDot = dateStr.findLast('.');
@@ -117,27 +111,27 @@ bool_t BitstampBtcUsd::createOrder(uint32_t entityId, BotProtocol::Order::Type t
     error = "Received invalid order date.";
     return false;
   }
-  order.date = time.toTimestamp();
+  order.entity.time = time.toTimestamp();
 
   order.price = orderData.find("price")->toDouble();
   order.amount = Math::abs(orderData.find("amount")->toDouble());
   order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
-  this->orders.append(order.entityId, order);
+  this->orders.append(order.raw_id, order);
 
   // update balance
   if(order.amount > 0) // buy order
   {
-    balance.availableUsd -= order.total;
-    balance.reservedUsd += order.total;
+    balance.available_usd -= order.total;
+    balance.reserved_usd += order.total;
   }
   else // sell order
   {
-    balance.availableBtc -= order.amount;
-    balance.reservedBtc += order.amount;
+    balance.available_btc -= order.amount;
+    balance.reserved_btc += order.amount;
   }
   return true;
 }
-
+/*
 bool_t BitstampBtcUsd::getOrder(uint32_t entityId, BotProtocol::Order& order)
 {
   HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(entityId);
@@ -149,54 +143,46 @@ bool_t BitstampBtcUsd::getOrder(uint32_t entityId, BotProtocol::Order& order)
   order = *it;
   return true;
 }
-
-bool_t BitstampBtcUsd::cancelOrder(uint32_t entityId)
+*/
+bool_t BitstampBtcUsd::cancelOrder(uint64_t id)
 {
-  String bitstampId = *entityIds.find(entityId);
-  if(!bitstampId.startsWith("order_"))
-  {
-    error = "Unknown order.";
-    return false;
-  }
-  bitstampId = bitstampId.substr(6);
-
-  HashMap<uint32_t, BotProtocol::Order>::Iterator it = orders.find(entityId);
+  HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = orders.find(id);
   if(it == orders.end())
   {
     error = "Unknown order.";
     return false;
   }
-  const BotProtocol::Order& order = *it;
+  const meguco_user_market_order_entity& order = *it;
 
   HashMap<String, Variant> args;
-  args.append("id", bitstampId);
+  args.append("id", id);
   Variant result;
   if(!request("https://www.bitstamp.net/api/cancel_order/", false, args, result))
     return false;
   if(!result.toBool())
   {
+    // todo: check if order is still on the orders list... if not, than it is already canceled and we should return true
     error = "Could not find or cancel order.";
     return false;
   }
 
   // update balance
-  if(order.type == BotProtocol::Order::buy) // buy order
+  if(order.type == meguco_user_market_order_buy) // buy order
   {
     double total = Math::abs(getOrderCharge(order.amount, order.price));
-    balance.availableUsd += total;
-    balance.reservedUsd -= total;
+    balance.available_usd += total;
+    balance.reserved_usd -= total;
   }
   else // sell order
   {
-    balance.availableBtc += order.amount;
-    balance.reservedBtc -= order.amount;
+    balance.available_btc += order.amount;
+    balance.reserved_btc -= order.amount;
   }
   orders.remove(it);
-  removeEntityId(entityId);
   return true;
 }
 
-bool_t BitstampBtcUsd::loadOrders(List<BotProtocol::Order>& orders)
+bool_t BitstampBtcUsd::loadOrders(List<meguco_user_market_order_entity>& orders)
 {
   if(!loadBalanceAndFee())
     return false;
@@ -207,66 +193,64 @@ bool_t BitstampBtcUsd::loadOrders(List<BotProtocol::Order>& orders)
 
   const List<Variant>& ordersData = result.toList();
   this->orders.clear();
-  BotProtocol::Order order;
-  order.entityType = BotProtocol::marketOrder;
+  meguco_user_market_order_entity order;
+  ZlimdbProtocol::setEntityHeader(order.entity, 0, 0, sizeof(order));
   Time time(true);
   for(List<Variant>::Iterator i = ordersData.begin(), end = ordersData.end(); i != end; ++i)
   {
     const Variant& orderDataVar = *i;
     HashMap<String, Variant> orderData = orderDataVar.toMap();
     
-    String bitstampId = String("order_") + orderData.find("id")->toString();
+    order.raw_id = orderData.find("id")->toUInt64();
     String type = orderData.find("type")->toString();
     if(type != "0" && type != "1")
       continue;
 
-    order.entityId = getNewEntityId(bitstampId);
     bool buy = type == "0";
-    order.type = buy ? BotProtocol::Order::buy : BotProtocol::Order::sell;
+    order.type = buy ? meguco_user_market_order_buy : meguco_user_market_order_sell;
 
     String dateStr = orderData.find("datetime")->toString();
 
     if(dateStr.scanf("%d-%d-%d %d:%d:%d", &time.year, &time.month, &time.day, &time.hour, &time.min, &time.sec) != 6)
       continue;
-    order.date = time.toTimestamp();
+    order.entity.time = time.toTimestamp();
 
     order.price = orderData.find("price")->toDouble();
     order.amount = Math::abs(orderData.find("amount")->toDouble());
     order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
 
-    this->orders.append(order.entityId, order);
+    this->orders.append(order.raw_id, order);
     orders.append(order);
   }
   return true;
 }
 
-bool_t BitstampBtcUsd::loadBalance(BotProtocol::Balance& balance)
+bool_t BitstampBtcUsd::loadBalance(meguco_user_market_balance_entity& balance)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/balance/", false, HashMap<String, Variant>(), result))
     return false;
 
   const HashMap<String, Variant>& balanceData = result.toMap();
-  balance.entityType = BotProtocol::marketBalance;
-  balance.entityId = 0;
-  balance.reservedUsd = balanceData.find("usd_reserved")->toDouble();
-  balance.reservedBtc = balanceData.find("btc_reserved")->toDouble();
-  balance.availableUsd = balanceData.find("usd_available")->toDouble();
-  balance.availableBtc = balanceData.find("btc_available")->toDouble();
+  ZlimdbProtocol::setEntityHeader(balance.entity, 0, 0, sizeof(balance));
+  balance.reserved_usd = balanceData.find("usd_reserved")->toDouble();
+  balance.reserved_btc = balanceData.find("btc_reserved")->toDouble();
+  balance.available_usd = balanceData.find("usd_available")->toDouble();
+  balance.available_btc = balanceData.find("btc_available")->toDouble();
   balance.fee =  balanceData.find("fee")->toDouble() * 0.01;
   this->balance = balance;
   this->balanceLoaded = true;
   return true;
 }
 
-bool_t BitstampBtcUsd::loadTransactions(List<BotProtocol::Transaction>& transactions)
+bool_t BitstampBtcUsd::loadTransactions(List<meguco_user_market_transaction_entity>& transactions)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/user_transactions/", false, HashMap<String, Variant>(), result))
     return false;
 
-  BotProtocol::Transaction transaction;
-  transaction.entityType = BotProtocol::marketTransaction;
+  meguco_user_market_transaction_entity transaction;
+  ZlimdbProtocol::setEntityHeader(transaction.entity, 0, 0, sizeof(transaction));
   const List<Variant>& transactionData = result.toList();
   Time time(true);
   for(List<Variant>::Iterator i = transactionData.begin(), end = transactionData.end(); i != end; ++i)
@@ -274,23 +258,21 @@ bool_t BitstampBtcUsd::loadTransactions(List<BotProtocol::Transaction>& transact
     const Variant& transactionDataVar = *i;
     const HashMap<String, Variant>& transactionData = transactionDataVar.toMap();
     
-    String bitstampId = String("transaction_") + transactionData.find("id")->toString();
+    transaction.raw_id = transactionData.find("id")->toUInt64();
     String type = transactionData.find("type")->toString();
     if(type != "2")
       continue;
 
-    transaction.entityId = getNewEntityId(bitstampId);
-
     String dateStr = transactionData.find("datetime")->toString();
     if(dateStr.scanf("%d-%d-%d %d:%d:%d", &time.year, &time.month, &time.day, &time.hour, &time.min, &time.sec) != 6)
       continue;
-    transaction.date = time.toTimestamp();
+    transaction.entity.time = time.toTimestamp();
 
     double fee = Math::abs(transactionData.find("fee")->toDouble());
 
     double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
-    transaction.type = buy ? BotProtocol::Transaction::buy : BotProtocol::Transaction::sell;
+    transaction.type = buy ? meguco_user_market_transaction_buy : meguco_user_market_transaction_sell;
     transaction.amount = Math::abs(transactionData.find("btc")->toDouble());
     transaction.total = buy ? (Math::abs(value) + fee) : (Math::abs(value) - fee);
     transaction.price = Math::abs(value) / Math::abs(transaction.amount);
@@ -303,13 +285,13 @@ bool_t BitstampBtcUsd::loadTransactions(List<BotProtocol::Transaction>& transact
 
 double BitstampBtcUsd::getMaxSellAmout() const
 {
-  return balance.availableBtc;
+  return balance.available_btc;
 }
 
 double BitstampBtcUsd::getMaxBuyAmout(double price) const
 {
   double fee = balance.fee; // e.g. 0.0044
-  double availableUsd = balance.availableUsd;
+  double availableUsd = balance.available_usd;
   double additionalAvailableUsd = 0.; //floor(canceledAmount * canceledPrice * (1. + fee) * 100.) / 100.;
   double usdAmount = availableUsd + additionalAvailableUsd;
   double result = Math::floor(((100. / ( 100. + (fee * 100.))) * usdAmount) * 100.) / 100.;
@@ -450,33 +432,4 @@ void_t BitstampBtcUsd::avoidSpamming()
   else
     lastRequestTime = now;
   // TODO: allow more than 1 request per second but limit requests to 600 per 10 minutes
-}
-
-void_t BitstampBtcUsd::setEntityId(const String& bitstampId, uint32_t entityId)
-{
-  entityIds.append(entityId, bitstampId);
-  entityIdsById.append(bitstampId, entityId);
-}
-
-uint32_t BitstampBtcUsd::getNewEntityId(const String& bitstampId)
-{
-  HashMap<String, uint32_t>::Iterator it = entityIdsById.find(bitstampId);
-  if(it == entityIdsById.end())
-  {
-    uint32_t entityId = nextEntityId++;
-    entityIds.append(entityId, bitstampId);
-    entityIdsById.append(bitstampId, entityId);
-    return entityId;
-  }
-  return *it;
-}
-
-void_t BitstampBtcUsd::removeEntityId(uint32_t entityId)
-{
-  HashMap<uint32_t, String>::Iterator it = entityIds.find(entityId);
-  if(it != entityIds.end())
-  {
-    entityIdsById.remove(*it);
-    entityIds.remove(it);
-  }
 }

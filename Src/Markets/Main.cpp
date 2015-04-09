@@ -12,17 +12,16 @@
 #include <nstd/String.h>
 #include <nstd/Thread.h> // sleep
 #include <nstd/HashSet.h>
-//#include <nstd/Error.h>
 
-#include "Tools/BotConnection.h"
-#include "Tools/HandlerConnection.h"
+#include "Tools/ZlimdbConnection.h"
+#include "Tools/ZlimdbProtocol.h"
 
 #ifdef MARKET_BITSTAMPBTCUSD
 #include "Markets/BitstampBtcUsd.h"
 typedef BitstampBtcUsd MarketAdapter;
 #endif
 
-class BotConnectionHandler
+class BotConnectionHandler : public ZlimdbConnection::Callback
 {
 public:
 
@@ -32,299 +31,353 @@ public:
     delete market;
   }
 
-  bool_t connect(uint16_t port)
+  bool_t connect2(uint32_t userMarketTableId)
   {
-    if(market)
+    delete market;
+    market = 0;
+    orders2.clear();
+    transactions2.clear();
+    balance.entity.id = 0;
+
+    if(!connection.connect(*this))
       return false;
 
-    if(!handlerConnection.connect(port))
+    // get user name and market name
+    Buffer buffer;
+    if(!connection.query(zlimdb_table_tables, userMarketTableId, buffer))
       return false;
-    if(!botConnection.connect(port))
+    if(buffer.size() < sizeof(zlimdb_table_entity))
+      return false;
+    zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)(byte_t*)buffer;
+    String tableName; // e.g. users/user1/markets/market1/market
+    if(!ZlimdbProtocol::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
+      return false;
+    if(!tableName.startsWith("users/"))
+      return false;
+    const char_t* userNameStart = (const tchar_t*)tableName + 6;
+    const char_t* userNameEnd = String::find(userNameStart, '/');
+    if(!userNameEnd)
+      return false;
+    if(String::compare(userNameEnd + 1, "markets/", 8) != 0)
+      return false;
+    const char_t* marketNameStart = userNameEnd + 9;
+    const char_t* marketNameEnd = String::find(marketNameStart, '/');
+    if(!marketNameEnd)
+      return false;
+    if(String::compare(marketNameEnd + 1, "market") != 0)
+      return false;
+    String userName = tableName.substr(userNameStart - tableName, userNameEnd - userNameStart);
+    String marketName = tableName.substr(marketNameStart - tableName, marketNameEnd - marketNameStart);
+
+    // get user market
+    if(!connection.query(userMarketTableId, 1, buffer))
+      return false;
+    if(buffer.size() < sizeof(meguco_user_market_entity))
+      return false;
+    meguco_user_market_entity* userMarketEntity = (meguco_user_market_entity*)(byte_t*)buffer;
+    {
+      String userName, key, secret;
+      if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity), userMarketEntity->user_name_size, userName))
+        return false;
+      if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length(), userMarketEntity->key_size, key))
+        return false;
+      if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length() + key.length(), userMarketEntity->secret_size, secret))
+        return false;
+      market = new MarketAdapter(userName, key, secret);
+    }
+
+    // subscribe to orders table
+    if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/orders", userMarketOrdersTableId))
+      return false;
+    if(!connection.subscribe(userMarketOrdersTableId))
+      return false;
+    while(connection.getResponse(buffer))
+    {
+      void* data = (byte_t*)buffer;
+      uint32_t size = buffer.size();
+      for(const meguco_user_market_order_entity* order; order = (const meguco_user_market_order_entity*)zlimdb_get_entity(sizeof(meguco_user_market_order_entity), &data, &size);)
+        orders2.append(order->entity.id, *order);
+    }
+    if(connection.getErrno() != 0)
       return false;
 
-    market = new MarketAdapter(handlerConnection.getUserName(), handlerConnection.getKey(), handlerConnection.getSecret());
+    // get transaction table id
+    if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/transactions", userMarketTransactionsTableId))
+      return false;
+    if(!connection.query(userMarketTransactionsTableId))
+      return false;
+    while(connection.getResponse(buffer))
+    {
+      void* data = (byte_t*)buffer;
+      uint32_t size = buffer.size();
+      for(const meguco_user_market_transaction_entity* transaction; transaction = (const meguco_user_market_transaction_entity*)zlimdb_get_entity(sizeof(meguco_user_market_transaction_entity), &data, &size);)
+        transactions2.append(transaction->entity.id, *transaction);
+    }
+    if(connection.getErrno() != 0)
+      return false;
+
+    // get balance table id
+    if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/balance", userMarketBalanceTableId))
+      return false;
+
+    // get log table id
+    if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/log", userMarketLogTableId))
+      return false;
+
     return true;
   }
 
-  bool_t process()
-  {
-    BotProtocol::Header header;
-    byte_t* data;
-    size_t size;
-    for(;;)
-    {
-      if(!handlerConnection.receiveMessage(header, data, size))
-        return false;
-      if(!handleMessage(header, data, size))
-        return false;
-    }
-  }
+  bool_t process() {return connection.process();}
 
-  String getErrorString() const
-  {
-    String error = handlerConnection.getErrorString();
-    if(!error.isEmpty())
-      return error;
-    return botConnection.getErrorString();
-  }
+  String getErrorString() const {return connection.getErrorString();}
 
 private:
-  HandlerConnection handlerConnection;
-  BotConnection botConnection;
+  ZlimdbConnection connection;
   Market* market;
 
-  HashSet<uint32_t> orders;
-  HashSet<uint32_t> transactions;
+  uint32_t userMarketOrdersTableId;
+  uint32_t userMarketTransactionsTableId;
+  uint32_t userMarketBalanceTableId;
+  uint32_t userMarketLogTableId;
+
+  HashMap<uint64_t, meguco_user_market_order_entity> orders2;
+  HashMap<uint64_t, meguco_user_market_transaction_entity> transactions2;
+  meguco_user_market_balance_entity balance;
+
+private: // ZlimdbConnection::Callback
+  virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity)
+  {
+    if(tableId == userMarketOrdersTableId)
+    {
+      if(entity.size >= sizeof(meguco_user_market_order_entity))
+        return addedUserMarketOrder(*(meguco_user_market_order_entity*)&entity);
+    }
+  }
+
+  virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
+  {
+    if(tableId == userMarketOrdersTableId)
+    {
+      if(entity.size >= sizeof(meguco_user_market_order_entity))
+        return updatedUserMarketOrder(*(meguco_user_market_order_entity*)&entity);
+    }
+  }
+
+  virtual void_t removedEntity(uint32_t tableId, uint64_t entityId)
+  {
+    if(tableId == userMarketOrdersTableId)
+      return removedUserMarketOrder(entityId);
+  }
+
+  virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer)
+  {
+    if(tableId == userMarketOrdersTableId)
+      return controlUserMarketOrder(entityId, controlCode);
+  }
 
 private:
-  bool_t handleMessage(const BotProtocol::Header& header, byte_t* data, size_t size)
+  void_t addedUserMarketOrder(const meguco_user_market_order_entity& createOrderArgs)
   {
-    switch((BotProtocol::MessageType)header.messageType)
+    meguco_user_market_order_entity order;
+    if(createOrderArgs.state != meguco_user_market_order_opening || !market->createOrder(createOrderArgs.entity.id, (meguco_user_market_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
     {
-    case BotProtocol::createEntity:
-      if(size >= sizeof(BotProtocol::Entity))
-        return handleCreateEntity(header.requestId, *(BotProtocol::Entity*)data, size);
-      break;
-    case BotProtocol::updateEntity:
-      if(size >= sizeof(BotProtocol::Entity))
-        return handleUpdateEntity(header.requestId, *(BotProtocol::Entity*)data, size);
-      break;
-    case BotProtocol::removeEntity:
-      if(size >= sizeof(BotProtocol::Entity))
-        return handleRemoveEntity(header.requestId, *(BotProtocol::Entity*)data);
-      break;
-    case BotProtocol::controlEntity:
-      if(size >= sizeof(BotProtocol::Entity))
-        return handleControlEntity(header.requestId, *(BotProtocol::Entity*)data, size);
-      break;
-    default:
-      break;
+      if(createOrderArgs.state == meguco_user_market_order_opening)
+        addLogMessage(meguco_log_error, market->getLastError());
+      order = createOrderArgs;
+      order.state = meguco_user_market_order_error;
     }
-    return true;
-  }
-
-  bool_t handleCreateEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size)
-  {
-    switch((BotProtocol::EntityType)entity.entityType)
+    else
     {
-    case BotProtocol::marketOrder:
-      if(size >= sizeof(BotProtocol::Order))
-        return handleCreateOrder(requestId, *(BotProtocol::Order*)&entity);
-      break;
-    default:
-      break;
+      order.state = meguco_user_market_order_open;
+      order.timeout = createOrderArgs.timeout;
     }
-    return true;
+    orders2.append(order.entity.id, order);
+    connection.update(userMarketOrdersTableId, order.entity);
   }
 
-  bool_t handleUpdateEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size)
+  void_t updatedUserMarketOrder(const meguco_user_market_order_entity& updateOrderArgs)
   {
-    switch((BotProtocol::EntityType)entity.entityType)
+    HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = orders2.find(updateOrderArgs.entity.id);
+    if(it == orders2.end())
+      return;
+    meguco_user_market_order_entity& order = *it;
+    if(Memory::compare(&order, &updateOrderArgs, sizeof(order)) == 0)
+      return;
+
+    if(updateOrderArgs.state == meguco_user_market_order_open)
     {
-    case BotProtocol::marketOrder:
-      if(size >= sizeof(BotProtocol::Order))
-        return handleUpdateOrder(requestId, *(BotProtocol::Order*)&entity);
-      break;
-    default:
-      break;
-    }
-    return true;
-  }
-
-  bool_t handleRemoveEntity(uint32_t requestId, const BotProtocol::Entity& entity)
-  {
-    switch((BotProtocol::EntityType)entity.entityType)
-    {
-    case BotProtocol::marketOrder:
-      return handleRemoveOrder(requestId, entity);
-      break;
-    default:
-      break;
-    }
-    return true;
-  }
-
-  bool_t handleControlEntity(uint32_t requestId, BotProtocol::Entity& entity, size_t size)
-  {
-    switch((BotProtocol::EntityType)entity.entityType)
-    {
-    case BotProtocol::market:
-      if(size >= sizeof(BotProtocol::ControlMarket))
-        return handleControlMarket(requestId, *(BotProtocol::ControlMarket*)&entity);
-      break;
-    default:
-      break;
-    }
-    return true;
-  }
-
-  bool_t handleCreateOrder(uint32_t requestId, BotProtocol::Order& createOrderArgs)
-  {
-    BotProtocol::Order order;
-    if(!market->createOrder(0, (BotProtocol::Order::Type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
-      return handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &createOrderArgs, market->getLastError());
-    order.timeout = createOrderArgs.timeout;
-
-    if(!handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &order, sizeof(order)))
-      return false;
-    this->orders.append(order.entityId);
-    return botConnection.sendEntity(&order, sizeof(order));
-  }
-
-  bool_t handleUpdateOrder(uint32_t requestId, BotProtocol::Order& updateOrderArgs)
-  {
-    // step #1 cancel current order
-    if(!market->cancelOrder(updateOrderArgs.entityId))
-      return handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError());
-
-    // step #2 create new order with same id
-    BotProtocol::Order order;
-    if(!market->createOrder(updateOrderArgs.entityId, (BotProtocol::Order::Type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
-    {
-      if(!handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &updateOrderArgs, market->getLastError()))
-        return false;
-      this->orders.remove(updateOrderArgs.entityId);
-      if(!botConnection.removeEntity(BotProtocol::marketOrder, updateOrderArgs.entityId))
-        return false;
-      return true;
-    }
-    order.timeout = updateOrderArgs.timeout;
-    if(!handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updateOrderArgs, sizeof(BotProtocol::Entity)))
-      return false;
-    this->orders.append(order.entityId);
-    return botConnection.sendEntity(&order, sizeof(order));
-  }
-
-  bool_t handleRemoveOrder(uint32_t requestId, const BotProtocol::Entity& entity)
-  {
-    if(!market->cancelOrder(entity.entityId))
-    {
-      if(!handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, market->getLastError()))
-        return false;
-      BotProtocol::Order order;
-      if(market->getOrder(entity.entityId, order))
-        if(!botConnection.sendEntity(&order, sizeof(order)))
-          return false;
-      return true;
-    }
-    if(!handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity)))
-      return false;
-    this->orders.remove(entity.entityId);
-    return botConnection.removeEntity(BotProtocol::marketOrder, entity.entityId);
-  }
-
-  bool_t handleControlMarket(uint32_t requestId, BotProtocol::ControlMarket& controlMarket)
-  {
-    BotProtocol::ControlMarketResponse response;
-    response.entityType = BotProtocol::market;
-    response.entityId = controlMarket.entityId;
-    response.cmd = controlMarket.cmd;
-
-    switch((BotProtocol::ControlMarket::Command)controlMarket.cmd)
-    {
-    case BotProtocol::ControlMarket::refreshOrders:
-    case BotProtocol::ControlMarket::requestOrders:
+      // step #1 cancel current order
+      if(!market->cancelOrder(updateOrderArgs.entity.id))
+        return addLogMessage(meguco_log_error, market->getLastError());
+    
+      // step #2 create new order with same id
+      meguco_user_market_order_entity order;
+      if(!market->createOrder(updateOrderArgs.entity.id, (meguco_user_market_order_type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
       {
-        List<BotProtocol::Order> orders;
+        addLogMessage(meguco_log_error, market->getLastError());
+        order = updateOrderArgs;
+        order.state = meguco_user_market_order_error;
+      }
+      else
+      {
+        order.state = meguco_user_market_order_open;
+        order.timeout = updateOrderArgs.timeout;
+      }
+    }
+    else
+      order.state = meguco_user_market_order_error;
+    connection.update(userMarketOrdersTableId, order.entity);
+  }
+
+  void_t removedUserMarketOrder(uint64_t entityId)
+  {
+    market->cancelOrder(entityId);
+  }
+
+  void_t controlUserMarketOrder(uint64_t entityId, uint32_t controlCode)
+  {
+    if(entityId != 0)
+      return;
+
+    switch(controlCode)
+    {
+    case meguco_user_market_order_control_refresh:
+      {
+        List<meguco_user_market_order_entity> orders;
         if(!market->loadOrders(orders))
-          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(controlMarket.cmd == BotProtocol::ControlMarket::refreshOrders)
+          return addLogMessage(meguco_log_error, market->getLastError());
+        HashMap<uint64_t, meguco_user_market_order_entity> ordersMapByRaw;
+        for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = orders2.begin(), end = orders2.end(); i != end; ++i)
         {
-          if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
-            return false;
+          meguco_user_market_order_entity& order = *i;
+          ordersMapByRaw.append(order.raw_id, order);
         }
-        else
+        orders2.clear();
+        for(List<meguco_user_market_order_entity>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
         {
-          size_t dataSize = sizeof(response) + sizeof(BotProtocol::Order) * orders.size();
-          if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
-             !handlerConnection.sendMessageData(&response, sizeof(response)))
-            return false;
-          for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-            if(!handlerConnection.sendMessageData(&*i, sizeof(BotProtocol::Order)))
-              return false;
+          meguco_user_market_order_entity& order = *i;
+          HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = ordersMapByRaw.find(order.raw_id);
+          if(it == ordersMapByRaw.end() || it->entity.id == 0)
+          { // add
+            uint64_t id;
+            if(connection.add(userMarketOrdersTableId, order.entity, id))
+              order.entity.id = id;
+          }
+          else
+          { // update
+            order.entity.id = it->entity.id;
+            if(Memory::compare(&*it, &order, sizeof(order)) != 0)
+              connection.update(userMarketOrdersTableId, order.entity);
+            ordersMapByRaw.remove(it);
+          }
+          orders2.append(order.entity.id, order);
         }
-        HashSet<uint32_t> ordersToRemove;
-        ordersToRemove.swap(this->orders);
-        for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-        {
-          this->orders.append(i->entityId);
-          if(!botConnection.sendEntity(&*i, sizeof(BotProtocol::Order)))
-            return false;
-          ordersToRemove.remove(i->entityId);
+        for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = ordersMapByRaw.end(), end = ordersMapByRaw.end(); i != end; ++i)
+        { // remove
+          meguco_user_market_order_entity& order = *i;
+          connection.remove(userMarketOrdersTableId, order.entity.id);
         }
-        for(HashSet<uint32_t>::Iterator i = ordersToRemove.begin(), end = ordersToRemove.end(); i != end; ++i)
-          if(!botConnection.removeEntity(BotProtocol::marketOrder, *i))
-            return false;
       }
-      break;
-    case BotProtocol::ControlMarket::refreshTransactions:
-    case BotProtocol::ControlMarket::requestTransactions:
-      {
-        List<BotProtocol::Transaction> transactions;
-        if(!market->loadTransactions(transactions))
-          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(controlMarket.cmd == BotProtocol::ControlMarket::refreshTransactions)
-        {
-          if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
-              return false;
-        }
-        else
-        {
-          size_t dataSize = sizeof(response) + sizeof(BotProtocol::Transaction) * transactions.size();
-          if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
-             !handlerConnection.sendMessageData(&response, sizeof(response)))
-            return false;
-          for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-            if(!handlerConnection.sendMessageData(&*i, sizeof(BotProtocol::Transaction)))
-              return false;
-        }
-        HashSet<uint32_t> transactionsToRemove;
-        transactionsToRemove.swap(this->transactions);
-        for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-        {
-          this->transactions.append(i->entityId);
-          if(!botConnection.sendEntity(&*i, sizeof(BotProtocol::Transaction)))
-            return false;
-          transactionsToRemove.remove(i->entityId);
-        }
-        for(HashSet<uint32_t>::Iterator i = transactionsToRemove.begin(), end = transactionsToRemove.end(); i != end; ++i)
-          if(!botConnection.removeEntity(BotProtocol::marketTransaction, *i))
-            return false;
-      }
-      break;
-    case BotProtocol::ControlMarket::refreshBalance:
-    case BotProtocol::ControlMarket::requestBalance:
-      {
-        BotProtocol::Balance balance;
-        if(!market->loadBalance(balance))
-          return handlerConnection.sendErrorResponse(BotProtocol::controlEntity, requestId, &controlMarket, market->getLastError());
-        if(controlMarket.cmd == BotProtocol::ControlMarket::refreshBalance)
-        {
-          if(!handlerConnection.sendMessage(BotProtocol::controlEntityResponse, requestId, &response, sizeof(response)))
-            return false;
-        }
-        else
-        {
-          size_t dataSize = sizeof(response) + sizeof(balance);
-          if(!handlerConnection.sendMessageHeader(BotProtocol::controlEntityResponse, requestId, dataSize) ||
-             !handlerConnection.sendMessageData(&response, sizeof(response)) ||
-             !handlerConnection.sendMessageData(&balance, sizeof(balance)))
-            return false;
-        }
-        if(!botConnection.sendEntity(&balance, sizeof(balance)))
-          return false;
-      }
-      break;
-    default:
       break;
     }
-    return true;
+  }
+
+  void_t controlUserMarketTransaction(uint64_t entityId, uint32_t controlCode)
+  {
+    if(entityId != 0)
+      return;
+
+    switch(controlCode)
+    {
+    case meguco_user_market_transaction_control_refresh:
+      {
+        List<meguco_user_market_transaction_entity> transactions;
+        if(!market->loadTransactions(transactions))
+          return addLogMessage(meguco_log_error, market->getLastError());
+        HashMap<uint64_t, meguco_user_market_transaction_entity> transactionsapByRaw;
+        for(HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator i = transactions2.begin(), end = transactions2.end(); i != end; ++i)
+        {
+          meguco_user_market_transaction_entity& transaction = *i;
+          transactionsapByRaw.append(transaction.raw_id, transaction);
+        }
+        transactions2.clear();
+        for(List<meguco_user_market_transaction_entity>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+        {
+          meguco_user_market_transaction_entity& transaction = *i;
+          HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator it = transactionsapByRaw.find(transaction.raw_id);
+          if(it == transactionsapByRaw.end() || it->entity.id == 0)
+          { // add
+            uint64_t id;
+            if(connection.add(userMarketTransactionsTableId, transaction.entity, id))
+              transaction.entity.id = id;
+          }
+          else
+          { // update
+            transaction.entity.id = it->entity.id;
+            if(Memory::compare(&*it, &transaction, sizeof(transaction)) != 0)
+              connection.update(userMarketTransactionsTableId, transaction.entity);
+            transactionsapByRaw.remove(it);
+          }
+          transactions2.append(transaction.raw_id, transaction);
+        }
+        for(HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator i = transactionsapByRaw.end(), end = transactionsapByRaw.end(); i != end; ++i)
+        { // remove
+          meguco_user_market_transaction_entity& transaction = *i;
+          connection.remove(userMarketTransactionsTableId, transaction.entity.id);
+        }
+      }
+      break;
+    }
+  }
+
+  void_t controlUserMarketBalance(uint64_t entityId, uint32_t controlCode)
+  {
+    if(entityId != 0)
+      return;
+
+    switch(controlCode)
+    {
+    case meguco_user_market_balance_control_refresh:
+      {
+        meguco_user_market_balance_entity balance;
+        if(!market->loadBalance(balance))
+          return addLogMessage(meguco_log_error, market->getLastError());
+        if(this->balance.entity.id == 0)
+        {
+          uint64_t id;
+          if(connection.add(userMarketBalanceTableId, balance.entity, id))
+            balance.entity.id = id;
+        }
+        else
+        {
+          balance.entity.id = this->balance.entity.id;
+          connection.update(userMarketBalanceTableId, balance.entity);
+        }
+        this->balance = balance;
+      }
+      break;
+    }
+  }
+
+  void_t addLogMessage(meguco_log_type type, const String& message)
+  {
+    meguco_log_entity logEntity;
+    ZlimdbProtocol::setEntityHeader(logEntity.entity, 0, 0, sizeof(logEntity));
+    logEntity.type = type;
+    ZlimdbProtocol::setString(logEntity.entity, logEntity.message_size, sizeof(logEntity), message);
+    uint64_t id;
+    connection.add(userMarketLogTableId, logEntity.entity, id);
   }
 };
 
 int_t main(int_t argc, char_t* argv[])
 {
-  static const uint16_t port = 40124;
+  if(argc < 2)
+  {
+    Console::errorf("error: Missing market table id\n");
+    return -1;
+  }
+  uint32_t userMarketTableId = String(argv[1], String::length(argv[1])).toUInt();
 
   //for(;;)
   //{
@@ -335,7 +388,7 @@ int_t main(int_t argc, char_t* argv[])
 
   // create connection to bot server
   BotConnectionHandler connection;
-  if(!connection.connect(port))
+  if(!connection.connect2(userMarketTableId))
   {
     Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)connection.getErrorString());
     return -1;

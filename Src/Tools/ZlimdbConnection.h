@@ -15,6 +15,7 @@ public:
     virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity) = 0;
     virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) = 0;
     virtual void_t removedEntity(uint32_t tableId, uint64_t entityId) = 0;
+    virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer) = 0;
   };
 
 public:
@@ -29,8 +30,11 @@ public:
 
   bool_t subscribe(uint32_t tableId);
   bool_t query(uint32_t tableId);
+  bool_t query(uint32_t tableId, uint64_t entityId, Buffer& buffer);
   bool_t getResponse(Buffer& buffer);
   bool_t createTable(const String& name, uint32_t& tableId);
+  bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists = false);
+  bool_t clearTable(uint32_t tableId);
   bool_t add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id);
   bool_t update(uint32_t tableId, const zlimdb_entity& entity);
   bool_t remove(uint32_t tableId, uint64_t entityId);

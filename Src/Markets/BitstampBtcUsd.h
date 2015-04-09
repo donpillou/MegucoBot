@@ -16,9 +16,9 @@ private:
   String key;
   String secret;
 
-  BotProtocol::Balance balance;
+  meguco_user_market_balance_entity balance;
   bool_t balanceLoaded;
-  HashMap<uint32_t, BotProtocol::Order> orders;
+  HashMap<uint64_t, meguco_user_market_order_entity> orders;
 
   String error;
 
@@ -28,9 +28,9 @@ private:
   uint64_t lastNonce;
   timestamp_t lastLiveTradeUpdateTime;
 
-  HashMap<uint32_t, String> entityIds;
-  HashMap<String, uint32_t> entityIdsById;
-  uint32_t nextEntityId;
+  //HashMap<uint32_t, String> entityIds;
+  //HashMap<String, uint32_t> entityIdsById;
+  //uint32_t nextEntityId;
 
 private:
   bool_t request(const String& url, bool_t isPublic, const HashMap<String, Variant>& params, Variant& result);
@@ -43,16 +43,12 @@ private:
 
   bool_t loadBalanceAndFee();
 
-  void_t setEntityId(const String& bitstampId, uint32_t entityId);
-  uint32_t getNewEntityId(const String& bitstampId);
-  void_t removeEntityId(uint32_t entityId);
-
 private: // Market
   virtual const String& getLastError() const {return error;}
-  virtual bool_t loadOrders(List<BotProtocol::Order>& orders);
-  virtual bool_t loadBalance(BotProtocol::Balance& balance);
-  virtual bool_t loadTransactions(List<BotProtocol::Transaction>& transactions);
-  virtual bool_t createOrder(uint32_t id, BotProtocol::Order::Type type, double price, double amount, double total, BotProtocol::Order& order);
-  virtual bool_t getOrder(uint32_t id, BotProtocol::Order& order);
-  virtual bool_t cancelOrder(uint32_t id);
+  virtual bool_t loadOrders(List<meguco_user_market_order_entity>& orders);
+  virtual bool_t loadBalance(meguco_user_market_balance_entity& balance);
+  virtual bool_t loadTransactions(List<meguco_user_market_transaction_entity>& transactions);
+  virtual bool_t createOrder(uint64_t id, meguco_user_market_order_type type, double price, double amount, double total, meguco_user_market_order_entity& order);
+  //virtual bool_t getOrder(uint64_t id, meguco_user_market_order_entity& order);
+  virtual bool_t cancelOrder(uint64_t id);
 };

@@ -5,6 +5,7 @@
 #include "Tools/ConnectionHandler.h"
 #include "Tools/SimBroker.h"
 #include "Tools/LiveBroker.h"
+#include "Tools/ZlimdbProtocol.h"
 
 #ifdef BOT_BETBOT
 #include "Bots/BetBot.h"
@@ -23,41 +24,109 @@ typedef FlipBot BotFactory;
 typedef TestBot BotFactory;
 #endif
 
-bool_t ConnectionHandler::connect(uint16_t botPort, uint32_t dataIp, uint16_t dataPort)
+bool_t ConnectionHandler::connect2(uint32_t sessionTableId, bool_t simulation)
 {
   // close current connections
-  botConnection.close();
-  handlerConnection.close();
-  dataConnection.close();
+  connection.close();
   delete broker;
   broker = 0;
   delete botSession;
   botSession = 0;
 
-  // store data server address
-  this->dataIp = dataIp;
-  this->dataPort = dataPort;
-
   // create session entity connection
-  if(!botConnection.connect(botPort))
+  if(!connection.connect(*this))
   {
-    error = botConnection.getErrorString();
+    error = connection.getErrorString();
     return false;
   }
 
-  // create session handler connection
-  if(!handlerConnection.connect(botPort))
-  {
-    error = handlerConnection.getErrorString();
+  // get user name and sesion name
+  Buffer buffer;
+  if(!connection.query(zlimdb_table_tables, sessionTableId, buffer))
     return false;
+  if(buffer.size() < sizeof(zlimdb_table_entity))
+    return false;
+  zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)(byte_t*)buffer;
+  String tableName; // e.g. users/user1/sessions/session1/session
+  if(!ZlimdbProtocol::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
+    return false;
+  if(!tableName.startsWith("users/"))
+    return false;
+  const char_t* userNameStart = (const tchar_t*)tableName + 6;
+  const char_t* userNameEnd = String::find(userNameStart, '/');
+  if(!userNameEnd)
+    return false;
+  if(String::compare(userNameEnd + 1, "sessions/", 9) != 0)
+    return false;
+  const char_t* sessionNameStart = userNameEnd + 10;
+  const char_t* sessionNameEnd = String::find(sessionNameStart, '/');
+  if(!sessionNameEnd)
+    return false;
+  if(String::compare(sessionNameEnd + 1, "session") != 0)
+    return false;
+  String userName = tableName.substr(userNameStart - tableName, userNameEnd - userNameStart);
+  String sessionName = tableName.substr(sessionNameStart - tableName, sessionNameEnd - sessionNameStart);
+
+  // get table ids (or create tables in case they do not exist)
+  String transactionsTableName = String("users/") + userName  + "/sessions/" + sessionName + "/transactions";
+  String assetsTableName = String("users/") + userName  + "/sessions/" + sessionName + "/assets";
+  String ordersTableName = String("users/") + userName  + "/sessions/" + sessionName + "/orders";
+  String logTableName = String("users/") + userName  + "/sessions/" + sessionName + "/log";
+  String markersTableName = String("users/") + userName  + "/sessions/" + sessionName + "/markers";
+  uint32_t transactionsTableId;
+  uint32_t assetsTableId;
+  uint32_t ordersTableId;
+  uint32_t logTableId;
+  uint32_t markersTableId;
+  if(!connection.createTable(transactionsTableName, transactionsTableId))
+    return false;
+  if(!connection.createTable(assetsTableName, assetsTableId))
+    return false;
+  if(!connection.createTable(ordersTableName, ordersTableId))
+    return false;
+  if(!connection.createTable(logTableName, logTableId))
+    return false;
+  if(!connection.createTable(markersTableName, markersTableId))
+    return false;
+
+  //
+  if(simulation)
+  {
+    // create backups
+    uint32_t id;
+    if(!connection.copyTable(transactionsTableId, transactionsTableName + ".backup", id, true) ||
+       !connection.copyTable(assetsTableId, assetsTableName + ".backup", id, true) ||
+       !connection.copyTable(ordersTableId, ordersTableName + ".backup", id, true) ||
+       !connection.copyTable(logTableId, logTableName + ".backup", id, true) ||
+       !connection.copyTable(markersTableId, markersTableName + ".backup", id, true))
+      return false;
+
+    // clear tables
+    if(!connection.clearTable(transactionsTableId) ||
+       !connection.clearTable(assetsTableId) ||
+       !connection.clearTable(ordersTableId) ||
+       !connection.clearTable(logTableId) ||
+       !connection.clearTable(markersTableId))
+      return false;
   }
-  sessionHandlerSocket = &handlerConnection.getSocket();
+  else
+  {
+    // todo: this:
+    //
+    //ich brauche hier etwas, um zu überprüfen, ob ein table existiert
+    //
+    //if backup table does exist
+    //  clear table
+    //  copy backup table back to normal table
+    //  remove backup table
+  }
+
 
   // load session data
   List<BotProtocol::Transaction> sessionTransactions;
   List<BotProtocol::SessionAsset> sessionAssets;
   List<BotProtocol::Order> sessionOrders;
-  BotProtocol::Balance sessionBalance;
+  //BotProtocol::Balance sessionBalance;
   List<BotProtocol::SessionProperty> sessionProperties;
   if(!botConnection.getSessionTransactions(sessionTransactions) ||
      !botConnection.getSessionAssets(sessionAssets) ||

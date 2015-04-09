@@ -72,6 +72,16 @@ bool_t ZlimdbConnection::query(uint32_t tableId)
   return true;
 }
 
+bool_t ZlimdbConnection::query(uint32_t tableId, uint64_t entityId, Buffer& buffer)
+{
+  buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
+  uint32_t size = ZLIMDB_MAX_MESSAGE_SIZE;
+  if(zlimdb_query_entity(zdb, tableId, entityId, buffer, &size) != 0)
+    return error = getZlimdbError(), false;
+  buffer.resize(size);
+  return true;
+}
+
 bool_t ZlimdbConnection::getResponse(Buffer& buffer)
 {
   buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
@@ -85,6 +95,24 @@ bool_t ZlimdbConnection::getResponse(Buffer& buffer)
 bool_t ZlimdbConnection::createTable(const String& name, uint32_t& tableId)
 {
   if(zlimdb_add_table(zdb, name, &tableId) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists)
+{
+  if(zlimdb_copy_table(zdb, sourceTableId, name, &tableId) != 0)
+  {
+    if (succeedIfExists && zlimdb_errno() == zlimdb_error_table_already_exists)
+      return true;
+    return error = getZlimdbError(), false;
+  }
+  return true;
+}
+
+bool_t ZlimdbConnection::clearTable(uint32_t tableId)
+{
+  if(zlimdb_clear(zdb, tableId) != 0)
     return error = getZlimdbError(), false;
   return true;
 }
@@ -151,14 +179,18 @@ void ZlimdbConnection::zlimdbCallback(const zlimdb_header& message)
     if(message.size >= sizeof(zlimdb_add_request) + sizeof(zlimdb_entity))
     {
       const zlimdb_add_request* addRequest = (const zlimdb_add_request*)&message;
-      callback->addedEntity(addRequest->table_id, *(const zlimdb_entity*)(addRequest + 1));
+      const zlimdb_entity* entity = (const zlimdb_entity*)(addRequest + 1);
+      if(sizeof(zlimdb_add_request) + entity->size <= message.size)
+        callback->addedEntity(addRequest->table_id, *entity);
     }
     break;
   case zlimdb_message_update_request:
     if(message.size >= sizeof(zlimdb_update_request) + sizeof(zlimdb_entity))
     {
       const zlimdb_update_request* updateRequest = (const zlimdb_update_request*)&message;
-      callback->updatedEntity(updateRequest->table_id, *(const zlimdb_entity*)(updateRequest + 1));
+      const zlimdb_entity* entity = (const zlimdb_entity*)(updateRequest + 1);
+      if(sizeof(zlimdb_update_request) + entity->size <= message.size)
+        callback->updatedEntity(updateRequest->table_id, *(const zlimdb_entity*)(updateRequest + 1));
     }
     break;
   case zlimdb_message_remove_request:
@@ -168,6 +200,14 @@ void ZlimdbConnection::zlimdbCallback(const zlimdb_header& message)
       callback->removedEntity(removeRequest->table_id, removeRequest->id);
     }
     break;
+  case zlimdb_message_control_request:
+    if(message.size >= sizeof(zlimdb_control_request))
+    {
+      const zlimdb_control_request* controlRequest = (const zlimdb_control_request*)&message;
+      Buffer buffer;
+      buffer.attach((byte_t*)(controlRequest + 1), message.size - sizeof(zlimdb_control_request));
+      callback->controlEntity(controlRequest->table_id, controlRequest->id, controlRequest->control_code, buffer);
+    }
   default:
     break;
   }

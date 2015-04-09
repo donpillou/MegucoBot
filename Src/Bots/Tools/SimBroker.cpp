@@ -3,103 +3,81 @@
 #include <nstd/Time.h>
 #include <nstd/Math.h>
 
+#include "Tools/ZlimdbProtocol.h"
+
+#include "ConnectionHandler.h"
 #include "SimBroker.h"
-#include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFee, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties, timestamp_t maxTradeAge) :
-  botConnection(botConnection), currencyBase(currencyBase), currencyComm(currencyComm),
-  time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0), maxTradeAge(maxTradeAge)
-{
-  for(List<BotProtocol::Transaction>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
-  {
-    const BotProtocol::Transaction& transaction = *i;
-    this->transactions.append(transaction.entityId, transaction);
-  }
-  for(List<BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
-  {
-    const BotProtocol::SessionAsset& asset = *i;
-    this->assets.append(asset.entityId, asset);
-  }
-  for(List<BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
-  {
-    const BotProtocol::Order& order = *i;
-    this->openOrders.append(order.entityId, order);
-  }
-  for(List<BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-  {
-    BotProtocol::SessionProperty& property = *i;
-    this->properties.append(BotProtocol::getString(property.name), property);
-  }
-}
+SimBroker::SimBroker(ConnectionHandler& connectionHandler, const String& currencyBase, const String& currencyComm, double tradeFee, timestamp_t maxTradeAge) :
+  connectionHandler(connectionHandler), currencyBase(currencyBase), currencyComm(currencyComm),
+  time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0), maxTradeAge(maxTradeAge) {}
 
-void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trade& trade)
+void_t SimBroker::handleTrade(Bot::Session& botSession, const meguco_trade_entity& trade, bool_t replayed)
 {
   if(startTime == 0)
-    startTime = trade.time;
-  if((timestamp_t)(trade.time - startTime) <= maxTradeAge)
+    startTime = trade.entity.time;
+  if((timestamp_t)(trade.entity.time - startTime) <= maxTradeAge)
   {
-    botSession.handleTrade(trade, startTime + maxTradeAge - trade.time);
+    botSession.handleTrade(trade, startTime + maxTradeAge - trade.entity.time);
     return; 
   }
 
-  if(trade.flags & DataProtocol::syncFlag)
-    warning("sync");
+  //if(trade.flags & DataProtocol::syncFlag)
+  //  warning("sync");
 
-  time = trade.time;
+  time = trade.entity.time;
 
-  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
+  for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = openOrders.begin(), end = openOrders.end(), next; i != end; i = next)
   {
     next = i;
     ++next;
 
-    const BotProtocol::Order& order = *i;
-    if(order.timeout > 0 && time >= order.timeout)
+    const meguco_user_market_order_entity& order = *i;
+    if(order.timeout > 0 && time >= (timestamp_t)order.timeout)
     {
-      botConnection.removeSessionOrder(order.entityId);
+      connectionHandler.removeSessionOrder(order.entity.id);
 
-      if(order.type == BotProtocol::Order::buy)
-        botSession.handleBuyTimeout(order.entityId);
+      if(order.type == meguco_user_market_order_buy)
+        botSession.handleBuyTimeout(order.entity.id);
       else
-        botSession.handleSellTimeout(order.entityId);
+        botSession.handleSellTimeout(order.entity.id);
 
       next = i; // update next since order list may have changed in bot session handler
       ++next;
       openOrders.remove(i);
     }
-    else if((order.type == BotProtocol::Order::buy && trade.price < order.price) ||
-            ( order.type == BotProtocol::Order::sell && trade.price > order.price) )
+    else if((order.type == meguco_user_market_order_buy && trade.price < order.price) ||
+            ( order.type == meguco_user_market_order_sell && trade.price > order.price) )
     {
-      BotProtocol::Transaction transaction;
-      transaction.entityType = BotProtocol::sessionTransaction;
-      transaction.type = order.type == BotProtocol::Order::buy ? BotProtocol::Transaction::buy : BotProtocol::Transaction::sell;
-      transaction.date = time;
+      meguco_user_market_transaction_entity transaction;
+      ZlimdbProtocol::setEntityHeader(transaction.entity, 0, time, sizeof(transaction));
+      transaction.type = order.type == meguco_user_market_order_buy ? meguco_user_market_transaction_buy : meguco_user_market_transaction_sell;
       transaction.price = order.price;
       transaction.amount = order.amount;
       transaction.total = order.total;
-      botConnection.createSessionTransaction(transaction);
-      transactions.append(transaction.entityId, transaction);
+      connectionHandler.createSessionTransaction(transaction);
+      transactions.append(transaction.entity.id, transaction);
 
-      if(order.type == BotProtocol::Order::buy)
+      if(order.type == meguco_user_market_order_buy)
         lastBuyTime = time;
       else
         lastSellTime = time;
 
-      botConnection.removeSessionOrder(order.entityId);
+      connectionHandler.removeSessionOrder(order.entity.id);
 
-      BotProtocol::Marker marker;
-      marker.entityType = BotProtocol::sessionMarker;
-      marker.date = time;
-      if(order.type == BotProtocol::Order::buy)
+      meguco_user_session_marker_entity marker;
+      ZlimdbProtocol::setEntityHeader(marker.entity, 0, time, sizeof(marker));
+      if(order.type == meguco_user_market_order_buy)
       {
-        marker.type = BotProtocol::Marker::buy;
-        botSession.handleBuy(order.entityId, transaction);
+        marker.type = meguco_user_session_marker_buy;
+        botSession.handleBuy(order.entity.id, transaction);
       }
       else
       {
-        marker.type = BotProtocol::Marker::sell;
-        botSession.handleSell(order.entityId, transaction);
+        marker.type = meguco_user_session_marker_sell;
+        botSession.handleSell(order.entity.id, transaction);
       }
-      botConnection.createSessionMarker(marker);
+      connectionHandler.createSessionMarker(marker);
 
       next = i; // update next since order list may have changed in bot session handler
       ++next;
@@ -110,7 +88,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
   botSession.handleTrade(trade, 0);
 }
 
-bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
+bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint64_t* id, double* orderedAmount)
 {
   if(amount != 0.)
     total = Math::ceil(amount * price * (1. + tradeFee) * 100.) / 100.;
@@ -124,37 +102,35 @@ bool_t SimBroker::buy(double price, double amount, double total, timestamp_t tim
   amount = total / (price * (1. + tradeFee));
   amount = Math::floor(amount * 100000000.) / 100000000.;
 
-  BotProtocol::Order order;
-  order.entityType = BotProtocol::sessionOrder;
-  order.type = BotProtocol::Order::buy;
-  order.date = time;
+  meguco_user_market_order_entity order;
+  ZlimdbProtocol::setEntityHeader(order.entity, 0, time, sizeof(order));
+  order.type = meguco_user_market_order_buy;
   order.amount = amount;
   order.price = price;
   order.total = total;
   timestamp_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
-  if(!botConnection.createSessionOrder(order))
+  if(!connectionHandler.createSessionOrder(order))
   {
-    error = botConnection.getErrorString();
+    error = connectionHandler.getLastError();
     return false;
   }
   ASSERT(order.timeout == orderTimeout);
   if(id)
-    *id = order.entityId;
+    *id = order.entity.id;
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-  BotProtocol::Marker marker;
-  marker.entityType = BotProtocol::sessionMarker;
-  marker.date = time;
-  marker.type = BotProtocol::Marker::buyAttempt;
-  botConnection.createSessionMarker(marker);
+  meguco_user_session_marker_entity marker;
+  ZlimdbProtocol::setEntityHeader(marker.entity, 0, time, sizeof(marker));
+  marker.type = meguco_user_session_marker_buy_attempt;
+  connectionHandler.createSessionMarker(marker);
 
-  openOrders.append(order.entityId, order);
+  openOrders.append(order.entity.id, order);
   return true;
 }
 
-bool_t SimBroker::sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
+bool_t SimBroker::sell(double price, double amount, double total, timestamp_t timeout, uint64_t* id, double* orderedAmount)
 {
   if(amount != 0.)
     total = Math::floor(amount * price * (1. - tradeFee) * 100.) / 100.;
@@ -168,50 +144,48 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   //  return false;
   //}
 
-  BotProtocol::Order order;
-  order.entityType = BotProtocol::sessionOrder;
-  order.type = BotProtocol::Order::sell;
-  order.date = time;
+  meguco_user_market_order_entity order;
+  ZlimdbProtocol::setEntityHeader(order.entity, 0, time, sizeof(order));
+  order.type = meguco_user_market_order_sell;
   order.amount = amount;
   order.price = price;
   order.total = Math::floor(price * amount * (1 - tradeFee) * 100.) / 100.;
   timestamp_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
-  if(!botConnection.createSessionOrder(order))
+  if(!connectionHandler.createSessionOrder(order))
   {
-    error = botConnection.getErrorString();
+    error = connectionHandler.getLastError();
     return false;
   }
   ASSERT(order.timeout == orderTimeout);
   if(id)
-    *id = order.entityId;
+    *id = order.entity.id;
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-  BotProtocol::Marker marker;
-  marker.entityType = BotProtocol::sessionMarker;
-  marker.date = time;
-  marker.type = BotProtocol::Marker::sellAttempt;
-  botConnection.createSessionMarker(marker);
+  meguco_user_session_marker_entity marker;
+  ZlimdbProtocol::setEntityHeader(marker.entity, 0, time, sizeof(marker));
+  marker.type = meguco_user_session_marker_sell_attempt;
+  connectionHandler.createSessionMarker(marker);
 
-  openOrders.append(order.entityId, order);
+  openOrders.append(order.entity.id, order);
   return true;
 }
 
-bool_t SimBroker::cancelOder(uint32_t id)
+bool_t SimBroker::cancelOder(uint64_t id)
 {
-  if(!botConnection.removeSessionOrder(id))
+  if(!connectionHandler.removeSessionOrder(id))
   {
-    error = botConnection.getErrorString();
+    error = connectionHandler.getLastError();
     return false;
   }
   openOrders.remove(id);
   return true;
 }
 
-const BotProtocol::Order* SimBroker::getOrder(uint32_t id) const
+const meguco_user_market_order_entity* SimBroker::getOrder(uint64_t id) const
 {
-  HashMap<uint32_t, BotProtocol::Order>::Iterator it = openOrders.find(id);
+  HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = openOrders.find(id);
   if(it == openOrders.end())
     return 0;
   return &*it;
@@ -220,10 +194,10 @@ const BotProtocol::Order* SimBroker::getOrder(uint32_t id) const
 size_t SimBroker::getOpenBuyOrderCount() const
 {
   size_t openBuyOrders = 0;
-  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
-    const BotProtocol::Order& order = *i;
-    if(order.type == BotProtocol::Order::buy)
+    const meguco_user_market_order_entity& order = *i;
+    if(order.type == meguco_user_market_order_buy)
       ++openBuyOrders;
   }
   return openBuyOrders;
@@ -232,183 +206,196 @@ size_t SimBroker::getOpenBuyOrderCount() const
 size_t SimBroker::getOpenSellOrderCount() const
 {
   size_t openSellOrders = 0;
-  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
+  for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = openOrders.begin(), end = openOrders.end(); i != end; ++i)
   {
-    const BotProtocol::Order& order = *i;
-    if(order.type == BotProtocol::Order::sell)
+    const meguco_user_market_order_entity& order = *i;
+    if(order.type == meguco_user_market_order_sell)
       ++openSellOrders;
   }
   return openSellOrders;
 }
 
-const BotProtocol::SessionAsset* SimBroker::getAsset(uint32_t id) const
+const meguco_user_session_asset_entity* SimBroker::getAsset(uint64_t id) const
 {
-  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(id);
+  HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator it = assets.find(id);
   if(it == assets.end())
     return 0;
   return &*it;
 }
 
-bool_t SimBroker::createAsset(BotProtocol::SessionAsset& asset)
+bool_t SimBroker::createAsset(meguco_user_session_asset_entity& asset)
 {
-  if(!botConnection.createSessionAsset(asset))
+  if(!connectionHandler.createSessionAsset(asset))
   {
-    error = botConnection.getErrorString();
+    error = connectionHandler.getLastError();
     return false;
   }
-  assets.append(asset.entityId, asset);
+  assets.append(asset.entity.id, asset);
   return true;
 }
 
-void_t SimBroker::removeAsset(uint32_t id)
+void_t SimBroker::removeAsset(uint64_t id)
 {
-  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(id);
+  HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator it = assets.find(id);
   if(it == assets.end())
     return;
-  const BotProtocol::SessionAsset& asset = *it;
-  botConnection.removeSessionAsset(asset.entityId);
+  const meguco_user_session_asset_entity& asset = *it;
+  connectionHandler.removeSessionAsset(asset.entity.id);
   assets.remove(it);
 }
 
-void_t SimBroker::updateAsset(const BotProtocol::SessionAsset& asset)
+void_t SimBroker::updateAsset(const meguco_user_session_asset_entity& asset)
 {
-  HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator it = assets.find(asset.entityId);
+  HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator it = assets.find(asset.entity.id);
   if(it == assets.end())
     return;
-  BotProtocol::SessionAsset& destAsset = *it;
+  meguco_user_session_asset_entity& destAsset = *it;
   destAsset = asset;
-  destAsset.entityType = BotProtocol::sessionAsset;
-  destAsset.entityId = asset.entityId;
-  botConnection.updateSessionAsset(destAsset);
+  destAsset.entity.id = asset.entity.id;
+  connectionHandler.updateSessionAsset(destAsset);
 }
 
-const BotProtocol::SessionProperty* SimBroker::getProperty(uint32_t id) const
-{
-  for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-    if(i->entityId == id)
-      return &*i;
-  return 0;
-}
+//const Bot::Broker::SessionProperty* SimBroker::getProperty(uint64_t id) const
+//{
+//  for(HashMap<String, SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+//    if(i->entity.id == id)
+//      return &*i;
+//  return 0;
+//}
 
-void_t SimBroker::updateProperty(const BotProtocol::SessionProperty& property)
-{
-  for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-    if(i->entityId == property.entityId)
-    {
-      botConnection.updateSessionProperty(property);
-      *i = property;
-    }
-}
+//void_t SimBroker::updateProperty(const SessionProperty& property)
+//{
+//  for(HashMap<String, SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
+//    if(i->property.entity.id == property.property.entity.id)
+//    {
+//      connectionHandler.updateSessionProperty(property.property, property.name, property.value, property.unit);
+//      *i = property;
+//    }
+//}
 
 double SimBroker::getProperty(const String& name, double defaultValue) const
 {
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  HashMap<String, Buffer>::Iterator it = properties.find(name);
   if(it == properties.end())
     return defaultValue;
-  BotProtocol::SessionProperty& property = *it;
-  return BotProtocol::getString(property.value).toDouble();
+  meguco_user_session_property_entity* property = (meguco_user_session_property_entity*)(byte_t*)*it;
+  String value;
+  if(!ZlimdbProtocol::getString(property->entity, sizeof(*property) + property->name_size, property->value_size, value))
+    return defaultValue;
+  return value.toDouble();
 }
 
 String SimBroker::getProperty(const String& name, const String& defaultValue) const
 {
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  HashMap<String, Buffer>::Iterator it = properties.find(name);
   if(it == properties.end())
     return defaultValue;
-  BotProtocol::SessionProperty& property = *it;
-  return BotProtocol::getString(property.value);
+  meguco_user_session_property_entity* property = (meguco_user_session_property_entity*)(byte_t*)*it;
+  String value;
+  if(!ZlimdbProtocol::getString(property->entity, sizeof(*property) + property->name_size, property->value_size, value))
+    return defaultValue;
+  return value;
 }
 
 void SimBroker::registerProperty(const String& name, double value, uint32_t flags, const String& unit)
 {
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  HashMap<String, Buffer>::Iterator it = properties.find(name);
   if(it == properties.end())
     setProperty(name, value, flags, unit);
   else
   {
-    it->flags = flags;
-    BotProtocol::setString(it->unit, unit);
+    meguco_user_session_property_entity* property = (meguco_user_session_property_entity*)(byte_t*)*it;
+    String oldUnit;
+    ZlimdbProtocol::getString(property->entity, sizeof(*property) + property->name_size + property->value_size, property->unit_size, oldUnit);
+    if(property->flags = flags || oldUnit != unit)
+    {
+      String value;
+      ZlimdbProtocol::getString(property->entity, sizeof(*property) + property->name_size, property->value_size, value);
+      setProperty(name, value, flags, unit);
+    }
   }
 }
 
 void SimBroker::registerProperty(const String& name, const String& value, uint32_t flags, const String& unit)
 {
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  HashMap<String, Buffer>::Iterator it = properties.find(name);
   if(it == properties.end())
     setProperty(name, value, flags, unit);
   else
   {
-    it->flags = flags;
-    BotProtocol::setString(it->unit, unit);
+    meguco_user_session_property_entity* property = (meguco_user_session_property_entity*)(byte_t*)*it;
+    String oldUnit;
+    ZlimdbProtocol::getString(property->entity, sizeof(*property) + property->name_size + property->value_size, property->unit_size, oldUnit);
+    if(property->flags = flags || oldUnit != unit)
+    {
+      String value;
+      ZlimdbProtocol::getString(property->entity, sizeof(*property) + property->name_size, property->value_size, value);
+      setProperty(name, value, flags, unit);
+    }
   }
 }
 
 void SimBroker::setProperty(const String& name, double value, uint32_t flags, const String& unit)
 {
-  BotProtocol::SessionProperty property;
-  property.entityType = BotProtocol::sessionProperty;
-  property.type = BotProtocol::SessionProperty::number;
-  property.flags = flags;
-  BotProtocol::setString(property.name, name);
-  BotProtocol::setString(property.value, String::fromDouble(value));
-  BotProtocol::setString(property.unit, unit);
-
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
-  if(it == properties.end())
-  {
-    botConnection.createSessionProperty(property);
-    properties.append(name, property);
-  }
-  else
-  {
-    property.entityId = it->entityId;
-    botConnection.updateSessionProperty(property);
-    *it = property;
-  }
+  setProperty(name, String::fromDouble(value), flags, unit);
 }
 
 void SimBroker::setProperty(const String& name, const String& value, uint32_t flags, const String& unit)
 {
-  BotProtocol::SessionProperty property;
-  property.entityType = BotProtocol::sessionProperty;
-  property.type = BotProtocol::SessionProperty::string;
-  property.flags = flags;
-  BotProtocol::setString(property.name, name);
-  BotProtocol::setString(property.value, value);
-  BotProtocol::setString(property.unit, unit);
+  setProperty(name, String::fromDouble(value), flags, unit);
+}
 
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+void SimBroker::setProperty(const String& name, const String& value, meguco_user_session_property_type type, uint32_t flags, const String& unit)
+{
+  HashMap<String, Buffer>::Iterator it = properties.find(name);
   if(it == properties.end())
   {
-    botConnection.createSessionProperty(property);
-    properties.append(name, property);
+    Buffer& buffer = properties.append(name, Buffer());
+    buffer.resize(sizeof(meguco_user_session_property_entity) + name.length() + value.length() + unit.length());
+    meguco_user_session_property_entity* property = (meguco_user_session_property_entity*)(byte_t*)buffer;
+    ZlimdbProtocol::setEntityHeader(property->entity, 0, 0, sizeof(*property) + name.length() + value.length() + unit.length());
+    property->flags = flags;
+    property->type = type;
+    ZlimdbProtocol::setString(property->entity, property->name_size, sizeof(*property), name);
+    ZlimdbProtocol::setString(property->entity, property->value_size, sizeof(*property) + name.length(), value);
+    ZlimdbProtocol::setString(property->entity, property->unit_size, sizeof(*property) + name.length() + value.length(), unit);
+    connectionHandler.createSessionProperty(*property);
   }
   else
   {
-    property.entityId = it->entityId;
-    botConnection.updateSessionProperty(property);
-    *it = property;
+    uint64_t entityId  = ((meguco_user_session_property_entity*)(byte_t*)*it)->entity.id;
+    Buffer& buffer = *it;
+    buffer.resize(sizeof(meguco_user_session_property_entity) + name.length() + value.length() + unit.length());
+    meguco_user_session_property_entity* property = (meguco_user_session_property_entity*)(byte_t*)buffer;
+    ZlimdbProtocol::setEntityHeader(property->entity, entityId, 0, sizeof(*property) + name.length() + value.length() + unit.length());
+    property->flags = flags;
+    property->type = type;
+    ZlimdbProtocol::setString(property->entity, property->name_size, sizeof(*property), name);
+    ZlimdbProtocol::setString(property->entity, property->value_size, sizeof(*property) + name.length(), value);
+    ZlimdbProtocol::setString(property->entity, property->unit_size, sizeof(*property) + name.length() + value.length(), unit);
+    connectionHandler.updateSessionProperty(*property);
   }
 }
 
 void SimBroker::removeProperty(const String& name)
 {
-  HashMap<String, BotProtocol::SessionProperty>::Iterator it = properties.find(name);
+  HashMap<String, Buffer>::Iterator it = properties.find(name);
   if(it == properties.end())
     return;
-  botConnection.removeSessionProperty(it->entityId);
+  uint64_t entityId  = ((meguco_user_session_property_entity*)(byte_t*)*it)->entity.id;
+  connectionHandler.removeSessionProperty(entityId);
   properties.remove(it);
 }
 
-void_t SimBroker::addMarker(BotProtocol::Marker::Type markerType)
+void_t SimBroker::addMarker(meguco_user_session_marker_type markerType)
 {
-  BotProtocol::Marker marker;
-  marker.entityType = BotProtocol::sessionMarker;
-  marker.date = time;
+  meguco_user_session_marker_entity marker;
+  ZlimdbProtocol::setEntityHeader(marker.entity, 0, time, sizeof(marker));
   marker.type = markerType;
-  botConnection.createSessionMarker(marker);
+  connectionHandler.createSessionMarker(marker);
 }
 
 void_t SimBroker::warning(const String& message)
 {
-  botConnection.addLogMessage(time, message);
+  connectionHandler.addLogMessage(time, message);
 }
