@@ -3,9 +3,8 @@ bots = "Src/Bots/*.cpp"
 bots = "$(patsubst Src/Bots/%.cpp,%,$(bots))"
 bots -= "Main"
 
-brokers = "Src/Brokers/*.cpp"
-brokers = "$(patsubst Src/Brokers/%.cpp,%,$(brokers))"
-brokers -= "Main"
+brokers = "Src/Brokers/*.cpp" - "Src/Brokers/Main.cpp"
+brokers = "$(patsubst Src/Brokers/%.cpp,%Broker,$(brokers))"
 
 services = "User"
 
@@ -131,9 +130,10 @@ targets = {
   }
 
   "$(brokers)" = cppApplication + {
+    name = "$(patsubst %Broker,%,$(target))"
     folder = "Brokers"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
-    defines += { "MARKET_$(upper $(target))" }
+    defines += { "BROKER_$(upper $(name))" }
     buildDir = "Build/$(configuration)/Brokers/$(target)"
     output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
     includePaths = {
@@ -151,8 +151,8 @@ targets = {
     libs = { "nstd", "zlimdbclient", "lz4", "curl" }
     root = { "Src/Brokers", "Src" }
     files = {
-      "Src/Brokers/$(target).cpp" = cppSource
-      "Src/Brokers/$(target).h"
+      "Src/Brokers/$(name).cpp" = cppSource
+      "Src/Brokers/$(name).h"
       "Src/Brokers/Tools/*.cpp" = cppSource
       "Src/Brokers/Tools/*.h"
       "Src/Brokers/Main.cpp" = cppSource

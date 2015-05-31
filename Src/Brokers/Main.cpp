@@ -3,7 +3,7 @@
 
 #include "Main.h"
 
-#ifdef MARKET_BITSTAMPBTCUSD
+#ifdef BROKER_BITSTAMPBTCUSD
 #include "Brokers/BitstampBtcUsd.h"
 typedef BitstampBtcUsd MarketAdapter;
 #endif
