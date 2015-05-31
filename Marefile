@@ -152,7 +152,6 @@ targets = {
       "Src/Brokers/$(target).h"
       "Src/Tools/*.cpp" = cppSource
       "Src/Tools/*.h"
-      "Src/BotProtocol.h"
       "Src/Brokers/Tools/**.cpp" = cppSource
       "Src/Brokers/Tools/**.h"
       "Src/Brokers/Main.cpp" = cppSource
