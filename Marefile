@@ -108,13 +108,18 @@ targets = {
     files = {
       "Src/Bots/$(target).cpp" = cppSource
       "Src/Bots/$(target).h"
-      "Src/Tools/Socket.cpp" = cppSource
-      "Src/Tools/Socket.h"
+      "Src/Bots/Tools/*.cpp" = cppSource
+      "Src/Bots/Tools/*.h"
+      "Src/Bots/Main.cpp" = cppSource
+      "Src/Bots/Main.h"
+      "Src/Tools/Hex.cpp" = cppSource
+      "Src/Tools/Hex.h"
+      "Src/Tools/Json.cpp" = cppSource
+      "Src/Tools/Json.h"
+      "Src/Tools/Sha256.cpp" = cppSource
+      "Src/Tools/Sha256.h"
       "Src/Tools/ZlimdbConnection.cpp" = cppSource
       "Src/Tools/ZlimdbConnection.h"
-      "Src/Bots/Tools/**.cpp" = cppSource
-      "Src/Bots/Tools/**.h"
-      "Src/Bots/Main.cpp" = cppSource
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
@@ -148,11 +153,18 @@ targets = {
     files = {
       "Src/Brokers/$(target).cpp" = cppSource
       "Src/Brokers/$(target).h"
-      "Src/Tools/*.cpp" = cppSource
-      "Src/Tools/*.h"
-      "Src/Brokers/Tools/**.cpp" = cppSource
-      "Src/Brokers/Tools/**.h"
+      "Src/Brokers/Tools/*.cpp" = cppSource
+      "Src/Brokers/Tools/*.h"
       "Src/Brokers/Main.cpp" = cppSource
+      "Src/Brokers/Main.h"
+      "Src/Tools/Hex.cpp" = cppSource
+      "Src/Tools/Hex.h"
+      "Src/Tools/Json.cpp" = cppSource
+      "Src/Tools/Json.h"
+      "Src/Tools/Sha256.cpp" = cppSource
+      "Src/Tools/Sha256.h"
+      "Src/Tools/ZlimdbConnection.cpp" = cppSource
+      "Src/Tools/ZlimdbConnection.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
