@@ -73,8 +73,8 @@ targets = {
     files = {
       "Src/Services/$(target)/**.cpp" = cppSource
       "Src/Services/$(target)/**.h"
-      "Src/Tools/*.cpp" = cppSource
-      "Src/Tools/*.h"
+      "Src/Tools/ZlimdbConnection.cpp" = cppSource
+      "Src/Tools/ZlimdbConnection.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
