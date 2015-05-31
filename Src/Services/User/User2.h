@@ -3,7 +3,9 @@
 
 #include <nstd/HashSet.h>
 
-#include "Tools/ZlimdbProtocol.h"
+#include <megucoprotocol.h>
+
+#include "Tools/ZlimdbConnection.h"
 
 class Market2;
 class Session2;

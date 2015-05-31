@@ -1,8 +1,6 @@
 
 #include <nstd/Error.h>
 
-#include "Tools/ZlimdbProtocol.h"
-
 #include "ConnectionHandler.h"
 #include "User2.h"
 #include "Market2.h"
@@ -60,7 +58,7 @@ bool_t ConnectionHandler::connect()
       uint32_t size = buffer.size();
       for(const meguco_bot_market_entity* botMarket; botMarket = (const meguco_bot_market_entity*)zlimdb_get_entity(sizeof(meguco_bot_market_entity), &data, &size);)
       {
-        if(!ZlimdbProtocol::getString(botMarket->entity, sizeof(*botMarket), botMarket->name_size, marketName))
+        if(!ZlimdbConnection::getString(botMarket->entity, sizeof(*botMarket), botMarket->name_size, marketName))
           continue;
         knownBotMarkets.append(marketName, botMarket->entity.id);
       }
@@ -75,8 +73,8 @@ bool_t ConnectionHandler::connect()
       if(it == knownBotMarkets.end())
       {
         meguco_bot_market_entity* botMarket = (meguco_bot_market_entity*)(byte_t*)buffer;
-        ZlimdbProtocol::setEntityHeader(botMarket->entity, 0, 0, sizeof(*botMarket) + marketName.length());
-        ZlimdbProtocol::setString(botMarket->entity, botMarket->name_size, sizeof(*botMarket), marketName);
+        ZlimdbConnection::setEntityHeader(botMarket->entity, 0, 0, sizeof(*botMarket) + marketName.length());
+        ZlimdbConnection::setString(botMarket->entity, botMarket->name_size, sizeof(*botMarket), marketName);
         uint64_t id;
         if(!connection.add(botMarketsTableId, botMarket->entity, id))
           return error = connection.getErrorString(), false;
@@ -107,7 +105,7 @@ bool_t ConnectionHandler::connect()
       uint32_t size = buffer.size();
       for(const meguco_bot_engine_entity* botEngine; botEngine = (const meguco_bot_engine_entity*)zlimdb_get_entity(sizeof(meguco_bot_engine_entity), &data, &size);)
       {
-        if(!ZlimdbProtocol::getString(botEngine->entity, sizeof(*botEngine), botEngine->name_size, engineName))
+        if(!ZlimdbConnection::getString(botEngine->entity, sizeof(*botEngine), botEngine->name_size, engineName))
           continue;
         knownBotEngines.append(engineName, botEngine->entity.id);
       }
@@ -122,8 +120,8 @@ bool_t ConnectionHandler::connect()
       if(it == knownBotEngines.end())
       {
         meguco_bot_engine_entity* botEngine = (meguco_bot_engine_entity*)(byte_t*)buffer;
-        ZlimdbProtocol::setEntityHeader(botEngine->entity, 0, 0, sizeof(*botEngine) + botEngineName.length());
-        ZlimdbProtocol::setString(botEngine->entity, botEngine->name_size, sizeof(*botEngine), botEngineName);
+        ZlimdbConnection::setEntityHeader(botEngine->entity, 0, 0, sizeof(*botEngine) + botEngineName.length());
+        ZlimdbConnection::setString(botEngine->entity, botEngine->name_size, sizeof(*botEngine), botEngineName);
         uint64_t id;
         if(!connection.add(botEnginesTableId, botEngine->entity, id))
           return error = connection.getErrorString(), false;
@@ -154,7 +152,7 @@ bool_t ConnectionHandler::connect()
       String command;
       for(const meguco_process_entity* process; process = (const meguco_process_entity*)zlimdb_get_entity(sizeof(meguco_process_entity), &data, &size);)
       {
-        if(!ZlimdbProtocol::getString(process->entity, sizeof(*process), process->cmd_size, command))
+        if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
           continue;
         processes.append(process->entity.id, command);
       }
@@ -177,7 +175,7 @@ bool_t ConnectionHandler::connect()
       uint32_t size = buffer.size();
       for(const zlimdb_table_entity* botMarket; botMarket = (const zlimdb_table_entity*)zlimdb_get_entity(sizeof(zlimdb_table_entity), &data, &size);)
       {
-        if(!ZlimdbProtocol::getString(botMarket->entity, sizeof(*botMarket), botMarket->name_size, tableName))
+        if(!ZlimdbConnection::getString(botMarket->entity, sizeof(*botMarket), botMarket->name_size, tableName))
           continue;
         tables.append((uint32_t)botMarket->entity.id, tableName);
       }
@@ -213,7 +211,7 @@ void_t ConnectionHandler::addedEntity(uint32_t tableId, const zlimdb_entity& ent
       return;
     const zlimdb_table_entity* tableEntity = (const zlimdb_table_entity*)&entity;
     String tableName;
-    if(!ZlimdbProtocol::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
+    if(!ZlimdbConnection::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
       return;
     addedTable((uint32_t)tableEntity->entity.id, tableName);
   }
@@ -223,7 +221,7 @@ void_t ConnectionHandler::addedEntity(uint32_t tableId, const zlimdb_entity& ent
       return;
     const meguco_process_entity* process = (const meguco_process_entity*)&entity;
     String command;
-    if(!ZlimdbProtocol::getString(process->entity, sizeof(*process), process->cmd_size, command))
+    if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
       return;
     addedProcess(process->entity.id, command);
   }
@@ -394,8 +392,8 @@ bool_t ConnectionHandler::setUserMarketState(Market2& market, meguco_user_market
       Buffer buffer;
       buffer.resize(sizeof(meguco_process_entity) + command.length());
       meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
-      ZlimdbProtocol::setEntityHeader(process->entity, 0, 0, buffer.size());
-      ZlimdbProtocol::setString(process->entity, process->cmd_size, sizeof(*process), command);
+      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, buffer.size());
+      ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(*process), command);
       uint64_t id;
       if(!connection.add(processesTableId, process->entity, id))
         return false;
@@ -450,8 +448,8 @@ bool_t ConnectionHandler::setUserSessionState(Session2& session, meguco_user_ses
       Buffer buffer;
       buffer.resize(sizeof(meguco_process_entity) + command.length());
       meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
-      ZlimdbProtocol::setEntityHeader(process->entity, 0, 0, buffer.size());
-      ZlimdbProtocol::setString(process->entity, process->cmd_size, sizeof(*process), command);
+      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, buffer.size());
+      ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(*process), command);
       uint64_t id;
       if(!connection.add(processesTableId, process->entity, id))
         return false;

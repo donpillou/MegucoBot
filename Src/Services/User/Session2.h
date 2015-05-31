@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "Tools/ZlimdbProtocol.h"
+#include "Tools/ZlimdbConnection.h"
 
 class Session2
 {

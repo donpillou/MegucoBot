@@ -1,7 +1,9 @@
 
 #pragma once
 
-#include "Tools/ZlimdbProtocol.h"
+#include <megucoprotocol.h>
+
+#include "Tools/ZlimdbConnection.h"
 
 class User2;
 

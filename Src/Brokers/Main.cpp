@@ -14,7 +14,6 @@
 #include <nstd/HashSet.h>
 
 #include "Tools/ZlimdbConnection.h"
-#include "Tools/ZlimdbProtocol.h"
 
 #ifdef MARKET_BITSTAMPBTCUSD
 #include "Brokers/BitstampBtcUsd.h"
@@ -50,7 +49,7 @@ public:
       return false;
     zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)(byte_t*)buffer;
     String tableName; // e.g. users/user1/markets/market1/market
-    if(!ZlimdbProtocol::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
+    if(!ZlimdbConnection::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
       return false;
     if(!tableName.startsWith("users/"))
       return false;
@@ -77,11 +76,11 @@ public:
     meguco_user_market_entity* userMarketEntity = (meguco_user_market_entity*)(byte_t*)buffer;
     {
       String userName, key, secret;
-      if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity), userMarketEntity->user_name_size, userName))
+      if(!ZlimdbConnection::getString(userMarketEntity->entity, sizeof(*userMarketEntity), userMarketEntity->user_name_size, userName))
         return false;
-      if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length(), userMarketEntity->key_size, key))
+      if(!ZlimdbConnection::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length(), userMarketEntity->key_size, key))
         return false;
-      if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length() + key.length(), userMarketEntity->secret_size, secret))
+      if(!ZlimdbConnection::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length() + key.length(), userMarketEntity->secret_size, secret))
         return false;
       broker = new MarketAdapter(userName, key, secret);
     }
@@ -362,9 +361,9 @@ private:
   void_t addLogMessage(meguco_log_type type, const String& message)
   {
     meguco_log_entity logEntity;
-    ZlimdbProtocol::setEntityHeader(logEntity.entity, 0, 0, sizeof(logEntity));
+    ZlimdbConnection::setEntityHeader(logEntity.entity, 0, 0, sizeof(logEntity));
     logEntity.type = type;
-    ZlimdbProtocol::setString(logEntity.entity, logEntity.message_size, sizeof(logEntity), message);
+    ZlimdbConnection::setString(logEntity.entity, logEntity.message_size, sizeof(logEntity), message);
     uint64_t id;
     connection.add(userMarketLogTableId, logEntity.entity, id);
   }

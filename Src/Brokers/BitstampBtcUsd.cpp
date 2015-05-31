@@ -6,7 +6,7 @@
 #include "Tools/Sha256.h"
 #include "Tools/Hex.h"
 #include "Tools/Json.h"
-#include "Tools/ZlimdbProtocol.h"
+#include "Tools/ZlimdbConnection.h"
 
 #include "BitstampBtcUsd.h"
 
@@ -89,7 +89,7 @@ bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_market_order_type ty
 
   const HashMap<String, Variant>& orderData = result.toMap();
 
-  ZlimdbProtocol::setEntityHeader(order.entity, 0, 0, sizeof(order));
+  ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(order));
   order.raw_id = orderData.find("id")->toUInt64();
   String btype = orderData.find("type")->toString();
   if(btype != "0" && btype != "1")
@@ -194,7 +194,7 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_market_order_entity>& orders)
   const List<Variant>& ordersData = result.toList();
   this->orders.clear();
   meguco_user_market_order_entity order;
-  ZlimdbProtocol::setEntityHeader(order.entity, 0, 0, sizeof(order));
+  ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(order));
   Time time(true);
   for(List<Variant>::Iterator i = ordersData.begin(), end = ordersData.end(); i != end; ++i)
   {
@@ -232,7 +232,7 @@ bool_t BitstampBtcUsd::loadBalance(meguco_user_market_balance_entity& balance)
     return false;
 
   const HashMap<String, Variant>& balanceData = result.toMap();
-  ZlimdbProtocol::setEntityHeader(balance.entity, 0, 0, sizeof(balance));
+  ZlimdbConnection::setEntityHeader(balance.entity, 0, 0, sizeof(balance));
   balance.reserved_usd = balanceData.find("usd_reserved")->toDouble();
   balance.reserved_btc = balanceData.find("btc_reserved")->toDouble();
   balance.available_usd = balanceData.find("usd_available")->toDouble();
@@ -250,7 +250,7 @@ bool_t BitstampBtcUsd::loadTransactions(List<meguco_user_market_transaction_enti
     return false;
 
   meguco_user_market_transaction_entity transaction;
-  ZlimdbProtocol::setEntityHeader(transaction.entity, 0, 0, sizeof(transaction));
+  ZlimdbConnection::setEntityHeader(transaction.entity, 0, 0, sizeof(transaction));
   const List<Variant>& transactionData = result.toList();
   Time time(true);
   for(List<Variant>::Iterator i = transactionData.begin(), end = transactionData.end(); i != end; ++i)

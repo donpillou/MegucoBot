@@ -3,8 +3,9 @@
 
 #include <nstd/HashMap.h>
 
+#include <megucoprotocol.h>
+
 #include "Tools/ZlimdbConnection.h"
-#include "Tools/ZlimdbProtocol.h"
 
 class User2;
 class Market2;
