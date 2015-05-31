@@ -11,11 +11,10 @@ class User2;
 class Market2;
 class Session2;
 
-class ConnectionHandler : public ZlimdbConnection::Callback
+class Main : public ZlimdbConnection::Callback
 {
 public:
-  ConnectionHandler() {}
-  ~ConnectionHandler();
+  ~Main();
 
   const String& getErrorString() const {return error;}
 

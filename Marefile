@@ -35,13 +35,12 @@ targets = {
     libs = { "nstd", "zlimdbclient", "lz4" }
     root = "Src"
     files = {
-      "Src/**.cpp" = cppSource
-      "Src/**.h"
-    }
-    files -= {
-      "Src/Bots/**"
-      "Src/Brokers/**"
-      "Src/Services/**"
+      "Src/*.cpp" = cppSource
+      "Src/*.h"
+      "Src/Tools/ProcessManager.cpp" = cppSource
+      "Src/Tools/ProcessManager.h"
+      "Src/Tools/ZlimdbConnection.cpp" = cppSource
+      "Src/Tools/ZlimdbConnection.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
