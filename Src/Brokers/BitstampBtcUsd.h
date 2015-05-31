@@ -3,10 +3,10 @@
 
 #include <nstd/Variant.h>
 
-#include "Tools/Market.h"
+#include "Tools/Broker.h"
 #include "Tools/HttpRequest.h"
 
-class BitstampBtcUsd : public Market
+class BitstampBtcUsd : public Broker
 {
 public:
   BitstampBtcUsd(const String& clientId, const String& key, const String& secret);

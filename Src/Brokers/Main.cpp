@@ -17,7 +17,7 @@
 #include "Tools/ZlimdbProtocol.h"
 
 #ifdef MARKET_BITSTAMPBTCUSD
-#include "Markets/BitstampBtcUsd.h"
+#include "Brokers/BitstampBtcUsd.h"
 typedef BitstampBtcUsd MarketAdapter;
 #endif
 
@@ -25,16 +25,16 @@ class BotConnectionHandler : public ZlimdbConnection::Callback
 {
 public:
 
-  BotConnectionHandler() : market(0) {}
+  BotConnectionHandler() : broker(0) {}
   ~BotConnectionHandler()
   {
-    delete market;
+    delete broker;
   }
 
   bool_t connect2(uint32_t userMarketTableId)
   {
-    delete market;
-    market = 0;
+    delete broker;
+    broker = 0;
     orders2.clear();
     transactions2.clear();
     balance.entity.id = 0;
@@ -83,7 +83,7 @@ public:
         return false;
       if(!ZlimdbProtocol::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length() + key.length(), userMarketEntity->secret_size, secret))
         return false;
-      market = new MarketAdapter(userName, key, secret);
+      broker = new MarketAdapter(userName, key, secret);
     }
 
     // subscribe to orders table
@@ -133,7 +133,7 @@ public:
 
 private:
   ZlimdbConnection connection;
-  Market* market;
+  Broker* broker;
 
   uint32_t userMarketOrdersTableId;
   uint32_t userMarketTransactionsTableId;
@@ -179,10 +179,10 @@ private:
   void_t addedUserMarketOrder(const meguco_user_market_order_entity& createOrderArgs)
   {
     meguco_user_market_order_entity order;
-    if(createOrderArgs.state != meguco_user_market_order_opening || !market->createOrder(createOrderArgs.entity.id, (meguco_user_market_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
+    if(createOrderArgs.state != meguco_user_market_order_opening || !broker->createOrder(createOrderArgs.entity.id, (meguco_user_market_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
     {
       if(createOrderArgs.state == meguco_user_market_order_opening)
-        addLogMessage(meguco_log_error, market->getLastError());
+        addLogMessage(meguco_log_error, broker->getLastError());
       order = createOrderArgs;
       order.state = meguco_user_market_order_error;
     }
@@ -207,14 +207,14 @@ private:
     if(updateOrderArgs.state == meguco_user_market_order_open)
     {
       // step #1 cancel current order
-      if(!market->cancelOrder(updateOrderArgs.entity.id))
-        return addLogMessage(meguco_log_error, market->getLastError());
+      if(!broker->cancelOrder(updateOrderArgs.entity.id))
+        return addLogMessage(meguco_log_error, broker->getLastError());
     
       // step #2 create new order with same id
       meguco_user_market_order_entity order;
-      if(!market->createOrder(updateOrderArgs.entity.id, (meguco_user_market_order_type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
+      if(!broker->createOrder(updateOrderArgs.entity.id, (meguco_user_market_order_type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
       {
-        addLogMessage(meguco_log_error, market->getLastError());
+        addLogMessage(meguco_log_error, broker->getLastError());
         order = updateOrderArgs;
         order.state = meguco_user_market_order_error;
       }
@@ -231,7 +231,7 @@ private:
 
   void_t removedUserMarketOrder(uint64_t entityId)
   {
-    market->cancelOrder(entityId);
+    broker->cancelOrder(entityId);
   }
 
   void_t controlUserMarketOrder(uint64_t entityId, uint32_t controlCode)
@@ -244,8 +244,8 @@ private:
     case meguco_user_market_order_control_refresh:
       {
         List<meguco_user_market_order_entity> orders;
-        if(!market->loadOrders(orders))
-          return addLogMessage(meguco_log_error, market->getLastError());
+        if(!broker->loadOrders(orders))
+          return addLogMessage(meguco_log_error, broker->getLastError());
         HashMap<uint64_t, meguco_user_market_order_entity> ordersMapByRaw;
         for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = orders2.begin(), end = orders2.end(); i != end; ++i)
         {
@@ -292,8 +292,8 @@ private:
     case meguco_user_market_transaction_control_refresh:
       {
         List<meguco_user_market_transaction_entity> transactions;
-        if(!market->loadTransactions(transactions))
-          return addLogMessage(meguco_log_error, market->getLastError());
+        if(!broker->loadTransactions(transactions))
+          return addLogMessage(meguco_log_error, broker->getLastError());
         HashMap<uint64_t, meguco_user_market_transaction_entity> transactionsapByRaw;
         for(HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator i = transactions2.begin(), end = transactions2.end(); i != end; ++i)
         {
@@ -340,8 +340,8 @@ private:
     case meguco_user_market_balance_control_refresh:
       {
         meguco_user_market_balance_entity balance;
-        if(!market->loadBalance(balance))
-          return addLogMessage(meguco_log_error, market->getLastError());
+        if(!broker->loadBalance(balance))
+          return addLogMessage(meguco_log_error, broker->getLastError());
         if(this->balance.entity.id == 0)
         {
           uint64_t id;

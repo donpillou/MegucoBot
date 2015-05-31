@@ -3,9 +3,9 @@ bots = "Src/Bots/*.cpp"
 bots = "$(patsubst Src/Bots/%.cpp,%,$(bots))"
 bots -= "Main"
 
-markets = "Src/Markets/*.cpp"
-markets = "$(patsubst Src/Markets/%.cpp,%,$(markets))"
-markets -= "Main"
+brokers = "Src/Brokers/*.cpp"
+brokers = "$(patsubst Src/Brokers/%.cpp,%,$(brokers))"
+brokers -= "Main"
 
 services = "User"
 
@@ -20,7 +20,7 @@ buildDir = "Build/$(configuration)/$(target)"
 targets = {
 
   MegucoServer = cppApplication + {
-    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + markets + services
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + brokers + services
     buildDir = "Build/$(configuration)"
     includePaths = {
       "Ext/libnstd/include"
@@ -40,7 +40,7 @@ targets = {
     }
     files -= {
       "Src/Bots/**"
-      "Src/Markets/**"
+      "Src/Brokers/**"
       "Src/Services/**"
     }
     if tool == "vcxproj" {
@@ -127,15 +127,15 @@ targets = {
     }
   }
 
-  "$(markets)" = cppApplication + {
-    folder = "Markets"
+  "$(brokers)" = cppApplication + {
+    folder = "Brokers"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "MARKET_$(upper $(target))" }
-    buildDir = "Build/$(configuration)/Markets/$(target)"
+    buildDir = "Build/$(configuration)/Brokers/$(target)"
     output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
     includePaths = {
       "Src",
-      "Src/Markets",
+      "Src/Brokers",
       "Ext/libnstd/include"
       "Ext/libzlimdbclient/include"
       "Ext/libmegucoprotocol/include"
@@ -146,16 +146,16 @@ targets = {
       "Build/$(configuration)/liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4", "curl" }
-    root = { "Src/Markets", "Src" }
+    root = { "Src/Brokers", "Src" }
     files = {
-      "Src/Markets/$(target).cpp" = cppSource
-      "Src/Markets/$(target).h"
+      "Src/Brokers/$(target).cpp" = cppSource
+      "Src/Brokers/$(target).h"
       "Src/Tools/*.cpp" = cppSource
       "Src/Tools/*.h"
       "Src/BotProtocol.h"
-      "Src/Markets/Tools/**.cpp" = cppSource
-      "Src/Markets/Tools/**.h"
-      "Src/Markets/Main.cpp" = cppSource
+      "Src/Brokers/Tools/**.cpp" = cppSource
+      "Src/Brokers/Tools/**.h"
+      "Src/Brokers/Main.cpp" = cppSource
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }

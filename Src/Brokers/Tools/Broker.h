@@ -6,10 +6,10 @@
 
 #include <megucoprotocol.h>
 
-class Market
+class Broker
 {
 public:
-  virtual ~Market() {};
+  virtual ~Broker() {};
 
   virtual const String& getLastError() const = 0;
 
