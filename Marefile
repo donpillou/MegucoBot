@@ -113,7 +113,6 @@ targets = {
       "Src/Tools/Socket.h"
       "Src/Tools/ZlimdbConnection.cpp" = cppSource
       "Src/Tools/ZlimdbConnection.h"
-      "Src/BotProtocol.h"
       "Src/Bots/Tools/**.cpp" = cppSource
       "Src/Bots/Tools/**.h"
       "Src/Bots/Main.cpp" = cppSource
