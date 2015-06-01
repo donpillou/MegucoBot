@@ -1,7 +1,6 @@
 
-bots = "Src/Bots/*.cpp"
+bots = "Src/Bots/*.cpp" - "Src/Bots/Main.cpp"
 bots = "$(patsubst Src/Bots/%.cpp,%,$(bots))"
-bots -= "Main"
 
 brokers = "Src/Brokers/*.cpp" - "Src/Brokers/Main.cpp"
 brokers = "$(patsubst Src/Brokers/%.cpp,%Broker,$(brokers))"
@@ -191,7 +190,7 @@ targets = {
   }
 
   "$(markets)" = cppApplication + {
-  name = "$(patsubst %Market,%,$(target))"
+    name = "$(patsubst %Market,%,$(target))"
     folder = "Markets"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "MARKET_$(upper $(name))" }
