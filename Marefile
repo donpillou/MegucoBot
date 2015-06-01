@@ -6,6 +6,9 @@ bots -= "Main"
 brokers = "Src/Brokers/*.cpp" - "Src/Brokers/Main.cpp"
 brokers = "$(patsubst Src/Brokers/%.cpp,%Broker,$(brokers))"
 
+markets = "Src/Markets/*.cpp" - "Src/Markets/Main.cpp"
+markets = "$(patsubst Src/Markets/%.cpp,%Market,$(markets))"
+
 services = "User"
 
 if configuration == "Debug" {
@@ -19,7 +22,7 @@ buildDir = "Build/$(configuration)/$(target)"
 targets = {
 
   MegucoServer = cppApplication + {
-    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + brokers + services
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + brokers + markets + services
     buildDir = "Build/$(configuration)"
     includePaths = {
       "Ext/libnstd/include"
@@ -165,6 +168,66 @@ targets = {
       "Src/Tools/Sha256.h"
       "Src/Tools/ZlimdbConnection.cpp" = cppSource
       "Src/Tools/ZlimdbConnection.h"
+      "Src/Tools/HttpRequest.cpp" = cppSource
+      "Src/Tools/HttpRequest.h"
+    }
+    if tool == "vcxproj" {
+      libs += { "ws2_32" }
+      dependencies += { "libcurl" }
+      linkFlags += { "/SUBSYSTEM:CONSOLE" }
+      defines += { "CURL_STATICLIB" }
+      includePaths += {
+        "Ext/curl/include",
+        "Build/$(configuration)/libcurl/include"
+        "Build/$(configuration)/libcurl/include/curl"
+      }
+      libPaths += {
+        "Build/$(configuration)/libcurl"
+      }
+    }
+    if platform == "Linux" {
+      libs += { "pthread", "rt" }
+    }
+  }
+
+  "$(markets)" = cppApplication + {
+  name = "$(patsubst %Market,%,$(target))"
+    folder = "Markets"
+    dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
+    defines += { "MARKET_$(upper $(name))" }
+    buildDir = "Build/$(configuration)/Markets/$(target)"
+    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    includePaths = {
+      "Src",
+      "Src/Markets",
+      "Ext/libnstd/include"
+      "Ext/libzlimdbclient/include"
+      "Ext/libmegucoprotocol/include"
+    }
+    libPaths = {
+      "Build/$(configuration)/libnstd"
+      "Build/$(configuration)/libzlimdbclient"
+      "Build/$(configuration)/liblz4"
+    }
+    libs = { "nstd", "zlimdbclient", "lz4", "curl" }
+    root = { "Src/Markets", "Src" }
+    files = {
+      "Src/Markets/$(name).cpp" = cppSource
+      "Src/Markets/$(name).h"
+      "Src/Markets/Tools/*.cpp" = cppSource
+      "Src/Markets/Tools/*.h"
+      "Src/Markets/Main.cpp" = cppSource
+      "Src/Markets/Main.h"
+      "Src/Tools/Hex.cpp" = cppSource
+      "Src/Tools/Hex.h"
+      "Src/Tools/Json.cpp" = cppSource
+      "Src/Tools/Json.h"
+      "Src/Tools/Sha256.cpp" = cppSource
+      "Src/Tools/Sha256.h"
+      "Src/Tools/ZlimdbConnection.cpp" = cppSource
+      "Src/Tools/ZlimdbConnection.h"
+      "Src/Tools/HttpRequest.cpp" = cppSource
+      "Src/Tools/HttpRequest.h"
     }
     if tool == "vcxproj" {
       libs += { "ws2_32" }
