@@ -69,7 +69,7 @@ int_t main(int_t argc, char_t* argv[])
     if(!server.connect())
     {
         Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)server.getErrorString());
-        return -1;
+        continue;
     }
     Console::printf("Connected to zlimdb server.\n");
 

@@ -1,5 +1,6 @@
 
 #include <nstd/Console.h>
+#include <nstd/Thread.h>
 
 #include "Main.h"
 
@@ -26,17 +27,18 @@ int_t main(int_t argc, char_t* argv[])
 
   // create connection to bot server
   Main main;
-  if(!main.connect2(userMarketTableId))
+  for(;; Thread::sleep(10 * 1000))
   {
-    Console::errorf("error: Could not connect to bot server: %s\n", (const char_t*)main.getErrorString());
-    return -1;
-  }
+    if(!main.connect2(userMarketTableId))
+    {
+      Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)main.getErrorString());
+      continue;
+    }
+    Console::printf("Connected to zlimdb server.\n");
 
-  // wait for requests
-  if(!main.process())
-  {
-    Console::errorf("error: Lost connection to bot server: %s\n", (const char_t*)main.getErrorString());
-    return -1;
+    // wait for requests
+    main.process();
+    Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)main.getErrorString());
   }
 
   return 0;
