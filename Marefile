@@ -58,7 +58,8 @@ targets = {
     name = "$(patsubst %Service,%,$(target))"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     folder = "Services"
-    buildDir = "Build/$(configuration)/Services/$(target)"
+    buildDir = "Build/$(configuration)/Services/$(name)"
+    output = "Build/$(configuration)/Services/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src",
       "Ext/libnstd/include"
@@ -93,7 +94,7 @@ targets = {
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "BOT_$(upper $(target))" }
     buildDir = "Build/$(configuration)/Bots/$(target)"
-    outputDir = "Build/$(configuration)/"
+    outputDir = "Build/$(configuration)/Bots"
     includePaths = {
       "Src",
       "Src/Bots",
@@ -138,8 +139,8 @@ targets = {
     folder = "Brokers"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "BROKER_$(upper $(name))" }
-    buildDir = "Build/$(configuration)/Brokers/$(target)"
-    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    buildDir = "Build/$(configuration)/Brokers/$(name)"
+    output = "Build/$(configuration)/Brokers/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src",
       "Src/Brokers",
@@ -196,8 +197,8 @@ targets = {
     folder = "Markets"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "MARKET_$(upper $(name))" }
-    buildDir = "Build/$(configuration)/Markets/$(target)"
-    output = "Build/$(configuration)/$(target)$(if $(Win32),.exe,)"
+    buildDir = "Build/$(configuration)/Markets/$(name)"
+    output = "Build/$(configuration)/Markets/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src",
       "Src/Markets",
