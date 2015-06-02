@@ -352,7 +352,7 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
 
 void_t Main::addedProcess(uint64_t entityId, const String& command)
 {
-  if(command.startsWith("Markets/"))
+  if(command.startsWith("Brokers/"))
   {
     const char_t* param = command.find(' ');
     if(param)
