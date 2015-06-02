@@ -8,7 +8,8 @@ brokers = "$(patsubst Src/Brokers/%.cpp,%Broker,$(brokers))"
 markets = "Src/Markets/*.cpp" - "Src/Markets/Main.cpp"
 markets = "$(patsubst Src/Markets/%.cpp,%Market,$(markets))"
 
-services = "User"
+services = "Src/Services/*/"
+services = "$(patsubst Src/Services/%/,%Service,$(services))"
 
 if configuration == "Debug" {
   defines += { "_DEBUG", "DEBUG" }
@@ -54,6 +55,7 @@ targets = {
   }
 
   "$(services)" = cppApplication + {
+    name = "$(patsubst %Service,%,$(target))"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     folder = "Services"
     buildDir = "Build/$(configuration)/Services/$(target)"
@@ -69,10 +71,10 @@ targets = {
       "Build/$(configuration)/liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4" }
-    root = { "Src/Services/$(target)", "Src" }
+    root = { "Src/Services/$(name)", "Src" }
     files = {
-      "Src/Services/$(target)/**.cpp" = cppSource
-      "Src/Services/$(target)/**.h"
+      "Src/Services/$(name)/**.cpp" = cppSource
+      "Src/Services/$(name)/**.h"
       "Src/Tools/ZlimdbConnection.cpp" = cppSource
       "Src/Tools/ZlimdbConnection.h"
     }
