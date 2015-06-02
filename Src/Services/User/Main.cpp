@@ -16,13 +16,13 @@ int_t main(int_t argc, char_t* argv[])
   Main main;
 
   // load market list
-  main.addBotMarket("Bitstamp/BTC/USD", binaryDir + "/BitstampBtcUsd");
+  main.addBotMarket("Bitstamp/BTC/USD", binaryDir + "Brokers/BitstampBtcUsd");
 
   // load bots
-  main.addBotEngine("BetBot", binaryDir + "/BetBot");
-  main.addBotEngine("BetBot2", binaryDir + "/BetBot2");
-  main.addBotEngine("FlipBot", binaryDir + "/FlipBot");
-  main.addBotEngine("TestBot", binaryDir + "/TestBot");
+  main.addBotEngine("BetBot", binaryDir + "Bots/BetBot");
+  main.addBotEngine("BetBot2", binaryDir + "Bots/BetBot2");
+  main.addBotEngine("FlipBot", binaryDir + "Bots/FlipBot");
+  main.addBotEngine("TestBot", binaryDir + "Bots/TestBot");
 
   // main loop
   for(;; Thread::sleep(10 * 1000))
