@@ -1,6 +1,7 @@
 
 #include <nstd/Console.h>
 #include <nstd/File.h>
+#include <nstd/Directory.h>
 #include <nstd/Thread.h>
 
 #include "Main.h"
@@ -11,6 +12,19 @@ int_t main(int_t argc, char_t* argv[])
 
   // initialize connection handler
   Main main;
+
+  // find market engines
+  {
+    Directory dir;
+    if(dir.open(binaryDir + "/Markets", String(), false))
+    {
+      String path;
+      bool_t isDir;
+      while(dir.read(path, isDir))
+        if(File::isExecutable(path))
+          main.addMarket(path);
+    }
+  }
 
   // main loop
   for(;; Thread::sleep(10 * 1000))
@@ -40,6 +54,12 @@ void_t Main::disconnect()
 {
   connection.close();
   processes.clear();
+}
+
+void_t Main::addMarket(const String& executable)
+{
+  Market& market = markets.append(executable, Market());
+  market.running = false;
 }
 
 bool_t Main::connect()
@@ -77,6 +97,10 @@ bool_t Main::connect()
       addedProcess(i.key(), *i);
   }
 
+  // start markets
+  for(HashMap<String, Market>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
+  {
+  }
 
   return true;
 }
@@ -102,28 +126,38 @@ void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
   }
 }
 
-void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
-{
-  // ??
-}
-
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 {
-  // ??
+  if(tableId == processesTableId)
+    removedProcess(entityId);
 }
-
 
 void_t Main::addedProcess(uint64_t entityId, const String& command)
 {
-  // ??
+  if(command.startsWith("Markets/"))
+  {
+    HashMap<String, Market>::Iterator it = markets.find(command);
+    if(it == markets.end())
+      return;
+    Market& market = *it;
+    if(market.running)
+    {
+      // todo: kill this process?
+      return;
+    }
+    processes.append(entityId, &market);
+    market.running = true;
+  }
 }
 
 void_t Main::removedProcess(uint64_t entityId)
 {
-  HashMap<uint64_t, Process>::Iterator it = processes.find(entityId);
+  HashMap<uint64_t, Market*>::Iterator it = processes.find(entityId);
   if(it != processes.end())
   {
-    // ??
+    Market* market = *it;
+    market->running = false;
     processes.remove(it);
+    // todo: restart process?
   }
 }
