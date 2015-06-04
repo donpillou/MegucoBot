@@ -74,7 +74,7 @@ bool_t Main::connect()
   // get processes
   if(!connection.createTable("processes", processesTableId))
       return error = connection.getErrorString(), false;
-  if(connection.subscribe(processesTableId))
+  if(!connection.subscribe(processesTableId))
     return error = connection.getErrorString(), false;
   {
     String tableName;
