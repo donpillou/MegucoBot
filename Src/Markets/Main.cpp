@@ -70,7 +70,7 @@ bool_t Main::receivedTrade(const Market::Trade& trade)
   tradeEntity.price = trade.price;
   tradeEntity.flags = trade.flags;
   uint64_t id;
-  if(!zlimdbConnection.add(tradesTableId, tradeEntity.entity, id))
+  if(!zlimdbConnection.add(tradesTableId, tradeEntity.entity, id, true))
     return false;
   return true;
 }

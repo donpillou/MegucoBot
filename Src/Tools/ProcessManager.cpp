@@ -2,6 +2,7 @@
 #include <nstd/Array.h>
 #include <nstd/Process.h>
 #include <nstd/HashMap.h>
+#include <nstd/Console.h>
 
 #include "ProcessManager.h"
 
@@ -25,6 +26,7 @@ void_t ProcessManager::stop()
 
 bool_t ProcessManager::startProcess(const String& commandLine, uint32_t& id)
 {
+  //Console::printf("launching: %s\n", (const char_t*)commandLine);
   id = nextId++;
   mutex.lock();
   Action& action = actions.append(Action());
@@ -69,58 +71,63 @@ uint_t ProcessManager::proc()
     }
     else
     {
-      mutex.lock();
-      if(actions.isEmpty())
+      for(;;)
       {
-        mutex.unlock();
-        continue;
-      }
-      Action& action = actions.front();
-      switch(action.type)
-      {
-      case Action::quitType:
-        mutex.unlock();
-        return 0;
-      case Action::startType:
+        mutex.lock();
+        if(actions.isEmpty())
         {
-          Process* process = new Process();
-          if(!process->start(action.commandLine))
-          {
-            callback->terminatedProcess(action.id);
-            delete process;
-          }
-          else
-          {
-            processes.append(process);
-            processIdMap.append(process, action.id);
-          }
+          mutex.unlock();
+          break;
         }
-        break;
-      case Action::killType:
+        Action& action = actions.front();
+        switch(action.type)
         {
-          HashMap<Process*, uint32_t>::Iterator itMap = processIdMap.end();
-          for(HashMap<Process*, uint32_t>::Iterator end = processIdMap.end(); itMap != end; ++itMap)
-            if(*itMap == action.id)
-              break;
-          if(itMap != processIdMap.end())
+        case Action::quitType:
+          actions.removeFront();
+          mutex.unlock();
+          return 0;
+        case Action::startType:
           {
-            process = itMap.key();
-            Array<Process*>::Iterator it = processes.find(process);
-            if(it != processes.end())
+            Process* process = new Process();
+            if(!process->start(action.commandLine))
             {
-              Process* process = *it;
-              if(process->kill())
+              callback->terminatedProcess(action.id);
+              delete process;
+            }
+            else
+            {
+              processes.append(process);
+              processIdMap.append(process, action.id);
+            }
+          }
+          break;
+        case Action::killType:
+          {
+            HashMap<Process*, uint32_t>::Iterator itMap = processIdMap.end();
+            for(HashMap<Process*, uint32_t>::Iterator end = processIdMap.end(); itMap != end; ++itMap)
+              if(*itMap == action.id)
+                break;
+            if(itMap != processIdMap.end())
+            {
+              process = itMap.key();
+              Array<Process*>::Iterator it = processes.find(process);
+              if(it != processes.end())
               {
-                callback->terminatedProcess(action.id);
-                processes.remove(it);
-                processIdMap.remove(itMap);
-                delete process;
+                Process* process = *it;
+                if(process->kill())
+                {
+                  callback->terminatedProcess(action.id);
+                  processes.remove(it);
+                  processIdMap.remove(itMap);
+                  delete process;
+                }
               }
             }
           }
         }
+        actions.removeFront();
+        mutex.unlock();
       }
-      mutex.unlock();
     }
   }
   return 0;

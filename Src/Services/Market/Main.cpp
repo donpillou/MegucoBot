@@ -8,7 +8,7 @@
 
 int_t main(int_t argc, char_t* argv[])
 {
-  String binaryDir = File::dirname(String(argv[0], String::length(argv[0])));
+  String binaryDir = File::dirname(File::dirname(String(argv[0], String::length(argv[0]))));
 
   // initialize connection handler
   Main main;
@@ -21,8 +21,8 @@ int_t main(int_t argc, char_t* argv[])
       String path;
       bool_t isDir;
       while(dir.read(path, isDir))
-        if(File::isExecutable(path))
-          main.addMarket(path);
+        if(File::isExecutable(binaryDir + "/Markets/" + path))
+          main.addMarket(String("Markets/") + path);
     }
   }
 
@@ -100,6 +100,19 @@ bool_t Main::connect()
   // start markets
   for(HashMap<String, Market>::Iterator i = markets.begin(), end = markets.end(); i != end; ++i)
   {
+    Market& market = *i;
+    if(!market.running)
+    {
+      const String& command = i.key();
+      buffer.resize(sizeof(meguco_process_entity) + command.length());
+      meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
+      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, buffer.size());
+      ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(meguco_process_entity), command);
+      process->process_id = 0;
+      uint64_t id;
+      if(!connection.add(processesTableId, process->entity, id))
+        return error = connection.getErrorString(), false;
+    }
   }
 
   return true;
@@ -109,7 +122,7 @@ bool_t Main::process()
 {
   for(;;)
     if(!connection.process())
-      return false;
+      return error = connection.getErrorString(), false;
 }
 
 void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)

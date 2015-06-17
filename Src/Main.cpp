@@ -55,7 +55,7 @@ int_t main(int_t argc, char_t* argv[])
 #endif
 
   // initialize process manager
-  Main server;
+  Main server(binaryDir);
   if(!server.init())
   {
     Console::errorf("error: Could not initialize process: %s\n", (const char_t*)server.getErrorString());
@@ -85,12 +85,24 @@ bool_t Main::init()
 {
   if(!processManager.start(*this))
     return error = Error::getErrorString(), false;
+
+  // start market service
+  uint32_t processId;
+  String command = "Services/Market.exe";
+  if(!processManager.startProcess(binaryDir + "/" + command, processId))
+    return error = processManager.getErrorString(), false;
+  Process& process = processesById.append(processId, Process());
+  process.processId = processId;
+  process.command = command;
+  process.entityId = 0;
+
   return true;
 }
 
 bool_t Main::connect()
 {
   connection.close();
+  this->processes.clear();
 
   if(!connection.connect(*this))
     return error = connection.getErrorString(), false;
@@ -112,10 +124,11 @@ bool_t Main::connect()
     {
       if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
         continue;
-      Process& processInfo = processes.append(process->process_id, Process());
+      Process& processInfo = processes.append(process->entity.id, Process());
       processInfo.entityId = process->entity.id;
       processInfo.command = command;
       processInfo.processId = process->process_id;
+      Console::printf("added: %s\n", (const char_t*)processInfo.command);
     }
   }
   if(connection.getErrno() != 0)
@@ -127,6 +140,7 @@ bool_t Main::connect()
     next = i;
     ++next;
     Process& process = *i;
+    Console::printf("check: %s\n", (const char_t*)process.command);
     HashMap<uint32_t, Process>::Iterator it = this->processesById.find(process.processId);
     if(it == this->processesById.end())
     {
@@ -150,7 +164,7 @@ bool_t Main::connect()
   for(HashMap<uint32_t, Process>::Iterator i = this->processesById.begin(), end = this->processesById.end(); i != end; ++i)
   {
     Process& process = *i;
-    if(processes.find(process.processId) == processes.end())
+    if(processes.find(process.entityId) == processes.end())
     {
       buffer.resize(sizeof(meguco_process_entity) + process.command.length());
       meguco_process_entity* processEntity = (meguco_process_entity*)(byte_t*)buffer;
@@ -196,7 +210,7 @@ void_t Main::removeProcess(uint32_t processId)
 bool_t Main::startProcess(uint64_t& entityId, const String& command)
 {
   uint32_t processId;
-  if(!processManager.startProcess(command, processId))
+  if(!processManager.startProcess(binaryDir + "/" + command, processId))
     return error = processManager.getErrorString(), false;
   Process& process = processesById.append(processId, Process());
   process.processId = processId;

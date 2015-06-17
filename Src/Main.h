@@ -11,6 +11,7 @@
 class Main : public ZlimdbConnection::Callback, public ProcessManager::Callback
 {
 public:
+  Main(const String& binaryDir) : binaryDir(binaryDir) {}
   bool_t init();
   const String& getErrorString() const {return error;}
   bool_t connect();
@@ -26,6 +27,7 @@ private:
 
 private:
   String error;
+  String binaryDir;
   ZlimdbConnection connection;
   uint32_t processesTableId;
   ProcessManager processManager;

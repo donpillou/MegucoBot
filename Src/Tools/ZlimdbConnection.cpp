@@ -117,10 +117,14 @@ bool_t ZlimdbConnection::clearTable(uint32_t tableId)
   return true;
 }
 
-bool_t ZlimdbConnection::add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id)
+bool_t ZlimdbConnection::add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id, bool_t succeedIfExists)
 {
   if(zlimdb_add(zdb, tableId, &entity, &id) != 0)
+  {
+    if (succeedIfExists && zlimdb_errno() == zlimdb_error_entity_id)
+      return true;
     return error = getZlimdbError(), false;
+  }
   return true;
 }
 
@@ -150,7 +154,7 @@ bool_t ZlimdbConnection::process()
       case zlimdb_local_error_timeout:
         continue;
       }
-      return false;
+      return error = getZlimdbError(), false;
     }
 }
 
