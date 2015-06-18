@@ -87,14 +87,28 @@ bool_t Main::init()
     return error = Error::getErrorString(), false;
 
   // start market service
-  uint32_t processId;
-  String command = "Services/Market.exe";
-  if(!processManager.startProcess(binaryDir + "/" + command, processId))
-    return error = processManager.getErrorString(), false;
-  Process& process = processesById.append(processId, Process());
-  process.processId = processId;
-  process.command = command;
-  process.entityId = 0;
+  {
+    uint32_t processId;
+    String command = "Services/Market.exe";
+    if(!processManager.startProcess(binaryDir + "/" + command, processId))
+      return error = processManager.getErrorString(), false;
+    Process& process = processesById.append(processId, Process());
+    process.processId = processId;
+    process.command = command;
+    process.entityId = 0;
+  }
+
+  // start user serivce
+  {
+    uint32_t processId;
+    String command = "Services/User.exe";
+    if(!processManager.startProcess(binaryDir + "/" + command, processId))
+      return error = processManager.getErrorString(), false;
+    Process& process = processesById.append(processId, Process());
+    process.processId = processId;
+    process.command = command;
+    process.entityId = 0;
+  }
 
   return true;
 }

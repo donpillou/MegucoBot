@@ -177,7 +177,7 @@ bool_t Main::connect()
   // get processes
   if(!connection.createTable("processes", processesTableId))
       return error = connection.getErrorString(), false;
-  if(connection.subscribe(processesTableId))
+  if(!connection.subscribe(processesTableId))
     return error = connection.getErrorString(), false;
   {
     String tableName;
@@ -201,7 +201,7 @@ bool_t Main::connect()
   }
 
   // get table list
-  if(connection.subscribe(zlimdb_table_tables))
+  if(!connection.subscribe(zlimdb_table_tables))
     return error = connection.getErrorString(), false;
   {
     String tableName;
