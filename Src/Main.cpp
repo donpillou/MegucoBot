@@ -114,7 +114,7 @@ bool_t Main::connect()
   if(!connection.subscribe(processesTableId))
     return error = connection.getErrorString(), false;
 
-  HashMap<uint32_t, Process> processes;
+  HashMap<uint64_t, Process> processes;
   String command;
   while(connection.getResponse(buffer))
   {
@@ -128,19 +128,17 @@ bool_t Main::connect()
       processInfo.entityId = process->entity.id;
       processInfo.command = command;
       processInfo.processId = process->process_id;
-      Console::printf("added: %s\n", (const char_t*)processInfo.command);
     }
   }
   if(connection.getErrno() != 0)
     return error = connection.getErrorString(), false;
 
   // start unknown processes from processes table
-  for(HashMap<uint32_t, Process>::Iterator i = processes.begin(), end = processes.end(), next; i != end; i = next)
+  for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(), next; i != end; i = next)
   {
     next = i;
     ++next;
     Process& process = *i;
-    Console::printf("check: %s\n", (const char_t*)process.command);
     HashMap<uint32_t, Process>::Iterator it = this->processesById.find(process.processId);
     if(it == this->processesById.end())
     {
@@ -177,6 +175,8 @@ bool_t Main::connect()
       process.entityId = entityId;
       this->processes.append(entityId, &process);
     }
+    else
+      this->processes.append(process.entityId, &process);
   }
   return true;
 }
@@ -228,6 +228,7 @@ bool_t Main::startProcess(uint64_t& entityId, const String& command)
       return error = connection.getErrorString(), false;
   }
   process.entityId = entityId;
+  processes.append(process.entityId, &process);
   return true;
 }
 
