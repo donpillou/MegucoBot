@@ -146,37 +146,14 @@ bool_t Main::connect()
   }
   if(connection.getErrno() != 0)
     return error = connection.getErrorString(), false;
-
-  // start unknown processes from processes table
   for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(), next; i != end; i = next)
-  {
-    next = i;
-    ++next;
-    Process& process = *i;
-    HashMap<uint32_t, Process>::Iterator it = this->processesById.find(process.processId);
-    if(it == this->processesById.end())
-    {
-      if(!startProcess(process.entityId, process.command))
-        return false;
-    }
-    else
-    {
-      Process& knownProcess = *it;
-      if(process.entityId != knownProcess.entityId)
-      {
-        knownProcess.entityId = 0;
-        if(!connection.remove(processesTableId, process.entityId))
-          return error = connection.getErrorString(), false;
-        processes.remove(i);
-      }
-    }
-  }
+    addedProcess(*i);
 
   // add known processes not in processes table to processes table
-  for(HashMap<uint32_t, Process>::Iterator i = this->processesById.begin(), end = this->processesById.end(); i != end; ++i)
+  for(HashMap<uint32_t, Process>::Iterator i = processesById.begin(), end = processesById.end(); i != end; ++i)
   {
     Process& process = *i;
-    if(processes.find(process.entityId) == processes.end())
+    if(this->processes.find(process.entityId) == this->processes.end())
     {
       buffer.resize(sizeof(meguco_process_entity) + process.command.length());
       meguco_process_entity* processEntity = (meguco_process_entity*)(byte_t*)buffer;
@@ -187,10 +164,7 @@ bool_t Main::connect()
       if(!connection.add(processesTableId, processEntity->entity, entityId))
         return error = connection.getErrorString(), false;
       process.entityId = entityId;
-      this->processes.append(entityId, &process);
     }
-    else
-      this->processes.append(process.entityId, &process);
   }
   return true;
 }
@@ -221,31 +195,6 @@ void_t Main::removeProcess(uint32_t processId)
   processesById.remove(it);
 }
 
-bool_t Main::startProcess(uint64_t& entityId, const String& command)
-{
-  uint32_t processId;
-  if(!processManager.startProcess(binaryDir + "/" + command, processId))
-    return error = processManager.getErrorString(), false;
-  Process& process = processesById.append(processId, Process());
-  process.processId = processId;
-  process.command = command;
-  process.entityId = entityId;
-  if(!entityId)
-  {
-    Buffer buffer;
-    buffer.resize(sizeof(meguco_process_entity) + command.length());
-    meguco_process_entity* processEntity = (meguco_process_entity*)(byte_t*)buffer;
-    ZlimdbConnection::setEntityHeader(processEntity->entity, entityId, 0, buffer.size());
-    processEntity->process_id = processId;
-    ZlimdbConnection::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), command);
-    if(!connection.add(processesTableId, processEntity->entity, entityId))
-      return error = connection.getErrorString(), false;
-  }
-  process.entityId = entityId;
-  processes.append(process.entityId, &process);
-  return true;
-}
-
 bool_t Main::killProcess(uint32_t processId)
 {
   if(!processManager.killProcess(processId))
@@ -263,30 +212,49 @@ void_t Main::terminatedProcess(uint32_t processId)
 
 void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
-  if(tableId == processesTableId && entity.size >= sizeof(meguco_process_entity))
+  if(tableId == processesTableId)
   {
-    meguco_process_entity& process = (meguco_process_entity&)entity;
-    if(processesById.find(process.process_id) != processesById.end())
+    if(entity.size < sizeof(meguco_process_entity))
       return;
-    String command;
-    if(!ZlimdbConnection::getString(process.entity, sizeof(meguco_process_entity), process.cmd_size, command))
+    const meguco_process_entity& processEntity = (const meguco_process_entity&)entity;
+    Process process;
+    process.entityId = processEntity.entity.id;
+    process.processId = processEntity.process_id;
+    if(!ZlimdbConnection::getString(processEntity.entity, sizeof(meguco_process_entity), processEntity.cmd_size, process.command))
       return;
-    if(!startProcess(process.entity.id, command))
-      connection.remove(processesTableId, process.entity.id);
+    addedProcess(process);
   }
+}
+
+void_t Main::addedProcess(const Process& addedProcess)
+{
+  if(processesById.find(addedProcess.processId) != processesById.end())
+    return;
+  uint32_t processId;
+  if(!processManager.startProcess(binaryDir + "/" + addedProcess.command, processId))
+    return (void_t)connection.remove(processesTableId, addedProcess.entityId);
+  Process& process = processesById.append(processId, Process());
+  process.processId = processId;
+  process.command = addedProcess.command;
+  process.entityId = addedProcess.entityId;
+  processes.append(addedProcess.entityId, &process);
+  // todo: update process id in entity
 }
 
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 {
   if(tableId == processesTableId)
-  {
-    HashMap<uint64_t, Process*>::Iterator it = processes.find(entityId);
-    if(it == processes.end())
-      return;
-    const Process* process = *it;
-    if(!killProcess(process->processId))
-      return;
-    processes.remove(it);
-    processesById.remove(process->processId);
-  }
+    removedProcess(entityId);
+}
+
+void_t Main::removedProcess(uint64_t entityId)
+{
+  HashMap<uint64_t, Process*>::Iterator it = processes.find(entityId);
+  if(it == processes.end())
+    return;
+  const Process* process = *it;
+  if(!killProcess(process->processId))
+    return;
+  processes.remove(it);
+  processesById.remove(process->processId);
 }

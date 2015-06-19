@@ -38,8 +38,10 @@ private:
 
 private:
   void_t removeProcess(uint32_t processId);
-  bool_t startProcess(uint64_t& entityId, const String& command);
   bool_t killProcess(uint32_t processId);
+
+  void_t addedProcess(const Process& process);
+  void_t removedProcess(uint64_t entityId);
 
 private: // ProcessManager::Callback
   virtual void_t terminatedProcess(uint32_t processId);
