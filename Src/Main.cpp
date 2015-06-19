@@ -146,7 +146,7 @@ bool_t Main::connect()
   }
   if(connection.getErrno() != 0)
     return error = connection.getErrorString(), false;
-  for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(), next; i != end; i = next)
+  for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(); i != end; ++i)
     addedProcess(*i);
 
   // add known processes not in processes table to processes table
@@ -238,7 +238,16 @@ void_t Main::addedProcess(const Process& addedProcess)
   process.command = addedProcess.command;
   process.entityId = addedProcess.entityId;
   processes.append(addedProcess.entityId, &process);
-  // todo: update process id in entity
+
+  // update process id in entity
+  Buffer buffer;
+  buffer.resize(sizeof(meguco_process_entity) + process.command.length());
+  meguco_process_entity* processEntity = (meguco_process_entity*)(byte_t*)buffer;
+  ZlimdbConnection::setEntityHeader(processEntity->entity, process.entityId, 0, buffer.size());
+  processEntity->process_id = process.processId;
+  ZlimdbConnection::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), process.command);
+  uint64_t entityId;
+  connection.update(processesTableId, processEntity->entity);
 }
 
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
