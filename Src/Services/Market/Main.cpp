@@ -108,7 +108,6 @@ bool_t Main::connect()
       meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
       ZlimdbConnection::setEntityHeader(process->entity, 0, 0, buffer.size());
       ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(meguco_process_entity), command);
-      process->process_id = 0;
       uint64_t id;
       if(!connection.add(processesTableId, process->entity, id))
         return error = connection.getErrorString(), false;

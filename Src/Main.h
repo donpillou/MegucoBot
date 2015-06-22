@@ -22,7 +22,6 @@ private:
   {
     uint64_t entityId;
     String command;
-    uint32_t processId;
   };
 
 private:
@@ -31,20 +30,19 @@ private:
   ZlimdbConnection connection;
   uint32_t processesTableId;
   ProcessManager processManager;
-  HashMap<uint32_t, Process> processesById;
-  HashMap<uint64_t, Process*> processes;
+  HashMap<uint64_t, Process> processes;
   Mutex mutex;
-  List<uint32_t> terminatedProcesses;
+  List<uint64_t> terminatedProcesses;
 
 private:
-  void_t removeProcess(uint32_t processId);
-  bool_t killProcess(uint32_t processId);
+  void_t removeProcess(uint64_t entityId);
+  bool_t killProcess(uint64_t entityId);
 
-  void_t addedProcess(const Process& process);
+  void_t addedProcess(uint64_t entityId, const String& cmd);
   void_t removedProcess(uint64_t entityId);
 
 private: // ProcessManager::Callback
-  virtual void_t terminatedProcess(uint32_t processId);
+  virtual void_t terminatedProcess(uint64_t entityId);
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);

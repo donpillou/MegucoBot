@@ -24,10 +24,9 @@ void_t ProcessManager::stop()
   thread.join();
 }
 
-bool_t ProcessManager::startProcess(const String& commandLine, uint32_t& id)
+void_t ProcessManager::startProcess(uint64_t id, const String& commandLine)
 {
   //Console::printf("launching: %s\n", (const char_t*)commandLine);
-  id = nextId++;
   mutex.lock();
   Action& action = actions.append(Action());
   action.type = Action::startType;
@@ -35,10 +34,9 @@ bool_t ProcessManager::startProcess(const String& commandLine, uint32_t& id)
   action.id = id;
   mutex.unlock();
   Process::interrupt();
-  return true;
 }
 
-bool_t ProcessManager::killProcess(uint32_t id)
+void_t ProcessManager::killProcess(uint64_t id)
 {
   mutex.lock();
   Action& action = actions.append(Action());
@@ -46,26 +44,26 @@ bool_t ProcessManager::killProcess(uint32_t id)
   action.id = id;
   mutex.unlock();
   Process::interrupt();
-  return true;
 }
 
 uint_t ProcessManager::proc()
 {
   Array<Process*> processes;
-  HashMap<Process*, uint32_t> processIdMap;
+  HashMap<Process*, uint64_t> processIdMap;
 
   for(;;)
   {
     Process* process = Process::wait(processes, processes.size());
     if(process)
     {
-      uint32_t id = *processIdMap.find(process);
-      callback->terminatedProcess(id);
-      Array<Process*>::Iterator it = processes.find(process);
-      if(it != processes.end())
+      HashMap<Process*, uint64_t>::Iterator it = processIdMap.find(process);
+      if(it != processIdMap.end())
       {
-        processIdMap.remove(*it);
-        processes.remove(it);
+        callback->terminatedProcess(*it);
+        processIdMap.remove(it);
+        Array<Process*>::Iterator it2 = processes.find(process);
+        if(it2 != processes.end())
+          processes.remove(it2);
         delete process;
       }
     }
@@ -103,8 +101,8 @@ uint_t ProcessManager::proc()
           break;
         case Action::killType:
           {
-            HashMap<Process*, uint32_t>::Iterator itMap = processIdMap.end();
-            for(HashMap<Process*, uint32_t>::Iterator end = processIdMap.end(); itMap != end; ++itMap)
+            HashMap<Process*, uint64_t>::Iterator itMap = processIdMap.end();
+            for(HashMap<Process*, uint64_t>::Iterator end = processIdMap.end(); itMap != end; ++itMap)
               if(*itMap == action.id)
                 break;
             if(itMap != processIdMap.end())

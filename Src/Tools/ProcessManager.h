@@ -12,19 +12,17 @@ public:
   class Callback
   {
   public:
-    virtual void_t terminatedProcess(uint32_t pid) = 0;
+    virtual void_t terminatedProcess(uint64_t entityId) = 0;
   };
 
 public:
-  ProcessManager() : nextId(1) {}
-
   const String& getErrorString() const {return error;}
 
   bool_t start(Callback& callback);
   void_t stop();
 
-  bool_t startProcess(const String& commandLine, uint32_t& id);
-  bool_t killProcess(uint32_t id);
+  void_t startProcess(uint64_t id, const String& commandLine);
+  void_t killProcess(uint64_t id);
 
 private:
   struct Action
@@ -36,14 +34,13 @@ private:
       quitType,
     } type;
     String commandLine;
-    uint32_t id;
+    uint64_t id;
   };
 
 private:
   String error;
   Thread thread;
   Callback* callback;
-  uint32_t nextId;
 
   Mutex mutex;
   List<Action> actions;
