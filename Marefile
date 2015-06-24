@@ -115,7 +115,7 @@ targets = {
       "Src/Bots/Tools/*.cpp" = cppSource
       "Src/Bots/Tools/*.h"
       "Src/Bots/Main.cpp" = cppSource
-      "Src/Bots/Main.h"
+      // "Src/Bots/Main.h"
       "Src/Tools/Hex.cpp" = cppSource
       "Src/Tools/Hex.h"
       "Src/Tools/Json.cpp" = cppSource
