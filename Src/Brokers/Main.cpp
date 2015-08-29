@@ -6,7 +6,7 @@
 
 #ifdef BROKER_BITSTAMPBTCUSD
 #include "Brokers/BitstampBtcUsd.h"
-typedef BitstampBtcUsd MarketAdapter;
+typedef BitstampBtcUsd BrokerImpl;
 #endif
 
 int_t main(int_t argc, char_t* argv[])
@@ -49,7 +49,7 @@ Main::~Main()
   delete broker;
 }
 
-bool_t Main::connect2(uint32_t userMarketTableId)
+bool_t Main::connect2(uint32_t userBrokerTableId)
 {
   delete broker;
   broker = 0;
@@ -62,12 +62,12 @@ bool_t Main::connect2(uint32_t userMarketTableId)
 
   // get user name and market name
   Buffer buffer;
-  if(!connection.query(zlimdb_table_tables, userMarketTableId, buffer))
+  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer))
     return false;
   if(buffer.size() < sizeof(zlimdb_table_entity))
     return false;
   zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)(byte_t*)buffer;
-  String tableName; // e.g. users/user1/markets/market1/market
+  String tableName; // e.g. users/user1/brokers/<id>/broker
   if(!ZlimdbConnection::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
     return false;
   if(!tableName.startsWith("users/"))
@@ -76,283 +76,265 @@ bool_t Main::connect2(uint32_t userMarketTableId)
   const char_t* userNameEnd = String::find(userNameStart, '/');
   if(!userNameEnd)
     return false;
-  if(String::compare(userNameEnd + 1, "markets/", 8) != 0)
+  if(String::compare(userNameEnd + 1, "brokers/", 8) != 0)
     return false;
-  const char_t* marketNameStart = userNameEnd + 9;
-  const char_t* marketNameEnd = String::find(marketNameStart, '/');
-  if(!marketNameEnd)
+  const char_t* brokerIdStart = userNameEnd + 9;
+  const char_t* brokerIdEnd = String::find(brokerIdStart, '/');
+  if(!brokerIdEnd)
     return false;
-  if(String::compare(marketNameEnd + 1, "market") != 0)
+  if(String::compare(brokerIdEnd + 1, "broker") != 0)
     return false;
   String userName = tableName.substr(userNameStart - tableName, userNameEnd - userNameStart);
-  String marketName = tableName.substr(marketNameStart - tableName, marketNameEnd - marketNameStart);
+  String brokerId = tableName.substr(brokerIdStart - tableName, brokerIdEnd - brokerIdStart);
 
-  // get user market
-  if(!connection.query(userMarketTableId, 1, buffer))
+  // get user broker
+  if(!connection.query(userBrokerTableId, 1, buffer))
     return false;
-  if(buffer.size() < sizeof(meguco_user_market_entity))
+  if(buffer.size() < sizeof(meguco_user_broker_entity))
     return false;
-  meguco_user_market_entity* userMarketEntity = (meguco_user_market_entity*)(byte_t*)buffer;
+  meguco_user_broker_entity* userBrokerEntity = (meguco_user_broker_entity*)(byte_t*)buffer;
   {
     String userName, key, secret;
-    if(!ZlimdbConnection::getString(userMarketEntity->entity, sizeof(*userMarketEntity), userMarketEntity->user_name_size, userName))
+    if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity), userBrokerEntity->user_name_size, userName))
       return false;
-    if(!ZlimdbConnection::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length(), userMarketEntity->key_size, key))
+    if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity) + userName.length(), userBrokerEntity->key_size, key))
       return false;
-    if(!ZlimdbConnection::getString(userMarketEntity->entity, sizeof(*userMarketEntity) + userName.length() + key.length(), userMarketEntity->secret_size, secret))
+    if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity) + userName.length() + key.length(), userBrokerEntity->secret_size, secret))
       return false;
-    broker = new MarketAdapter(userName, key, secret);
+    broker = new BrokerImpl(userName, key, secret);
   }
 
   // subscribe to orders table
-  if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/orders", userMarketOrdersTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/orders", userBrokerOrdersTableId))
     return false;
-  if(!connection.subscribe(userMarketOrdersTableId))
+  if(!connection.subscribe(userBrokerOrdersTableId))
     return false;
   while(connection.getResponse(buffer))
   {
     void* data = (byte_t*)buffer;
     uint32_t size = buffer.size();
-    for(const meguco_user_market_order_entity* order; order = (const meguco_user_market_order_entity*)zlimdb_get_entity(sizeof(meguco_user_market_order_entity), &data, &size);)
+    for(const meguco_user_broker_order_entity* order; order = (const meguco_user_broker_order_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_order_entity), &data, &size);)
       orders2.append(order->entity.id, *order);
   }
   if(connection.getErrno() != 0)
     return false;
 
   // get transaction table id
-  if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/transactions", userMarketTransactionsTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/transactions", userBrokerTransactionsTableId))
     return false;
-  if(!connection.query(userMarketTransactionsTableId))
+  if(!connection.query(userBrokerTransactionsTableId))
     return false;
   while(connection.getResponse(buffer))
   {
     void* data = (byte_t*)buffer;
     uint32_t size = buffer.size();
-    for(const meguco_user_market_transaction_entity* transaction; transaction = (const meguco_user_market_transaction_entity*)zlimdb_get_entity(sizeof(meguco_user_market_transaction_entity), &data, &size);)
+    for(const meguco_user_broker_transaction_entity* transaction; transaction = (const meguco_user_broker_transaction_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_transaction_entity), &data, &size);)
       transactions2.append(transaction->entity.id, *transaction);
   }
   if(connection.getErrno() != 0)
     return false;
 
   // get balance table id
-  if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/balance", userMarketBalanceTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/balance", userBrokerBalanceTableId))
     return false;
 
   // get log table id
-  if(!connection.createTable(String("users/") + userName + "/markets/" + marketName + "/log", userMarketLogTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/log", userBrokerLogTableId))
     return false;
 
+  this->userBrokerTableId = userBrokerTableId;
   return true;
 }
 
 void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
-  if(tableId == userMarketOrdersTableId)
+  if(tableId == userBrokerOrdersTableId)
   {
-    if(entity.size >= sizeof(meguco_user_market_order_entity))
-      return addedUserMarketOrder(*(meguco_user_market_order_entity*)&entity);
+    if(entity.size >= sizeof(meguco_user_broker_order_entity))
+      return addedUserBrokerOrder(*(meguco_user_broker_order_entity*)&entity);
   }
 }
 
 void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
-  if(tableId == userMarketOrdersTableId)
+  if(tableId == userBrokerOrdersTableId)
   {
-    if(entity.size >= sizeof(meguco_user_market_order_entity))
-      return updatedUserMarketOrder(*(meguco_user_market_order_entity*)&entity);
+    if(entity.size >= sizeof(meguco_user_broker_order_entity))
+      return updatedUserBrokerOrder(*(meguco_user_broker_order_entity*)&entity);
   }
 }
 
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 {
-  if(tableId == userMarketOrdersTableId)
-    return removedUserMarketOrder(entityId);
+  if(tableId == userBrokerOrdersTableId)
+    return removedUserBrokerOrder(entityId);
 }
 
 void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer)
 {
-  if(tableId == userMarketOrdersTableId)
-    return controlUserMarketOrder(entityId, controlCode);
+  if(tableId == userBrokerTableId)
+    return controlUserBroker(entityId, controlCode);
 }
 
-void_t Main::addedUserMarketOrder(const meguco_user_market_order_entity& createOrderArgs)
+void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& createOrderArgs)
 {
-  meguco_user_market_order_entity order;
-  if(createOrderArgs.state != meguco_user_market_order_opening || !broker->createOrder(createOrderArgs.entity.id, (meguco_user_market_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
+  meguco_user_broker_order_entity order;
+  if(createOrderArgs.state != meguco_user_broker_order_submitting || 
+     !broker->createOrder(createOrderArgs.entity.id, (meguco_user_broker_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
   {
-    if(createOrderArgs.state == meguco_user_market_order_opening)
+    if(createOrderArgs.state == meguco_user_broker_order_submitting)
       addLogMessage(meguco_log_error, broker->getLastError());
     order = createOrderArgs;
-    order.state = meguco_user_market_order_error;
+    order.state = meguco_user_broker_order_error;
   }
   else
   {
-    order.state = meguco_user_market_order_open;
+    order.state = meguco_user_broker_order_open;
     order.timeout = createOrderArgs.timeout;
   }
   orders2.append(order.entity.id, order);
-  connection.update(userMarketOrdersTableId, order.entity);
+  connection.update(userBrokerOrdersTableId, order.entity);
 }
 
-void_t Main::updatedUserMarketOrder(const meguco_user_market_order_entity& updateOrderArgs)
+void_t Main::updatedUserBrokerOrder(const meguco_user_broker_order_entity& updateOrderArgs)
 {
-  HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = orders2.find(updateOrderArgs.entity.id);
+  HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(updateOrderArgs.entity.id);
   if(it == orders2.end())
     return;
-  meguco_user_market_order_entity& order = *it;
+  meguco_user_broker_order_entity& order = *it;
   if(Memory::compare(&order, &updateOrderArgs, sizeof(order)) == 0)
     return;
 
-  if(updateOrderArgs.state == meguco_user_market_order_open)
+  if(updateOrderArgs.state == meguco_user_broker_order_open)
   {
     // step #1 cancel current order
     if(!broker->cancelOrder(updateOrderArgs.entity.id))
       return addLogMessage(meguco_log_error, broker->getLastError());
     
     // step #2 create new order with same id
-    meguco_user_market_order_entity order;
-    if(!broker->createOrder(updateOrderArgs.entity.id, (meguco_user_market_order_type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
+    meguco_user_broker_order_entity order;
+    if(!broker->createOrder(updateOrderArgs.entity.id, (meguco_user_broker_order_type)updateOrderArgs.type, updateOrderArgs.price, updateOrderArgs.amount, updateOrderArgs.total, order))
     {
       addLogMessage(meguco_log_error, broker->getLastError());
       order = updateOrderArgs;
-      order.state = meguco_user_market_order_error;
+      order.state = meguco_user_broker_order_error;
     }
     else
     {
-      order.state = meguco_user_market_order_open;
+      order.state = meguco_user_broker_order_open;
       order.timeout = updateOrderArgs.timeout;
     }
   }
   else
-    order.state = meguco_user_market_order_error;
-  connection.update(userMarketOrdersTableId, order.entity);
+    order.state = meguco_user_broker_order_error;
+  connection.update(userBrokerOrdersTableId, order.entity);
 }
 
-void_t Main::removedUserMarketOrder(uint64_t entityId)
+void_t Main::removedUserBrokerOrder(uint64_t entityId)
 {
   broker->cancelOrder(entityId);
 }
 
-void_t Main::controlUserMarketOrder(uint64_t entityId, uint32_t controlCode)
+void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
 {
   if(entityId != 0)
     return;
 
   switch(controlCode)
   {
-  case meguco_user_market_order_control_refresh:
+  case meguco_user_broker_control_refresh_orders:
     {
-      List<meguco_user_market_order_entity> orders;
-      if(!broker->loadOrders(orders))
+      List<meguco_user_broker_order_entity> newOrders;
+      if(!broker->loadOrders(newOrders))
         return addLogMessage(meguco_log_error, broker->getLastError());
-      HashMap<uint64_t, meguco_user_market_order_entity> ordersMapByRaw;
-      for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = orders2.begin(), end = orders2.end(); i != end; ++i)
+      HashMap<uint64_t, meguco_user_broker_order_entity> ordersMapByRaw;
+      for(HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator i = orders2.begin(), end = orders2.end(); i != end; ++i)
       {
-        meguco_user_market_order_entity& order = *i;
+        meguco_user_broker_order_entity& order = *i;
         ordersMapByRaw.append(order.raw_id, order);
       }
       orders2.clear();
-      for(List<meguco_user_market_order_entity>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+      for(List<meguco_user_broker_order_entity>::Iterator i = newOrders.begin(), end = newOrders.end(); i != end; ++i)
       {
-        meguco_user_market_order_entity& order = *i;
-        HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = ordersMapByRaw.find(order.raw_id);
+        meguco_user_broker_order_entity& order = *i;
+        HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = ordersMapByRaw.find(order.raw_id);
         if(it == ordersMapByRaw.end() || it->entity.id == 0)
         { // add
           uint64_t id;
-          if(connection.add(userMarketOrdersTableId, order.entity, id))
+          if(connection.add(userBrokerOrdersTableId, order.entity, id))
             order.entity.id = id;
         }
         else
         { // update
           order.entity.id = it->entity.id;
           if(Memory::compare(&*it, &order, sizeof(order)) != 0)
-            connection.update(userMarketOrdersTableId, order.entity);
+            connection.update(userBrokerOrdersTableId, order.entity);
           ordersMapByRaw.remove(it);
         }
         orders2.append(order.entity.id, order);
       }
-      for(HashMap<uint64_t, meguco_user_market_order_entity>::Iterator i = ordersMapByRaw.end(), end = ordersMapByRaw.end(); i != end; ++i)
+      for(HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator i = ordersMapByRaw.end(), end = ordersMapByRaw.end(); i != end; ++i)
       { // remove
-        meguco_user_market_order_entity& order = *i;
-        connection.remove(userMarketOrdersTableId, order.entity.id);
+        meguco_user_broker_order_entity& order = *i;
+        connection.remove(userBrokerOrdersTableId, order.entity.id);
       }
     }
     break;
-  }
-}
-
-void_t Main::controlUserMarketTransaction(uint64_t entityId, uint32_t controlCode)
-{
-  if(entityId != 0)
-    return;
-
-  switch(controlCode)
-  {
-  case meguco_user_market_transaction_control_refresh:
+  case meguco_user_broker_control_refresh_transactions:
     {
-      List<meguco_user_market_transaction_entity> transactions;
-      if(!broker->loadTransactions(transactions))
+      List<meguco_user_broker_transaction_entity> newTransactions;
+      if(!broker->loadTransactions(newTransactions))
         return addLogMessage(meguco_log_error, broker->getLastError());
-      HashMap<uint64_t, meguco_user_market_transaction_entity> transactionsapByRaw;
-      for(HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator i = transactions2.begin(), end = transactions2.end(); i != end; ++i)
+      HashMap<uint64_t, meguco_user_broker_transaction_entity> transactionsapByRaw;
+      for(HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator i = transactions2.begin(), end = transactions2.end(); i != end; ++i)
       {
-        meguco_user_market_transaction_entity& transaction = *i;
+        meguco_user_broker_transaction_entity& transaction = *i;
         transactionsapByRaw.append(transaction.raw_id, transaction);
       }
       transactions2.clear();
-      for(List<meguco_user_market_transaction_entity>::Iterator i = transactions.begin(), end = transactions.end(); i != end; ++i)
+      for(List<meguco_user_broker_transaction_entity>::Iterator i = newTransactions.begin(), end = newTransactions.end(); i != end; ++i)
       {
-        meguco_user_market_transaction_entity& transaction = *i;
-        HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator it = transactionsapByRaw.find(transaction.raw_id);
+        meguco_user_broker_transaction_entity& transaction = *i;
+        HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator it = transactionsapByRaw.find(transaction.raw_id);
         if(it == transactionsapByRaw.end() || it->entity.id == 0)
         { // add
           uint64_t id;
-          if(connection.add(userMarketTransactionsTableId, transaction.entity, id))
+          if(connection.add(userBrokerTransactionsTableId, transaction.entity, id))
             transaction.entity.id = id;
         }
         else
         { // update
           transaction.entity.id = it->entity.id;
           if(Memory::compare(&*it, &transaction, sizeof(transaction)) != 0)
-            connection.update(userMarketTransactionsTableId, transaction.entity);
+            connection.update(userBrokerTransactionsTableId, transaction.entity);
           transactionsapByRaw.remove(it);
         }
         transactions2.append(transaction.raw_id, transaction);
       }
-      for(HashMap<uint64_t, meguco_user_market_transaction_entity>::Iterator i = transactionsapByRaw.end(), end = transactionsapByRaw.end(); i != end; ++i)
+      for(HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator i = transactionsapByRaw.end(), end = transactionsapByRaw.end(); i != end; ++i)
       { // remove
-        meguco_user_market_transaction_entity& transaction = *i;
-        connection.remove(userMarketTransactionsTableId, transaction.entity.id);
+        meguco_user_broker_transaction_entity& transaction = *i;
+        connection.remove(userBrokerTransactionsTableId, transaction.entity.id);
       }
     }
     break;
-  }
-}
-
-void_t Main::controlUserMarketBalance(uint64_t entityId, uint32_t controlCode)
-{
-  if(entityId != 0)
-    return;
-
-  switch(controlCode)
-  {
-  case meguco_user_market_balance_control_refresh:
+  case meguco_user_broker_control_refresh_balance:
     {
-      meguco_user_market_balance_entity balance;
-      if(!broker->loadBalance(balance))
+      meguco_user_broker_balance_entity newBalance;
+      if(!broker->loadBalance(newBalance))
         return addLogMessage(meguco_log_error, broker->getLastError());
       if(this->balance.entity.id == 0)
       {
         uint64_t id;
-        if(connection.add(userMarketBalanceTableId, balance.entity, id))
+        if(connection.add(userBrokerBalanceTableId, balance.entity, id))
           balance.entity.id = id;
       }
       else
       {
         balance.entity.id = this->balance.entity.id;
-        connection.update(userMarketBalanceTableId, balance.entity);
+        connection.update(userBrokerBalanceTableId, balance.entity);
       }
-      this->balance = balance;
+      this->balance = newBalance;
     }
     break;
   }
@@ -365,5 +347,5 @@ void_t Main::addLogMessage(meguco_log_type type, const String& message)
   logEntity.type = type;
   ZlimdbConnection::setString(logEntity.entity, logEntity.message_size, sizeof(logEntity), message);
   uint64_t id;
-  connection.add(userMarketLogTableId, logEntity.entity, id);
+  connection.add(userBrokerLogTableId, logEntity.entity, id);
 }

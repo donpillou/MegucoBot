@@ -16,9 +16,9 @@ private:
   String key;
   String secret;
 
-  meguco_user_market_balance_entity balance;
+  meguco_user_broker_balance_entity balance;
   bool_t balanceLoaded;
-  HashMap<uint64_t, meguco_user_market_order_entity> orders;
+  HashMap<uint64_t, meguco_user_broker_order_entity> orders;
 
   String error;
 
@@ -45,10 +45,10 @@ private:
 
 private: // Market
   virtual const String& getLastError() const {return error;}
-  virtual bool_t loadOrders(List<meguco_user_market_order_entity>& orders);
-  virtual bool_t loadBalance(meguco_user_market_balance_entity& balance);
-  virtual bool_t loadTransactions(List<meguco_user_market_transaction_entity>& transactions);
-  virtual bool_t createOrder(uint64_t id, meguco_user_market_order_type type, double price, double amount, double total, meguco_user_market_order_entity& order);
+  virtual bool_t loadOrders(List<meguco_user_broker_order_entity>& orders);
+  virtual bool_t loadBalance(meguco_user_broker_balance_entity& balance);
+  virtual bool_t loadTransactions(List<meguco_user_broker_transaction_entity>& transactions);
+  virtual bool_t createOrder(uint64_t id, meguco_user_broker_order_type type, double price, double amount, double total, meguco_user_broker_order_entity& order);
   //virtual bool_t getOrder(uint64_t id, meguco_user_market_order_entity& order);
   virtual bool_t cancelOrder(uint64_t id);
 };

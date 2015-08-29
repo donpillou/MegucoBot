@@ -15,7 +15,7 @@ User2::~User2()
     delete *i;
 }
 
-Market2* User2::createMarket(uint32_t tableId, const meguco_user_market_entity& marketEntity, const String& executable)
+Market2* User2::createBroker(uint32_t tableId, const meguco_user_broker_entity& marketEntity, const String& executable)
 {
   Market2* market = new Market2(*this, tableId, marketEntity, executable);
   markets.append(market);

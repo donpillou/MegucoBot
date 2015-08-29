@@ -18,18 +18,18 @@ bool_t BitstampBtcUsd::loadBalanceAndFee()
 {
   if(balanceLoaded)
     return true;
-  meguco_user_market_balance_entity balance;
+  //meguco_user_broker_balance_entity balance;
   if(!loadBalance(balance))
     return false;
   return true;
 }
 
-bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_market_order_type type, double price, double amount, double total, meguco_user_market_order_entity& order)
+bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_broker_order_type type, double price, double amount, double total, meguco_user_broker_order_entity& order)
 {
   if(!loadBalanceAndFee())
     return false;
 
-  bool buy = type == meguco_user_market_order_buy;
+  bool buy = type == meguco_user_broker_order_buy;
 
   if(amount == 0.)
   { // compute amount based on total
@@ -99,7 +99,7 @@ bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_market_order_type ty
   }
 
   buy = btype == "0";
-  order.type = buy ? meguco_user_market_order_buy : meguco_user_market_order_sell;
+  order.type = buy ? meguco_user_broker_order_buy : meguco_user_broker_order_sell;
 
   String dateStr = orderData.find("datetime")->toString();
   const tchar_t* lastDot = dateStr.findLast('.');
@@ -146,13 +146,13 @@ bool_t BitstampBtcUsd::getOrder(uint32_t entityId, BotProtocol::Order& order)
 */
 bool_t BitstampBtcUsd::cancelOrder(uint64_t id)
 {
-  HashMap<uint64_t, meguco_user_market_order_entity>::Iterator it = orders.find(id);
+  HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders.find(id);
   if(it == orders.end())
   {
     error = "Unknown order.";
     return false;
   }
-  const meguco_user_market_order_entity& order = *it;
+  const meguco_user_broker_order_entity& order = *it;
 
   HashMap<String, Variant> args;
   args.append("id", id);
@@ -167,7 +167,7 @@ bool_t BitstampBtcUsd::cancelOrder(uint64_t id)
   }
 
   // update balance
-  if(order.type == meguco_user_market_order_buy) // buy order
+  if(order.type == meguco_user_broker_order_buy) // buy order
   {
     double total = Math::abs(getOrderCharge(order.amount, order.price));
     balance.available_usd += total;
@@ -182,7 +182,7 @@ bool_t BitstampBtcUsd::cancelOrder(uint64_t id)
   return true;
 }
 
-bool_t BitstampBtcUsd::loadOrders(List<meguco_user_market_order_entity>& orders)
+bool_t BitstampBtcUsd::loadOrders(List<meguco_user_broker_order_entity>& orders)
 {
   if(!loadBalanceAndFee())
     return false;
@@ -193,7 +193,7 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_market_order_entity>& orders)
 
   const List<Variant>& ordersData = result.toList();
   this->orders.clear();
-  meguco_user_market_order_entity order;
+  meguco_user_broker_order_entity order;
   ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(order));
   Time time(true);
   for(List<Variant>::Iterator i = ordersData.begin(), end = ordersData.end(); i != end; ++i)
@@ -207,7 +207,7 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_market_order_entity>& orders)
       continue;
 
     bool buy = type == "0";
-    order.type = buy ? meguco_user_market_order_buy : meguco_user_market_order_sell;
+    order.type = buy ? meguco_user_broker_order_buy : meguco_user_broker_order_sell;
 
     String dateStr = orderData.find("datetime")->toString();
 
@@ -225,7 +225,7 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_market_order_entity>& orders)
   return true;
 }
 
-bool_t BitstampBtcUsd::loadBalance(meguco_user_market_balance_entity& balance)
+bool_t BitstampBtcUsd::loadBalance(meguco_user_broker_balance_entity& balance)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/balance/", false, HashMap<String, Variant>(), result))
@@ -243,13 +243,13 @@ bool_t BitstampBtcUsd::loadBalance(meguco_user_market_balance_entity& balance)
   return true;
 }
 
-bool_t BitstampBtcUsd::loadTransactions(List<meguco_user_market_transaction_entity>& transactions)
+bool_t BitstampBtcUsd::loadTransactions(List<meguco_user_broker_transaction_entity>& transactions)
 {
   Variant result;
   if(!request("https://www.bitstamp.net/api/user_transactions/", false, HashMap<String, Variant>(), result))
     return false;
 
-  meguco_user_market_transaction_entity transaction;
+  meguco_user_broker_transaction_entity transaction;
   ZlimdbConnection::setEntityHeader(transaction.entity, 0, 0, sizeof(transaction));
   const List<Variant>& transactionData = result.toList();
   Time time(true);
@@ -272,7 +272,7 @@ bool_t BitstampBtcUsd::loadTransactions(List<meguco_user_market_transaction_enti
 
     double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
-    transaction.type = buy ? meguco_user_market_transaction_buy : meguco_user_market_transaction_sell;
+    transaction.type = buy ? meguco_user_broker_transaction_buy : meguco_user_broker_transaction_sell;
     transaction.amount = Math::abs(transactionData.find("btc")->toDouble());
     transaction.total = buy ? (Math::abs(value) + fee) : (Math::abs(value) - fee);
     transaction.price = Math::abs(value) / Math::abs(transaction.amount);
