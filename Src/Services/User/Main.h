@@ -74,15 +74,15 @@ private:
   User2* findUser(const String& name) {return *users.find(name);}
   User2* createUser(const String& name);
 
-  bool_t setUserBrokerState(Market2& market, meguco_user_broker_state state);
-  bool_t setUserSessionState(Session2& session, meguco_user_session_state state);
+  //bool_t setUserBrokerState(Market2& market, meguco_user_broker_state state);
+  //bool_t setUserSessionState(Session2& session, meguco_user_session_state state);
 
   void_t addedTable(uint32_t tableId, const String& tableName);
   void_t addedProcess(uint64_t entityId, const String& command);
   void_t addedUserBroker(uint32_t tableId, const String& userName, const meguco_user_broker_entity& userMarket);
   void_t addedUserSession(uint32_t tableId, const String& userName, const meguco_user_session_entity& userSession);
-  void_t updatedUserBroker(Market2& market, const meguco_user_broker_entity& entity);
-  void_t updatedUserSession(Session2& session, const meguco_user_session_entity& entity);
+  //void_t updatedUserBroker(Market2& market, const meguco_user_broker_entity& entity);
+  //void_t updatedUserSession(Session2& session, const meguco_user_session_entity& entity);
   void_t removedTable(uint32_t tableId);
   void_t removedProcess(uint64_t entityId);
   void_t removedUserBroker(Market2& market);
@@ -90,7 +90,7 @@ private:
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);
-  virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity);
+  virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) {}
   virtual void_t removedEntity(uint32_t tableId, uint64_t entityId);
   virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer) {}
 };

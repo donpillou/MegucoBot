@@ -269,6 +269,7 @@ void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
   }
 }
 
+/*
 void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
   if(entity.id != 1)
@@ -290,7 +291,7 @@ void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
     }
   }
 }
-
+*/
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 {
   if(tableId == zlimdb_table_tables)
@@ -399,21 +400,42 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
   }
 }
 
-void_t Main::addedUserBroker(uint32_t tableId, const String& userName, const meguco_user_broker_entity& userMarket)
+void_t Main::addedUserBroker(uint32_t tableId, const String& userName, const meguco_user_broker_entity& userBroker)
 {
-  BotMarket* botMarket = *botMarkets.find(userMarket.bot_market_id);
+  BotMarket* botMarket = *botMarkets.find(userBroker.bot_market_id);
   User2* user = findUser(userName);
   if(!user)
     user = createUser(userName);
-  Market2* market = user->createBroker(tableId, userMarket, botMarket ? botMarket->executable : String());
+  Market2* market = user->createBroker(tableId, userBroker, botMarket ? botMarket->executable : String());
   Table table = {Main::userBroker, market};
   tables.append(tableId, table);
 
-  // start process
-  if(!setUserBrokerState(*market, meguco_user_broker_starting))
-    return;
+  // update user broker state
+  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(tableId);
+  meguco_user_broker_state state = meguco_user_broker_stopped;
+  if(it != processesByTable.end() && (*it)->type == Main::userBroker)
+    state = meguco_user_broker_running;
+  if (state != market->getState())
+  {
+    market->setState(state);
+    connection.update(tableId, market->getEntity());
+  }
+
+  // start broker process if it is not already running
+  if (state != meguco_user_broker_running)
+  {
+      String command = market->getExecutable() + " " + String::fromUInt(tableId);
+      Buffer buffer;
+      buffer.resize(sizeof(meguco_process_entity) + command.length());
+      meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
+      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, buffer.size());
+      ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(*process), command);
+      uint64_t id;
+      connection.add(processesTableId, process->entity, id);
+  }
 }
 
+/*
 bool_t Main::setUserBrokerState(Market2& market, meguco_user_broker_state state)
 {
   uint32_t tableId = market.getTableId();
@@ -525,7 +547,7 @@ bool_t Main::setUserSessionState(Session2& session, meguco_user_session_state st
   }
   return true;
 }
-
+*/
 void_t Main::addedUserSession(uint32_t tableId, const String& userName, const meguco_user_session_entity& userSession)
 {
   BotEngine* botEngine = *botEngines.find(userSession.bot_engine_id);
@@ -536,21 +558,16 @@ void_t Main::addedUserSession(uint32_t tableId, const String& userName, const me
   Table table = {Main::userSession, session};
   tables.append(tableId, table);
 
-  // start process
-  if(!setUserSessionState(*session, (meguco_user_session_state)userSession.state))
-    return;
-}
-
-void_t Main::updatedUserBroker(Market2& market, const meguco_user_broker_entity& entity)
-{
-  if(!setUserBrokerState(market, (meguco_user_broker_state)entity.state))
-    return;
-}
-
-void_t Main::updatedUserSession(Session2& session, const meguco_user_session_entity& entity)
-{
-  if(!setUserSessionState(session, (meguco_user_session_state)entity.state))
-    return;
+  // update user session state
+  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(tableId);
+  meguco_user_session_state state = meguco_user_session_stopped;
+  if(it != processesByTable.end() && (*it)->type == Main::userSession)
+    state = meguco_user_session_running;
+  if (state != session->getState())
+  {
+    session->setState(state);
+    connection.update(tableId, session->getEntity());
+  }
 }
 
 void_t Main::removedTable(uint32_t tableId)
@@ -587,13 +604,21 @@ void_t Main::removedProcess(uint64_t entityId)
         case userBroker:
           {
             Market2* market = (Market2*)table.object;
-            setUserBrokerState(*market, meguco_user_broker_stopped);
+            if(market->getState() != meguco_user_broker_stopped)
+            {
+              market->setState(meguco_user_broker_stopped);
+              connection.update(market->getTableId(), market->getEntity());
+            }
           }
           break;
         case userSession:
           {
             Session2* session = (Session2*)table.object;
-            setUserSessionState(*session, meguco_user_session_stopped);
+            if(session->getState() != meguco_user_session_stopped)
+            {
+              session->setState(meguco_user_session_stopped);
+              connection.update(session->getTableId(), session->getEntity());
+            }
           }
           break;
         }
@@ -606,14 +631,18 @@ void_t Main::removedProcess(uint64_t entityId)
 
 void_t Main::removedUserBroker(Market2& market)
 {
-  setUserBrokerState(market, meguco_user_broker_stopped);
+  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(market.getTableId());
+  if(it != processesByTable.end() && (*it)->type == userBroker)
+    connection.remove(processesTableId, (*it)->entityId);
   tables.remove(market.getTableId());
   market.getUser().deleteMarket(market);
 }
 
 void_t Main::removedUserSession(Session2& session)
 {
-  setUserSessionState(session, meguco_user_session_stopped);
+  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(session.getTableId());
+  if(it != processesByTable.end() && (*it)->type == userSession)
+    connection.remove(processesTableId, (*it)->entityId);
   tables.remove(session.getTableId());
   session.getUser().deleteSession(session);
 }
