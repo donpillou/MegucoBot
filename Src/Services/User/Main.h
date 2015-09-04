@@ -26,13 +26,13 @@ public:
   bool_t process();
 
 private:
-  struct BotMarket
+  struct BrokerType
   {
     String name;
     String executable;
   };
 
-  struct BotEngine
+  struct BotType
   {
     String name;
     String executable;
@@ -60,10 +60,10 @@ private:
 private:
   ZlimdbConnection connection;
   String error;
-  HashMap<String, BotMarket> botMarketsByName;
-  HashMap<String, BotEngine> botEnginesByName;
-  HashMap<uint64_t, BotMarket*> botMarkets;
-  HashMap<uint64_t, BotEngine*> botEngines;
+  HashMap<String, BrokerType> brokerTypesByName;
+  HashMap<String, BotType> botTypesByName;
+  HashMap<uint64_t, BrokerType*> brokerTypes;
+  HashMap<uint64_t, BotType*> botTypes;
   HashMap<String, User2*> users;
   uint32_t processesTableId;
   HashMap<uint64_t, Process> processes;

@@ -50,14 +50,14 @@ Main::~Main()
 
 void_t Main::addBotMarket(const String& name, const String& executable)
 {
-  BotMarket botMarket = {name, executable};
-  botMarketsByName.append(name, botMarket);
+  BrokerType brokerType = {name, executable};
+  brokerTypesByName.append(name, brokerType);
 }
 
 void_t Main::addBotEngine(const String& name, const String& executable)
 {
-  BotEngine botEngine = {name, executable};
-  botEnginesByName.append(name, botEngine);
+  BotType botType = {name, executable};
+  botTypesByName.append(name, botType);
 }
 
 void_t Main::disconnect()
@@ -103,7 +103,7 @@ bool_t Main::connect()
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
     buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
-    for(HashMap<String, BotMarket>::Iterator i = botMarketsByName.begin(), end = botMarketsByName.end(); i != end; ++i)
+    for(HashMap<String, BrokerType>::Iterator i = brokerTypesByName.begin(), end = brokerTypesByName.end(); i != end; ++i)
     {
       const String& marketName = i.key();
       HashMap<String, uint64_t>::Iterator it = knownBotMarkets.find(marketName);
@@ -115,12 +115,12 @@ bool_t Main::connect()
         uint64_t id;
         if(!connection.add(botMarketsTableId, brokerType->entity, id))
           return error = connection.getErrorString(), false;
-        botMarkets.append(id, &*i);
+        brokerTypes.append(id, &*i);
       }
       else
       {
         knownBotMarkets.remove(it);
-        botMarkets.append(*it, &*i);
+        brokerTypes.append(*it, &*i);
       }
     }
     for(HashMap<String, uint64_t>::Iterator i = knownBotMarkets.begin(), end = knownBotMarkets.end(); i != end; ++i)
@@ -150,7 +150,7 @@ bool_t Main::connect()
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
     buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
-    for(HashMap<String, BotEngine>::Iterator i = botEnginesByName.begin(), end = botEnginesByName.end(); i != end; ++i)
+    for(HashMap<String, BotType>::Iterator i = botTypesByName.begin(), end = botTypesByName.end(); i != end; ++i)
     {
       const String& botEngineName = i.key();
       HashMap<String, uint64_t>::Iterator it = knownBotEngines.find(botEngineName);
@@ -162,12 +162,12 @@ bool_t Main::connect()
         uint64_t id;
         if(!connection.add(botEnginesTableId, botType->entity, id))
           return error = connection.getErrorString(), false;
-        botEngines.append(id, &*i);
+        botTypes.append(id, &*i);
       }
       else
       {
         knownBotEngines.remove(it);
-        botEngines.append(*it, &*i);
+        botTypes.append(*it, &*i);
       }
     }
     for(HashMap<String, uint64_t>::Iterator i = knownBotEngines.begin(), end = knownBotEngines.end(); i != end; ++i)
@@ -402,11 +402,11 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
 
 void_t Main::addedUserBroker(uint32_t tableId, const String& userName, const meguco_user_broker_entity& userBroker)
 {
-  BotMarket* botMarket = *botMarkets.find(userBroker.bot_market_id);
+  BrokerType* brokerType = *brokerTypes.find(userBroker.broker_type_id);
   User2* user = findUser(userName);
   if(!user)
     user = createUser(userName);
-  Market2* market = user->createBroker(tableId, userBroker, botMarket ? botMarket->executable : String());
+  Market2* market = user->createBroker(tableId, userBroker, brokerType ? brokerType->executable : String());
   Table table = {Main::userBroker, market};
   tables.append(tableId, table);
 
@@ -550,11 +550,11 @@ bool_t Main::setUserSessionState(Session2& session, meguco_user_session_state st
 */
 void_t Main::addedUserSession(uint32_t tableId, const String& userName, const meguco_user_session_entity& userSession)
 {
-  BotEngine* botEngine = *botEngines.find(userSession.bot_engine_id);
+  BotType* botType = *botTypes.find(userSession.bot_type_id);
   User2* user = findUser(userName);
   if(!user)
     user = createUser(userName);
-  Session2* session = user->createSession(tableId, userSession, botEngine ? botEngine->executable : String());
+  Session2* session = user->createSession(tableId, userSession, botType ? botType->executable : String());
   Table table = {Main::userSession, session};
   tables.append(tableId, table);
 
