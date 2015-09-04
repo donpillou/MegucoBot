@@ -80,11 +80,11 @@ bool_t Main::connect()
 
   Buffer buffer(ZLIMDB_MAX_MESSAGE_SIZE);
 
-  // update bot markets table
+  // update broker types table
   {
     HashMap<String, uint64_t> knownBotMarkets;
     uint32_t botMarketsTableId;
-    if(!connection.createTable("botMarkets", botMarketsTableId))
+    if(!connection.createTable("brokers", botMarketsTableId))
       return error = connection.getErrorString(), false;
     if(!connection.query(botMarketsTableId))
       return error = connection.getErrorString(), false;
@@ -93,11 +93,11 @@ bool_t Main::connect()
     {
       void* data = (byte_t*)buffer;
       uint32_t size = buffer.size();
-      for(const meguco_bot_market_entity* botMarket; botMarket = (const meguco_bot_market_entity*)zlimdb_get_entity(sizeof(meguco_bot_market_entity), &data, &size);)
+      for(const meguco_broker_type_entity* brokerType; brokerType = (const meguco_broker_type_entity*)zlimdb_get_entity(sizeof(meguco_broker_type_entity), &data, &size);)
       {
-        if(!ZlimdbConnection::getString(botMarket->entity, sizeof(*botMarket), botMarket->name_size, marketName))
+        if(!ZlimdbConnection::getString(brokerType->entity, sizeof(*brokerType), brokerType->name_size, marketName))
           continue;
-        knownBotMarkets.append(marketName, botMarket->entity.id);
+        knownBotMarkets.append(marketName, brokerType->entity.id);
       }
     }
     if(connection.getErrno() != 0)
@@ -109,11 +109,11 @@ bool_t Main::connect()
       HashMap<String, uint64_t>::Iterator it = knownBotMarkets.find(marketName);
       if(it == knownBotMarkets.end())
       {
-        meguco_bot_market_entity* botMarket = (meguco_bot_market_entity*)(byte_t*)buffer;
-        ZlimdbConnection::setEntityHeader(botMarket->entity, 0, 0, sizeof(*botMarket) + marketName.length());
-        ZlimdbConnection::setString(botMarket->entity, botMarket->name_size, sizeof(*botMarket), marketName);
+        meguco_broker_type_entity* brokerType = (meguco_broker_type_entity*)(byte_t*)buffer;
+        ZlimdbConnection::setEntityHeader(brokerType->entity, 0, 0, sizeof(*brokerType) + marketName.length());
+        ZlimdbConnection::setString(brokerType->entity, brokerType->name_size, sizeof(*brokerType), marketName);
         uint64_t id;
-        if(!connection.add(botMarketsTableId, botMarket->entity, id))
+        if(!connection.add(botMarketsTableId, brokerType->entity, id))
           return error = connection.getErrorString(), false;
         botMarkets.append(id, &*i);
       }
