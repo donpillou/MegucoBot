@@ -127,11 +127,11 @@ bool_t Main::connect()
       connection.remove(botMarketsTableId, *i);
   }
 
-  // update bot engines list
+  // update bot types table
   {
     HashMap<String, uint64_t> knownBotEngines;
     uint32_t botEnginesTableId;
-    if(!connection.createTable("botEngines", botEnginesTableId))
+    if(!connection.createTable("bots", botEnginesTableId))
       return error = connection.getErrorString(), false;
     if(!connection.query(botEnginesTableId))
       return error = connection.getErrorString(), false;
@@ -140,11 +140,11 @@ bool_t Main::connect()
     {
       void* data = (byte_t*)buffer;
       uint32_t size = buffer.size();
-      for(const meguco_bot_engine_entity* botEngine; botEngine = (const meguco_bot_engine_entity*)zlimdb_get_entity(sizeof(meguco_bot_engine_entity), &data, &size);)
+      for(const meguco_bot_type_entity* botType; botType = (const meguco_bot_type_entity*)zlimdb_get_entity(sizeof(meguco_bot_type_entity), &data, &size);)
       {
-        if(!ZlimdbConnection::getString(botEngine->entity, sizeof(*botEngine), botEngine->name_size, engineName))
+        if(!ZlimdbConnection::getString(botType->entity, sizeof(*botType), botType->name_size, engineName))
           continue;
-        knownBotEngines.append(engineName, botEngine->entity.id);
+        knownBotEngines.append(engineName, botType->entity.id);
       }
     }
     if(connection.getErrno() != 0)
@@ -156,11 +156,11 @@ bool_t Main::connect()
       HashMap<String, uint64_t>::Iterator it = knownBotEngines.find(botEngineName);
       if(it == knownBotEngines.end())
       {
-        meguco_bot_engine_entity* botEngine = (meguco_bot_engine_entity*)(byte_t*)buffer;
-        ZlimdbConnection::setEntityHeader(botEngine->entity, 0, 0, sizeof(*botEngine) + botEngineName.length());
-        ZlimdbConnection::setString(botEngine->entity, botEngine->name_size, sizeof(*botEngine), botEngineName);
+        meguco_bot_type_entity* botType = (meguco_bot_type_entity*)(byte_t*)buffer;
+        ZlimdbConnection::setEntityHeader(botType->entity, 0, 0, sizeof(*botType) + botEngineName.length());
+        ZlimdbConnection::setString(botType->entity, botType->name_size, sizeof(*botType), botEngineName);
         uint64_t id;
-        if(!connection.add(botEnginesTableId, botEngine->entity, id))
+        if(!connection.add(botEnginesTableId, botType->entity, id))
           return error = connection.getErrorString(), false;
         botEngines.append(id, &*i);
       }
