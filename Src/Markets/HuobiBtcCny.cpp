@@ -100,7 +100,7 @@ bool_t HuobiBtcCny::process(Callback& callback)
 
         if(Math::abs(tradeTimestamp  - approxServerTimestamp) > 12 * 60 * 60 * 1000LL)
           tradeTimestamp += tradeTimestamp > approxServerTimestamp ? -24 * 60 * 60 * 1000LL : 24 * 60 * 60 * 1000LL;
-        if(Math::abs(tradeTimestamp  - approxServerTimestamp) > 60 * 60 * 1000LL)
+        if(Math::abs(tradeTimestamp  - approxServerTimestamp) > 3 * 60 * 60 * 1000LL)
         {
           error = "Could not determine trade timestamp.";
           open = false;
