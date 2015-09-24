@@ -18,8 +18,8 @@ public:
 
   const String& getErrorString() const {return error;}
 
-  void_t addBotMarket(const String& name, const String& executable);
-  void_t addBotEngine(const String& name, const String& executable);
+  void_t addBrokerType(const String& name, const String& executable);
+  void_t addBotType(const String& name, const String& executable);
 
   bool_t connect();
   void_t disconnect();

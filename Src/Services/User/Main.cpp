@@ -2,6 +2,7 @@
 #include <nstd/Console.h>
 #include <nstd/File.h>
 #include <nstd/Thread.h>
+#include <nstd/Directory.h>
 
 #include "Main.h"
 #include "User2.h"
@@ -10,19 +11,59 @@
 
 int_t main(int_t argc, char_t* argv[])
 {
-  String binaryDir = File::dirname(String(argv[0], String::length(argv[0])));
+  String binaryDir = File::dirname(File::dirname(String(argv[0], String::length(argv[0]))));
+
+  bool stop = true;
+  while(stop);
 
   // initialize connection handler
   Main main;
 
-  // load market list
-  main.addBotMarket("Bitstamp/BTC/USD", binaryDir + "Brokers/BitstampBtcUsd");
+  // find broker types
+  {
+    Directory dir;
+    if(dir.open(binaryDir + "/Brokers", String(), false))
+    {
+      String path;
+      bool_t isDir;
+      while(dir.read(path, isDir))
+        if(File::isExecutable(binaryDir + "/Brokers/" + path))
+        {
+          const char_t* prevUpper = 0, * lastUpper = 0, * end;
+          for(const char_t* p = path; *p; ++p)
+            if(String::isUpper(*p))
+            {
+              prevUpper = lastUpper;
+              lastUpper = p;
+            }
+            else if(*p == '.')
+            {
+              end = p;
+              break;
+            }
+          if(prevUpper && lastUpper && end)
+          {
+            String name = path.substr(0, prevUpper - (const char_t*)path);
+            String comm = path.substr(name.length(), lastUpper - prevUpper);
+            String base = path.substr(name.length() + comm.length(), end - lastUpper);
+            main.addBrokerType(name + "/" + comm + "/" + base, String("Brokers/") + path);
+          }
+        }
+    }
+  }
 
-  // load bots
-  main.addBotEngine("BetBot", binaryDir + "Bots/BetBot");
-  main.addBotEngine("BetBot2", binaryDir + "Bots/BetBot2");
-  main.addBotEngine("FlipBot", binaryDir + "Bots/FlipBot");
-  main.addBotEngine("TestBot", binaryDir + "Bots/TestBot");
+  // find bot types
+  {
+    Directory dir;
+    if(dir.open(binaryDir + "/Bots", String(), false))
+    {
+      String path;
+      bool_t isDir;
+      while(dir.read(path, isDir))
+        if(File::isExecutable(binaryDir + "/Bots/" + path))
+          main.addBotType(File::basename(path, "exe"), String("Bots/") + path);
+    }
+  }
 
   // main loop
   for(;; Thread::sleep(10 * 1000))
@@ -48,13 +89,13 @@ Main::~Main()
   disconnect();
 }
 
-void_t Main::addBotMarket(const String& name, const String& executable)
+void_t Main::addBrokerType(const String& name, const String& executable)
 {
   BrokerType brokerType = {name, executable};
   brokerTypesByName.append(name, brokerType);
 }
 
-void_t Main::addBotEngine(const String& name, const String& executable)
+void_t Main::addBotType(const String& name, const String& executable)
 {
   BotType botType = {name, executable};
   botTypesByName.append(name, botType);
