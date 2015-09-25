@@ -59,6 +59,7 @@ uint_t ProcessManager::proc()
       HashMap<Process*, uint64_t>::Iterator it = processIdMap.find(process);
       if(it != processIdMap.end())
       {
+        Console::printf("reaped some process\n");
         callback->terminatedProcess(*it);
         processIdMap.remove(it);
         Array<Process*>::Iterator it2 = processes.find(process);
@@ -87,8 +88,12 @@ uint_t ProcessManager::proc()
         case Action::startType:
           {
             Process* process = new Process();
+            String command = action.commandLine;
+            command.resize(command.length());
+            Console::printf("launching: %s\n", (const char_t*)command);
             if(!process->start(action.commandLine))
             {
+              Console::printf("could not launch: %s\n", (const char_t*)command);
               callback->terminatedProcess(action.id);
               delete process;
             }
@@ -101,26 +106,25 @@ uint_t ProcessManager::proc()
           break;
         case Action::killType:
           {
-            HashMap<Process*, uint64_t>::Iterator itMap = processIdMap.end();
-            for(HashMap<Process*, uint64_t>::Iterator end = processIdMap.end(); itMap != end; ++itMap)
-              if(*itMap == action.id)
-                break;
-            if(itMap != processIdMap.end())
-            {
-              process = itMap.key();
-              Array<Process*>::Iterator it = processes.find(process);
-              if(it != processes.end())
+            for(HashMap<Process*, uint64_t>::Iterator i = processIdMap.begin(), end = processIdMap.end(); i != end; ++i)
+              if(*i == action.id)
               {
-                Process* process = *it;
-                if(process->kill())
+                process = i.key();
+                Array<Process*>::Iterator it = processes.find(process);
+                if(it != processes.end())
                 {
-                  callback->terminatedProcess(action.id);
-                  processes.remove(it);
-                  processIdMap.remove(itMap);
-                  delete process;
+                  Process* process = *it;
+                  Console::printf("killing some process\n");
+                  if(process->kill())
+                  {
+                    callback->terminatedProcess(action.id);
+                    processes.remove(it);
+                    processIdMap.remove(i);
+                    delete process;
+                  }
                 }
+                break;
               }
-            }
           }
         }
         actions.removeFront();

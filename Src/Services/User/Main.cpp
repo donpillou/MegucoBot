@@ -13,9 +13,6 @@ int_t main(int_t argc, char_t* argv[])
 {
   String binaryDir = File::dirname(File::dirname(String(argv[0], String::length(argv[0]))));
 
-  bool stop = true;
-  while(stop);
-
   // initialize connection handler
   Main main;
 
@@ -355,19 +352,23 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     if(!connection.subscribe(entityId))
       return;
     Buffer buffer;
+    meguco_user_broker_entity userBroker;
+    userBroker.entity.id = 0;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
       uint32_t size = buffer.size();
-      for(const meguco_user_broker_entity* userBroker; userBroker = (const meguco_user_broker_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_entity), &data, &size);)
+      for(const meguco_user_broker_entity* entity; entity = (const meguco_user_broker_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_entity), &data, &size);)
       {
-        if(userBroker->entity.id != 1)
+        if(entity->entity.id != 1)
           continue;
-        addedUserBroker(entityId, userName, *userBroker);
+        userBroker = *entity;
       }
     }
     if(connection.getErrno() != 0)
       return;
+    if(userBroker.entity.id != 0)
+      addedUserBroker(entityId, userName, userBroker);
   }
   if(tableName.startsWith("users/") && tableName.endsWith("/session"))
   {
@@ -381,19 +382,23 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     if(!connection.subscribe(entityId))
       return;
     Buffer buffer;
+    meguco_user_session_entity userSession;
+    userSession.entity.id = 0;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
       uint32_t size = buffer.size();
-      for(const meguco_user_session_entity* userSession; userSession = (const meguco_user_session_entity*)zlimdb_get_entity(sizeof(meguco_user_session_entity), &data, &size);)
+      for(const meguco_user_session_entity* entity; entity = (const meguco_user_session_entity*)zlimdb_get_entity(sizeof(meguco_user_session_entity), &data, &size);)
       {
-        if(userSession->entity.id != 1)
+        if(entity->entity.id != 1)
           continue;
-        addedUserSession(entityId, userName, *userSession);
+        userSession = *entity;
       }
     }
     if(connection.getErrno() != 0)
       return;
+    if(userSession.entity.id != 0)
+      addedUserSession(entityId, userName, userSession);
   }
 }
 
