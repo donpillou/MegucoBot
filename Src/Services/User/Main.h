@@ -51,9 +51,10 @@ private:
     uint32_t tableId;
   };
 
-  struct Table
+  struct TableInfo
   {
     ProcessType type;
+    String userName;
     void_t* object;
   };
 
@@ -68,7 +69,7 @@ private:
   uint32_t processesTableId;
   HashMap<uint64_t, Process> processes;
   HashMap<uint32_t, Process*> processesByTable;
-  HashMap<uint32_t, Table> tables;
+  HashMap<uint32_t, TableInfo> tableInfo;
 
 private:
   User2* findUser(const String& name) {return *users.find(name);}
@@ -79,8 +80,8 @@ private:
 
   void_t addedTable(uint32_t tableId, const String& tableName);
   void_t addedProcess(uint64_t entityId, const String& command);
-  void_t addedUserBroker(uint32_t tableId, const String& userName, const meguco_user_broker_entity& userMarket);
-  void_t addedUserSession(uint32_t tableId, const String& userName, const meguco_user_session_entity& userSession);
+  void_t addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguco_user_broker_entity& userMarket);
+  void_t addedUserSession(uint32_t tableId, TableInfo& tableInfo, const meguco_user_session_entity& userSession);
   //void_t updatedUserBroker(Market2& market, const meguco_user_broker_entity& entity);
   //void_t updatedUserSession(Session2& session, const meguco_user_session_entity& entity);
   void_t removedTable(uint32_t tableId);

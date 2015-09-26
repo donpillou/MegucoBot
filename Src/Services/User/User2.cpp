@@ -29,7 +29,7 @@ Session2* User2::createSession(uint32_t tableId, const meguco_user_session_entit
   return session;
 }
 
-void_t User2::deleteMarket(Market2& market)
+void_t User2::deleteBroker(Market2& market)
 {
   markets.remove(&market);
   delete &market;
