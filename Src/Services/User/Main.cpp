@@ -270,7 +270,7 @@ bool_t Main::process()
 {
   for(;;)
     if(!connection.process())
-      return false;
+      return error = connection.getErrorString(), false;
 }
 
 User2* Main::createUser(const String& name)

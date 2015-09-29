@@ -179,7 +179,7 @@ bool_t Main::process()
   for(;;)
   {
     if(!connection.process())
-      return false;
+      return error = connection.getErrorString(), false;
     List<uint64_t> terminatedProcesses;
     mutex.lock();
     terminatedProcesses.swap(this->terminatedProcesses);
