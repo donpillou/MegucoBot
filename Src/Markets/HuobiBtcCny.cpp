@@ -49,7 +49,7 @@ bool_t HuobiBtcCny::process(Callback& callback)
     }
 
     const List<Variant>& tradesList = dataVar.toMap().find("trades")->toList();
-    timestamp_t approxServerTimestamp = Time::time() + 8LL * 60LL * 60LL * 1000LL;
+    int64_t approxServerTimestamp = Time::time() + 8LL * 60LL * 60LL * 1000LL;
     Time approxServerTime(approxServerTimestamp, true); // Hong Kong time
 
     Trade trade;
@@ -96,7 +96,7 @@ bool_t HuobiBtcCny::process(Callback& callback)
         tradeTime.hour = hour;
         tradeTime.min = min;
         tradeTime.sec = sec;
-        timestamp_t tradeTimestamp = tradeTime.toTimestamp();
+        int64_t tradeTimestamp = tradeTime.toTimestamp();
 
         if(Math::abs(tradeTimestamp  - approxServerTimestamp) > 12 * 60 * 60 * 1000LL)
           tradeTimestamp += tradeTimestamp > approxServerTimestamp ? -24 * 60 * 60 * 1000LL : 24 * 60 * 60 * 1000LL;

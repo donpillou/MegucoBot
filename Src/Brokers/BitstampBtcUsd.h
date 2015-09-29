@@ -24,9 +24,9 @@ private:
 
   HttpRequest httpRequest;
 
-  timestamp_t lastRequestTime;
+  int64_t lastRequestTime;
   uint64_t lastNonce;
-  timestamp_t lastLiveTradeUpdateTime;
+  int64_t lastLiveTradeUpdateTime;
 
   //HashMap<uint32_t, String> entityIds;
   //HashMap<String, uint32_t> entityIdsById;

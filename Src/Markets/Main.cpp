@@ -1,5 +1,5 @@
 
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/Thread.h>
 #include <nstd/Directory.h>
 #include <nstd/Error.h>
@@ -9,6 +9,8 @@
 
 int_t main(int_t argc, char_t* argv[])
 {
+  Log::setFormat("%P> %m");
+
   Main main;
   for(;; Thread::sleep(10 * 1000))
   {
@@ -25,23 +27,23 @@ bool_t Main::connect()
 
   if(!zlimdbConnection.isOpen())
   {
-    Console::printf("Connecting to zlimdb server...\n");
+    Log::infof("Connecting to zlimdb server...");
     if(!zlimdbConnection.connect(*this))
-      return Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)zlimdbConnection.getErrorString()), false;
+      return Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)zlimdbConnection.getErrorString()), false;
     if(!zlimdbConnection.createTable(String("markets/") + channelName + "/trades", tradesTableId))
-      return Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)zlimdbConnection.getErrorString()), false;
+      return Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)zlimdbConnection.getErrorString()), false;
     if(!zlimdbConnection.createTable(String("markets/") + channelName + "/ticker", tickerTableId))
-      return Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)zlimdbConnection.getErrorString()), false;
+      return Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)zlimdbConnection.getErrorString()), false;
 
-    Console::printf("Connected to zlimdb server.\n");
+    Log::infof("Connected to zlimdb server.");
   }
 
   if(!marketConnection.isOpen())
   {
-    Console::printf("Connecting to %s...\n", (const char_t*)channelName);
+    Log::infof("Connecting to %s...", (const char_t*)channelName);
     if(!marketConnection.connect())
-      return Console::errorf("error: Could not connect to %s: %s\n", (const char_t*)channelName, (const char_t*)marketConnection.getErrorString()), false;
-    Console::printf("Connected to %s.\n", (const char_t*)channelName);
+      return Log::errorf("Could not connect to %s: %s", (const char_t*)channelName, (const char_t*)marketConnection.getErrorString()), false;
+    Log::infof("Connected to %s.", (const char_t*)channelName);
   }
 
   return true;
@@ -54,9 +56,9 @@ void_t Main::process()
       break;
 
   if(!zlimdbConnection.isOpen())
-    Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)zlimdbConnection.getErrorString());
+    Log::errorf("Lost connection to zlimdb server: %s", (const char_t*)zlimdbConnection.getErrorString());
   if(!marketConnection.isOpen())
-    Console::errorf("error: Lost connection to %s: %s\n", (const char_t*)marketConnection.getChannelName(), (const char_t*)marketConnection.getErrorString());
+    Log::errorf("Lost connection to %s: %s", (const char_t*)marketConnection.getChannelName(), (const char_t*)marketConnection.getErrorString());
   marketConnection.close(); // reconnect to reload the trade history
 }
 

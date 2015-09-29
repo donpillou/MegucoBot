@@ -13,7 +13,7 @@ public:
   bool_t connect(const String& url);
   void_t close();
   bool_t isOpen() const;
-  bool_t recv(Buffer& buffer, timestamp_t timeout);
+  bool_t recv(Buffer& buffer, int64_t timeout);
   bool_t send(const byte_t* buffer, size_t size);
   bool_t send(const String& data);
   bool_t sendPing();
@@ -29,7 +29,7 @@ private:
   Buffer recvBuffer;
 
   bool_t sendAll(const byte_t* data, size_t size);
-  bool_t receive(byte_t* data, size_t size, timestamp_t timeout, size_t& received);
+  bool_t receive(byte_t* data, size_t size, int64_t timeout, size_t& received);
   bool_t sendFrame(uint_t type, const byte_t* data, size_t size);
 
   static String getSocketErrorString();

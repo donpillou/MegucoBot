@@ -2,7 +2,7 @@
 #include <nstd/Array.h>
 #include <nstd/Process.h>
 #include <nstd/HashMap.h>
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 
 #include "ProcessManager.h"
 
@@ -26,7 +26,6 @@ void_t ProcessManager::stop()
 
 void_t ProcessManager::startProcess(uint64_t id, const String& commandLine)
 {
-  //Console::printf("launching: %s\n", (const char_t*)commandLine);
   mutex.lock();
   Action& action = actions.append(Action());
   action.type = Action::startType;
@@ -59,7 +58,7 @@ uint_t ProcessManager::proc()
       HashMap<Process*, uint64_t>::Iterator it = processIdMap.find(process);
       if(it != processIdMap.end())
       {
-        Console::printf("reaped some process\n");
+        Log::infof("reaped some process");
         callback->terminatedProcess(*it);
         processIdMap.remove(it);
         Array<Process*>::Iterator it2 = processes.find(process);
@@ -90,10 +89,10 @@ uint_t ProcessManager::proc()
             Process* process = new Process();
             String command = action.commandLine;
             command.resize(command.length());
-            Console::printf("launching: %s\n", (const char_t*)command);
+            Log::infof("launching: %s", (const char_t*)command);
             if(!process->start(action.commandLine))
             {
-              Console::printf("could not launch: %s\n", (const char_t*)command);
+              Log::infof("could not launch: %s", (const char_t*)command);
               callback->terminatedProcess(action.id);
               delete process;
             }
@@ -114,7 +113,7 @@ uint_t ProcessManager::proc()
                 if(it != processes.end())
                 {
                   Process* process = *it;
-                  Console::printf("killing some process\n");
+                  Log::infof("killing some process");
                   if(process->kill())
                   {
                     callback->terminatedProcess(action.id);

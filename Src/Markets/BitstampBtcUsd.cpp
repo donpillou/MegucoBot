@@ -38,8 +38,8 @@ bool_t BitstampBtcUsd::connect()
       websocket.close();
       return false;
     }
-    timestamp_t localTime = Time::time();
-    //Console::printf("%s\n", (const byte_t*)data);
+    int64_t localTime = Time::time();
+    //Log::infof("%s", (const byte_t*)data);
     Variant dataVar;
     if(!Json::parse(data, dataVar))
     {
@@ -48,7 +48,7 @@ bool_t BitstampBtcUsd::connect()
       return false;
     }
     const HashMap<String, Variant>& dataMap = dataVar.toMap();
-    timestamp_t serverTime = dataMap.find("timestamp")->toInt64() * 1000LL;  // + up to 8 seconds
+    int64_t serverTime = dataMap.find("timestamp")->toInt64() * 1000LL;  // + up to 8 seconds
     if(i == 0 || serverTime - localTime > localToServerTime)
       localToServerTime = serverTime - localTime;
     if(i == 12)
@@ -71,7 +71,7 @@ bool_t BitstampBtcUsd::process(Callback& callback)
       return false;
     }
 
-    //Console::printf("%s\n", (const byte_t*)data);
+    //Log::infof("%s", (const byte_t*)data);
     Variant dataVar;
     if(!Json::parse(data, dataVar))
     {
@@ -128,7 +128,7 @@ bool_t BitstampBtcUsd::process(Callback& callback)
       return false;
 
     // request ticker data?
-    timestamp_t now = Time::time();
+    int64_t now = Time::time();
     if(now - lastTickerTimer >= 30 * 1000)
     {
       if(httpRequest.get("https://www.bitstamp.net/api/ticker/", buffer))
@@ -154,8 +154,8 @@ bool_t BitstampBtcUsd::process(Callback& callback)
 
 bool_t BitstampBtcUsd::handleStreamData(const Buffer& data, Callback& callback)
 {
-  timestamp_t localTime = Time::time();
-  //Console::printf("%s\n", (const byte_t*)data);
+  int64_t localTime = Time::time();
+  //Log::infof("%s", (const byte_t*)data);
 
   Variant dataVar;
   if(Json::parse(data, dataVar))

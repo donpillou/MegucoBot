@@ -192,7 +192,7 @@ bool_t Websocket::isOpen() const
   return s != 0;
 }
 
-bool_t Websocket::recv(Buffer& buffer, timestamp_t timeout)
+bool_t Websocket::recv(Buffer& buffer, int64_t timeout)
 {
   if(!curl)
     return false;
@@ -425,7 +425,7 @@ bool_t Websocket::sendAll(const byte_t* data, size_t size)
 {
   fd_set writefds;
   FD_ZERO(&writefds);
-  timestamp_t timeout = 10000;
+  int64_t timeout = 10000;
   timeval tv = { (long)(timeout / 1000L), (long)((timeout % 1000LL)) * 1000L };
   for(;;)
   {
@@ -455,7 +455,7 @@ bool_t Websocket::sendAll(const byte_t* data, size_t size)
   }
 }
 
-bool_t Websocket::receive(byte_t* data, size_t size, timestamp_t timeout, size_t& received)
+bool_t Websocket::receive(byte_t* data, size_t size, int64_t timeout, size_t& received)
 {
   fd_set readfds;
   FD_ZERO(&readfds);

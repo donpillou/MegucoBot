@@ -1,5 +1,5 @@
 
-#include <nstd/Console.h>
+#include <nstd/Log.h>
 #include <nstd/File.h>
 #include <nstd/Thread.h>
 #include <nstd/Directory.h>
@@ -12,6 +12,8 @@
 int_t main(int_t argc, char_t* argv[])
 {
   String binaryDir = File::dirname(File::dirname(String(argv[0], String::length(argv[0]))));
+
+  Log::setFormat("%P> %m");
 
   // initialize connection handler
   Main main;
@@ -68,15 +70,15 @@ int_t main(int_t argc, char_t* argv[])
     // connect to zlimdb server
     if(!main.connect())
     {
-        Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)main.getErrorString());
+        Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)main.getErrorString());
         continue;
     }
-    Console::printf("Connected to zlimdb server.\n");
+    Log::infof("Connected to zlimdb server.");
 
     // run connection handler loop
     main.process();
 
-    Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)main.getErrorString());
+    Log::errorf("Lost connection to zlimdb server: %s", (const char_t*)main.getErrorString());
   }
   return 0;
 }

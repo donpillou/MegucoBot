@@ -19,10 +19,10 @@ public:
 private:
   Websocket websocket;
   String error;
-  timestamp_t localToServerTime;
-  timestamp_t lastPingTime;
-  timestamp_t lastTickerTimer;
+  int64_t localToServerTime;
+  int64_t lastPingTime;
+  int64_t lastTickerTimer;
 
-  timestamp_t toServerTime(timestamp_t localTime) const {return localTime + localToServerTime;}
+  int64_t toServerTime(int64_t localTime) const {return localTime + localToServerTime;}
   bool_t handleStreamData(const Buffer& data, Callback& callback);
 };

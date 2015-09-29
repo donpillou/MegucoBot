@@ -1,6 +1,7 @@
 
 #include <nstd/Console.h>
 #include <nstd/Thread.h>
+#include <nstd/Log.h>
 
 #include "Main.h"
 
@@ -18,6 +19,8 @@ int_t main(int_t argc, char_t* argv[])
   }
   uint32_t userMarketTableId = String(argv[1], String::length(argv[1])).toUInt();
 
+  Log::setFormat("%P> %m");
+
   //for(;;)
   //{
   //  bool stop = true;
@@ -31,14 +34,14 @@ int_t main(int_t argc, char_t* argv[])
   {
     if(!main.connect2(userMarketTableId))
     {
-      Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)main.getErrorString());
+      Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)main.getErrorString());
       continue;
     }
-    Console::printf("Connected to zlimdb server.\n");
+    Log::infof("Connected to zlimdb server.");
 
     // wait for requests
     main.process();
-    Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)main.getErrorString());
+    Log::errorf("Lost connection to zlimdb server: %s", (const char_t*)main.getErrorString());
   }
 
   return 0;

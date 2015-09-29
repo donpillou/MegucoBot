@@ -1,4 +1,5 @@
 
+#include <nstd/Log.h>
 #include <nstd/Console.h>
 #include <nstd/File.h>
 #include <nstd/Process.h>
@@ -40,15 +41,16 @@ int_t main(int_t argc, char_t* argv[])
         return -1;
       }
   }
+  Log::setFormat("%P> %m");
 
   // daemonize process
 #ifndef _WIN32
   if(!logFile.isEmpty())
   {
-    Console::printf("Starting as daemon...\n");
+    Log::infof("Starting as daemon...");
     if(!Process::daemonize(logFile))
     {
-      Console::errorf("error: Could not daemonize process: %s\n", (const char_t*)Error::getErrorString());
+      Log::errorf("Could not daemonize process: %s", (const char_t*)Error::getErrorString());
       return -1;
     }
   }
@@ -58,7 +60,7 @@ int_t main(int_t argc, char_t* argv[])
   Main server(binaryDir);
   if(!server.init())
   {
-    Console::errorf("error: Could not initialize process: %s\n", (const char_t*)server.getErrorString());
+    Log::errorf("Could not initialize process: %s", (const char_t*)server.getErrorString());
     return -1;
   }
 
@@ -68,15 +70,15 @@ int_t main(int_t argc, char_t* argv[])
     // connect to zlimdb server
     if(!server.connect())
     {
-        Console::errorf("error: Could not connect to zlimdb server: %s\n", (const char_t*)server.getErrorString());
+        Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)server.getErrorString());
         continue;
     }
-    Console::printf("Connected to zlimdb server.\n");
+    Log::infof("Connected to zlimdb server.");
 
     // run connection handler loop
     server.process();
 
-    Console::errorf("error: Lost connection to zlimdb server: %s\n", (const char_t*)server.getErrorString());
+    Log::errorf("Lost connection to zlimdb server: %s", (const char_t*)server.getErrorString());
   }
   return 0;
 }
