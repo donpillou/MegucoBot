@@ -63,9 +63,9 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   if(!connection.connect(*this))
     return false;
 
-  // get user name and market name
+  // get user name and broker id
   Buffer buffer;
-  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer))
+  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer)) ?? dies wird irgendwie nicht beantwortet
     return false;
   if(buffer.size() < sizeof(zlimdb_table_entity))
     return false;
@@ -90,13 +90,17 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   String userName = tableName.substr(userNameStart - tableName, userNameEnd - userNameStart);
   String brokerId = tableName.substr(brokerIdStart - tableName, brokerIdEnd - brokerIdStart);
 
-  // get user broker
-  if(!connection.query(userBrokerTableId, 1, buffer))
+  // get and subscribe to user broker table
+  if(!connection.subscribe(userBrokerTableId))
     return false;
-  if(buffer.size() < sizeof(meguco_user_broker_entity))
-    return false;
-  meguco_user_broker_entity* userBrokerEntity = (meguco_user_broker_entity*)(byte_t*)buffer;
+  Log::infof("subscribed to table %d", (int_t)userBrokerTableId);
+  while(connection.getResponse(buffer))
   {
+    if(buffer.size() < sizeof(meguco_user_broker_entity))
+      return false;
+    meguco_user_broker_entity* userBrokerEntity = (meguco_user_broker_entity*)(byte_t*)buffer;
+    if(userBrokerEntity->entity.id != 1)
+      continue;
     String userName, key, secret;
     if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity), userBrokerEntity->user_name_size, userName))
       return false;
@@ -106,6 +110,8 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
       return false;
     broker = new BrokerImpl(userName, key, secret);
   }
+  if(connection.getErrno() != 0)
+    return false;
 
   // subscribe to orders table
   if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/orders", userBrokerOrdersTableId))
@@ -122,7 +128,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   if(connection.getErrno() != 0)
     return false;
 
-  // get transaction table id
+  // get transaction table
   if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/transactions", userBrokerTransactionsTableId))
     return false;
   if(!connection.query(userBrokerTransactionsTableId))
