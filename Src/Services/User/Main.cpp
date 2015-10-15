@@ -43,8 +43,8 @@ int_t main(int_t argc, char_t* argv[])
           if(prevUpper && lastUpper && end)
           {
             String name = path.substr(0, prevUpper - (const char_t*)path);
-            String comm = path.substr(name.length(), lastUpper - prevUpper);
-            String base = path.substr(name.length() + comm.length(), end - lastUpper);
+            String comm = path.substr(name.length(), lastUpper - prevUpper).toUpperCase();
+            String base = path.substr(name.length() + comm.length(), end - lastUpper).toUpperCase();
             main.addBrokerType(name + "/" + comm + "/" + base, String("Brokers/") + path);
           }
         }
@@ -221,7 +221,6 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
   {
     String tableName;
-    HashMap<uint64_t, String> processes;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
@@ -231,13 +230,11 @@ bool_t Main::connect()
       {
         if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
           continue;
-        processes.append(process->entity.id, command);
+        addedProcess(process->entity.id, command);
       }
     }
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
-    for(HashMap<uint64_t, String>::Iterator i = processes.begin(), end = processes.end(); i != end; ++i)
-      addedProcess(i.key(), *i);
   }
 
   // get table list
@@ -245,7 +242,6 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
   {
     String tableName;
-    HashMap<uint64_t, String> tables;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
@@ -254,13 +250,11 @@ bool_t Main::connect()
       {
         if(!ZlimdbConnection::getString(entity->entity, sizeof(*entity), entity->name_size, tableName))
           continue;
-        tables.append((uint32_t)entity->entity.id, tableName);
+        addedTable((uint32_t)entity->entity.id, tableName);
       }
     }
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
-    for(HashMap<uint64_t, String>::Iterator i = tables.begin(), end = tables.end(); i != end; ++i)
-      addedTable((uint32_t)i.key(), *i);
   }
 
   return true;
@@ -369,8 +363,6 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     TableInfo tableInfoData = {Main::userBroker, userName};
     TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
     Buffer buffer;
-    meguco_user_broker_entity userBroker;
-    userBroker.entity.id = 0;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
@@ -379,13 +371,11 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
       {
         if(entity->entity.id != 1)
           continue;
-        userBroker = *entity;
+        addedUserBroker(entityId, tableInfo, *entity);
       }
     }
     if(connection.getErrno() != 0)
       return;
-    if(userBroker.entity.id != 0)
-      addedUserBroker(entityId, tableInfo, userBroker);
   }
   if(tableName.startsWith("users/") && tableName.endsWith("/session"))
   {
@@ -401,8 +391,6 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     TableInfo tableInfoData = {Main::userSession, userName};
     TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
     Buffer buffer;
-    meguco_user_session_entity userSession;
-    userSession.entity.id = 0;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
@@ -411,13 +399,11 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
       {
         if(entity->entity.id != 1)
           continue;
-        userSession = *entity;
+        addedUserSession(entityId, tableInfo, *entity);
       }
     }
     if(connection.getErrno() != 0)
       return;
-    if(userSession.entity.id != 0)
-      addedUserSession(entityId, tableInfo, userSession);
   }
 }
 

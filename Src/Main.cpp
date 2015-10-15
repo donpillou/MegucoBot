@@ -122,12 +122,11 @@ bool_t Main::connect()
       HashMap<String, bool_t>::Iterator it = autostartProcesses.find(command);
       if(it != autostartProcesses.end())
         *it = true;
+      addedProcess(process->entity.id, command);
     }
   }
   if(connection.getErrno() != 0)
     return error = connection.getErrorString(), false;
-  for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(); i != end; ++i)
-    addedProcess(i->entityId, i->command);
 
   // add known processes not in processes table to processes table
   List<HashMap<uint64_t, Process>::Iterator> processesToAdd;
@@ -223,6 +222,8 @@ void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
     String cmd;
     if(!ZlimdbConnection::getString(processEntity.entity, sizeof(meguco_process_entity), processEntity.cmd_size, cmd))
       return;
+    String command = cmd;
+    command += "";
     addedProcess(processEntity.entity.id, cmd);
   }
 }

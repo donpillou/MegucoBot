@@ -80,7 +80,6 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
   {
     String tableName;
-    HashMap<uint64_t, String> processes;
     while(connection.getResponse(buffer))
     {
       void* data = (byte_t*)buffer;
@@ -90,13 +89,11 @@ bool_t Main::connect()
       {
         if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
           continue;
-        processes.append(process->entity.id, command);
+        addedProcess(process->entity.id, command);
       }
     }
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
-    for(HashMap<uint64_t, String>::Iterator i = processes.begin(), end = processes.end(); i != end; ++i)
-      addedProcess(i.key(), *i);
   }
 
   // start markets

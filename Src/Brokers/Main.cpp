@@ -65,7 +65,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
 
   // get user name and broker id
   Buffer buffer;
-  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer)) ?? dies wird irgendwie nicht beantwortet
+  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer))
     return false;
   if(buffer.size() < sizeof(zlimdb_table_entity))
     return false;
@@ -93,7 +93,6 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   // get and subscribe to user broker table
   if(!connection.subscribe(userBrokerTableId))
     return false;
-  Log::infof("subscribed to table %d", (int_t)userBrokerTableId);
   while(connection.getResponse(buffer))
   {
     if(buffer.size() < sizeof(meguco_user_broker_entity))
@@ -246,7 +245,7 @@ void_t Main::removedUserBrokerOrder(uint64_t entityId)
 
 void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
 {
-  if(entityId != 0)
+  if(entityId != 1)
     return;
 
   switch(controlCode)
