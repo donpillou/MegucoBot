@@ -71,7 +71,8 @@ bool_t Main::connect()
   if(!connection.connect(*this))
     return error = connection.getErrorString(), false;
 
-  Buffer buffer(ZLIMDB_MAX_MESSAGE_SIZE);
+  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+  size_t size;
 
   // get processes
   if(!connection.createTable("processes", processesTableId))
@@ -80,10 +81,9 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
   {
     String tableName;
-    while(connection.getResponse(buffer))
+    while(connection.getResponse(buffer, size))
     {
       void* data = (byte_t*)buffer;
-      uint32_t size = buffer.size();
       String command;
       for(const meguco_process_entity* process; process = (const meguco_process_entity*)zlimdb_get_entity(sizeof(meguco_process_entity), &data, &size);)
       {
@@ -103,10 +103,10 @@ bool_t Main::connect()
     if(!market.running)
     {
       const String& command = i.key();
-      buffer.resize(sizeof(meguco_process_entity) + command.length());
       meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
-      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, buffer.size());
-      ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(meguco_process_entity), command);
+      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity) + command.length());
+      if(!ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(meguco_process_entity), command))
+        continue;
       uint64_t id;
       if(!connection.add(processesTableId, process->entity, id))
         return error = connection.getErrorString(), false;

@@ -101,17 +101,17 @@ bool_t Main::connect()
   autostartProcesses.append("Services/Market.exe", false);
   autostartProcesses.append("Services/User.exe", false);
 
-  Buffer buffer(ZLIMDB_MAX_MESSAGE_SIZE);
+  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+  size_t size;
   if(!connection.createTable("processes", processesTableId))
     return error = connection.getErrorString(), false;
   if(!connection.subscribe(processesTableId))
     return error = connection.getErrorString(), false;
   HashMap<uint64_t, Process> processes;
   String command;
-  while(connection.getResponse(buffer))
+  while(connection.getResponse(buffer, size))
   {
     void* data = (byte_t*)buffer;
-    uint32_t size = buffer.size();
     for(const meguco_process_entity* process; process = (const meguco_process_entity*)zlimdb_get_entity(sizeof(meguco_process_entity), &data, &size);)
     {
       if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
@@ -139,10 +139,10 @@ bool_t Main::connect()
   for(List<HashMap<uint64_t, Process>::Iterator>::Iterator i = processesToAdd.end(), end = processesToAdd.end(); i != end; ++i)
   {
     Process& process = *(*i);
-    buffer.resize(sizeof(meguco_process_entity) + process.command.length());
-    meguco_process_entity* processEntity = (meguco_process_entity*)(byte_t*)buffer;
-    ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, buffer.size());
-    ZlimdbConnection::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), process.command);
+    meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
+    ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity) + process.command.length());
+    if(!ZlimdbConnection::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), process.command))
+      continue;
     uint64_t entityId;
     if(!connection.add(processesTableId, processEntity->entity, entityId))
       return error = connection.getErrorString(), false;
@@ -160,10 +160,10 @@ bool_t Main::connect()
     if(!alreadyRunning)
     {
       String cmd = i.key();
-      buffer.resize(sizeof(meguco_process_entity) + cmd.length());
-      meguco_process_entity* processEntity = (meguco_process_entity*)(byte_t*)buffer;
-      ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, buffer.size());
-      ZlimdbConnection::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), cmd);
+      meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
+      ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity) + cmd.length());
+      if(!ZlimdbConnection::setString(processEntity->entity, processEntity->cmd_size, sizeof(meguco_process_entity), cmd))
+        continue;
       uint64_t entityId;
       if(!connection.add(processesTableId, processEntity->entity, entityId))
         return error = connection.getErrorString(), false;

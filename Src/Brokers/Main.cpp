@@ -64,12 +64,13 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
     return false;
 
   // get user name and broker id
-  Buffer buffer;
-  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer))
+  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+  size_t size;
+  if(!connection.query(zlimdb_table_tables, userBrokerTableId, buffer, size))
     return false;
-  if(buffer.size() < sizeof(zlimdb_table_entity))
+  if(size < sizeof(zlimdb_table_entity))
     return false;
-  zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)(byte_t*)buffer;
+  zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)buffer;
   String tableName; // e.g. users/user1/brokers/<id>/broker
   if(!ZlimdbConnection::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
     return false;
@@ -93,11 +94,11 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   // get and subscribe to user broker table
   if(!connection.subscribe(userBrokerTableId))
     return false;
-  while(connection.getResponse(buffer))
+  while(connection.getResponse(buffer, size))
   {
-    if(buffer.size() < sizeof(meguco_user_broker_entity))
+    if(size < sizeof(meguco_user_broker_entity))
       return false;
-    meguco_user_broker_entity* userBrokerEntity = (meguco_user_broker_entity*)(byte_t*)buffer;
+    meguco_user_broker_entity* userBrokerEntity = (meguco_user_broker_entity*)buffer;
     if(userBrokerEntity->entity.id != 1)
       continue;
     String userName, key, secret;
@@ -117,10 +118,9 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
     return false;
   if(!connection.subscribe(userBrokerOrdersTableId))
     return false;
-  while(connection.getResponse(buffer))
+  while(connection.getResponse(buffer, size))
   {
     void* data = (byte_t*)buffer;
-    uint32_t size = buffer.size();
     for(const meguco_user_broker_order_entity* order; order = (const meguco_user_broker_order_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_order_entity), &data, &size);)
       orders2.append(order->entity.id, *order);
   }
@@ -132,10 +132,9 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
     return false;
   if(!connection.query(userBrokerTransactionsTableId))
     return false;
-  while(connection.getResponse(buffer))
+  while(connection.getResponse(buffer, size))
   {
     void* data = (byte_t*)buffer;
-    uint32_t size = buffer.size();
     for(const meguco_user_broker_transaction_entity* transaction; transaction = (const meguco_user_broker_transaction_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_transaction_entity), &data, &size);)
       transactions2.append(transaction->entity.id, *transaction);
   }
@@ -178,7 +177,7 @@ void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
     return removedUserBrokerOrder(entityId);
 }
 
-void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer)
+void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == userBrokerTableId)
     return controlUserBroker(entityId, controlCode);
@@ -350,10 +349,13 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
 
 void_t Main::addLogMessage(meguco_log_type type, const String& message)
 {
-  meguco_log_entity logEntity;
-  ZlimdbConnection::setEntityHeader(logEntity.entity, 0, 0, sizeof(logEntity));
-  logEntity.type = type;
-  ZlimdbConnection::setString(logEntity.entity, logEntity.message_size, sizeof(logEntity), message);
+  Buffer buffer;
+  buffer.resize(sizeof(meguco_log_entity) + message.length());
+  meguco_log_entity* logEntity = (meguco_log_entity*)(byte_t*)buffer;
+  ZlimdbConnection::setEntityHeader(logEntity->entity, 0, 0, buffer.size());
+  logEntity->type = type;
+  if(!ZlimdbConnection::setString(logEntity->entity, logEntity->message_size, sizeof(logEntity), message))
+    return;
   uint64_t id;
-  connection.add(userBrokerLogTableId, logEntity.entity, id);
+  connection.add(userBrokerLogTableId, logEntity->entity, id);
 }

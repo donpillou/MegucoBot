@@ -2,7 +2,6 @@
 #pragma once
 
 #include <nstd/String.h>
-#include <nstd/Buffer.h>
 
 #include <zlimdbclient.h>
 
@@ -15,7 +14,7 @@ public:
     virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity) = 0;
     virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) = 0;
     virtual void_t removedEntity(uint32_t tableId, uint64_t entityId) = 0;
-    virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer) = 0;
+    virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size) = 0;
   };
 
 public:
@@ -30,8 +29,8 @@ public:
 
   bool_t subscribe(uint32_t tableId);
   bool_t query(uint32_t tableId);
-  bool_t query(uint32_t tableId, uint64_t entityId, Buffer& buffer);
-  bool_t getResponse(Buffer& buffer);
+  bool_t query(uint32_t tableId, uint64_t entityId, byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size);
+  bool_t getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size);
   bool_t createTable(const String& name, uint32_t& tableId);
   bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists = false);
   bool_t clearTable(uint32_t tableId);
@@ -67,10 +66,13 @@ public:
     entity.size = size;
   }
 
-  static void_t setString(zlimdb_entity& entity, uint16_t& length, size_t offset, const String& str)
+  static bool_t setString(zlimdb_entity& entity, uint16_t& length, size_t offset, const String& str)
   {
+    if(sizeof(zlimdb_add_request) + offset + str.length() > ZLIMDB_MAX_MESSAGE_SIZE)
+      return false;
     length = str.length();
     Memory::copy((byte_t*)&entity + offset, (const char_t*)str, str.length());
+    return true;
   }
 
 private:

@@ -48,5 +48,5 @@ private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);
   virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) {}
   virtual void_t removedEntity(uint32_t tableId, uint64_t entityId);
-  virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const Buffer& buffer) {}
+  virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size) {}
 };

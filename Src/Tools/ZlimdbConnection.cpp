@@ -72,23 +72,21 @@ bool_t ZlimdbConnection::query(uint32_t tableId)
   return true;
 }
 
-bool_t ZlimdbConnection::query(uint32_t tableId, uint64_t entityId, Buffer& buffer)
+bool_t ZlimdbConnection::query(uint32_t tableId, uint64_t entityId, byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size)
 {
-  buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
-  uint32_t size = ZLIMDB_MAX_MESSAGE_SIZE;
+  uint32_t size32 = ZLIMDB_MAX_MESSAGE_SIZE;
   if(zlimdb_query_entity(zdb, tableId, entityId, buffer, &size) != 0)
     return error = getZlimdbError(), false;
-  buffer.resize(size);
+  size = size32;
   return true;
 }
 
-bool_t ZlimdbConnection::getResponse(Buffer& buffer)
+bool_t ZlimdbConnection::getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size)
 {
-  buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
-  uint32_t size = ZLIMDB_MAX_MESSAGE_SIZE;
+  uint32_t size32 = ZLIMDB_MAX_MESSAGE_SIZE;
   if(zlimdb_get_response(zdb, buffer, &size) != 0)
     return error = getZlimdbError(), false;
-  buffer.resize(size);
+  size = size32;
   return true;
 }
 
@@ -208,9 +206,7 @@ void ZlimdbConnection::zlimdbCallback(const zlimdb_header& message)
     if(message.size >= sizeof(zlimdb_control_request))
     {
       const zlimdb_control_request* controlRequest = (const zlimdb_control_request*)&message;
-      Buffer buffer;
-      buffer.attach((byte_t*)(controlRequest + 1), message.size - sizeof(zlimdb_control_request));
-      callback->controlEntity(controlRequest->table_id, controlRequest->id, controlRequest->control_code, buffer);
+      callback->controlEntity(controlRequest->table_id, controlRequest->id, controlRequest->control_code, (byte_t*)(controlRequest + 1), message.size - sizeof(zlimdb_control_request));
     }
   default:
     break;
