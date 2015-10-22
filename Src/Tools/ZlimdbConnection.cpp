@@ -72,21 +72,30 @@ bool_t ZlimdbConnection::query(uint32_t tableId)
   return true;
 }
 
-bool_t ZlimdbConnection::query(uint32_t tableId, uint64_t entityId, byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size)
+bool_t ZlimdbConnection::getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE])
 {
-  uint32_t size32 = ZLIMDB_MAX_MESSAGE_SIZE;
-  if(zlimdb_query_entity(zdb, tableId, entityId, buffer, &size) != 0)
+  if(zlimdb_get_response(zdb, (zlimdb_header*)buffer, ZLIMDB_MAX_MESSAGE_SIZE) != 0)
     return error = getZlimdbError(), false;
-  size = size32;
   return true;
 }
-
-bool_t ZlimdbConnection::getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size)
+/*
+bool_t ZlimdbConnection::queryEntity(uint32_t tableId, uint64_t entityId, byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE])
 {
-  uint32_t size32 = ZLIMDB_MAX_MESSAGE_SIZE;
-  if(zlimdb_get_response(zdb, buffer, &size) != 0)
+  if(zlimdb_query(zdb, tableId, zlimdb_query_type_by_id, entityId) != 0)
     return error = getZlimdbError(), false;
-  size = size32;
+  if(zlimdb_get_response(zdb, (zlimdb_header*)buffer, ZLIMDB_MAX_MESSAGE_SIZE) != 0)
+    return error = getZlimdbError(), false;
+  byte_t buffer2[ZLIMDB_MAX_MESSAGE_SIZE];
+  while(zlimdb_get_response(zdb, (zlimdb_header*)buffer2, ZLIMDB_MAX_MESSAGE_SIZE) == 0);
+  if(zlimdb_errno() != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+*/
+bool_t ZlimdbConnection::queryEntity(uint32_t tableId, uint64_t entityId, zlimdb_entity& entity, size_t minSize, size_t maxSize)
+{
+  if(zlimdb_query_entity(zdb, tableId, entityId, &entity, minSize, maxSize) != 0)
+    return error = getZlimdbError(), false;
   return true;
 }
 

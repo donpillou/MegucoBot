@@ -29,8 +29,8 @@ public:
 
   bool_t subscribe(uint32_t tableId);
   bool_t query(uint32_t tableId);
-  bool_t query(uint32_t tableId, uint64_t entityId, byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size);
-  bool_t getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE], size_t& size);
+  bool_t getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE]);
+  bool_t queryEntity(uint32_t tableId, uint64_t entityId, zlimdb_entity& entity, size_t minSize, size_t maxSize);
   bool_t createTable(const String& name, uint32_t& tableId);
   bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists = false);
   bool_t clearTable(uint32_t tableId);
@@ -44,20 +44,14 @@ public:
 public:
   static bool_t getString(const zlimdb_entity& entity, size_t offset, size_t length, String& result)
   {
-    if(offset + length > entity.size)
+    if(!length || offset + length > entity.size)
       return false;
-    result.attach((const char_t*)&entity + offset, length);
+    char_t* str = (char_t*)&entity + offset;
+    if(str[--length])
+      return false;
+    result.attach(str, length);
     return true;
   }
-
-  //static bool_t getString(const void* data, size_t size, const zlimdb_entity& entity, size_t offset, size_t length, String& result)
-  //{
-  //  size_t end = offset + length;
-  //  if(end > entity.size || (const byte_t*)&entity + end > (const byte_t*)data + size)
-  //    return false;
-  //  result.attach((const char_t*)&entity + offset, length);
-  //  return true;
-  //}
 
   static void_t setEntityHeader(zlimdb_entity& entity, uint64_t id, uint64_t time, uint16_t size)
   {
@@ -66,12 +60,13 @@ public:
     entity.size = size;
   }
 
-  static bool_t setString(zlimdb_entity& entity, uint16_t& length, size_t offset, const String& str)
+  static bool_t copyString(zlimdb_entity& entity, uint16_t& length, const String& str, size_t maxSize)
   {
-    if(sizeof(zlimdb_add_request) + offset + str.length() > ZLIMDB_MAX_MESSAGE_SIZE)
+    length = str.length() + 1;
+    if((size_t)entity.size + length > maxSize)
       return false;
-    length = str.length();
-    Memory::copy((byte_t*)&entity + offset, (const char_t*)str, str.length());
+    Memory::copy((byte_t*)&entity + entity.size, (const char_t*)str, length);
+    entity.size += length;
     return true;
   }
 

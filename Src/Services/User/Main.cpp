@@ -119,7 +119,6 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
 
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-  size_t size;
 
   // update broker types table
   {
@@ -130,10 +129,11 @@ bool_t Main::connect()
     if(!connection.query(botMarketsTableId))
       return error = connection.getErrorString(), false;
     String marketName;
-    while(connection.getResponse(buffer, size))
+    while(connection.getResponse(buffer))
     {
-      void* data = (byte_t*)buffer;
-      for(const meguco_broker_type_entity* brokerType; brokerType = (const meguco_broker_type_entity*)zlimdb_get_entity(sizeof(meguco_broker_type_entity), &data, &size);)
+      for(const meguco_broker_type_entity* brokerType = (const meguco_broker_type_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_broker_type_entity));
+          brokerType;
+          brokerType = (const meguco_broker_type_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_broker_type_entity), &brokerType->entity))
       {
         if(!ZlimdbConnection::getString(brokerType->entity, sizeof(*brokerType), brokerType->name_size, marketName))
           continue;
@@ -149,8 +149,8 @@ bool_t Main::connect()
       if(it == knownBotMarkets.end())
       {
         meguco_broker_type_entity* brokerType = (meguco_broker_type_entity*)buffer;
-        ZlimdbConnection::setEntityHeader(brokerType->entity, 0, 0, sizeof(*brokerType) + marketName.length());
-        if(!ZlimdbConnection::setString(brokerType->entity, brokerType->name_size, sizeof(*brokerType), marketName))
+        ZlimdbConnection::setEntityHeader(brokerType->entity, 0, 0, sizeof(meguco_broker_type_entity));
+        if(!ZlimdbConnection::copyString(brokerType->entity, brokerType->name_size, marketName, ZLIMDB_MAX_MESSAGE_SIZE))
           continue;
         uint64_t id;
         if(!connection.add(botMarketsTableId, brokerType->entity, id))
@@ -176,10 +176,11 @@ bool_t Main::connect()
     if(!connection.query(botEnginesTableId))
       return error = connection.getErrorString(), false;
     String engineName;
-    while(connection.getResponse(buffer, size))
+    while(connection.getResponse(buffer))
     {
-      void* data = (byte_t*)buffer;
-      for(const meguco_bot_type_entity* botType; botType = (const meguco_bot_type_entity*)zlimdb_get_entity(sizeof(meguco_bot_type_entity), &data, &size);)
+      for(const meguco_bot_type_entity* botType = (const meguco_bot_type_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_bot_type_entity));
+          botType;
+          botType = (const meguco_bot_type_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_bot_type_entity), &botType->entity))
       {
         if(!ZlimdbConnection::getString(botType->entity, sizeof(*botType), botType->name_size, engineName))
           continue;
@@ -195,8 +196,8 @@ bool_t Main::connect()
       if(it == knownBotEngines.end())
       {
         meguco_bot_type_entity* botType = (meguco_bot_type_entity*)buffer;
-        ZlimdbConnection::setEntityHeader(botType->entity, 0, 0, sizeof(*botType) + botEngineName.length());
-        if(!ZlimdbConnection::setString(botType->entity, botType->name_size, sizeof(*botType), botEngineName))
+        ZlimdbConnection::setEntityHeader(botType->entity, 0, 0, sizeof(meguco_bot_type_entity));
+        if(!ZlimdbConnection::copyString(botType->entity, botType->name_size, botEngineName, ZLIMDB_MAX_MESSAGE_SIZE))
           continue;
         uint64_t id;
         if(!connection.add(botEnginesTableId, botType->entity, id))
@@ -220,11 +221,12 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
   {
     String tableName;
-    while(connection.getResponse(buffer, size))
+    while(connection.getResponse(buffer))
     {
-      void* data = (byte_t*)buffer;
       String command;
-      for(const meguco_process_entity* process; process = (const meguco_process_entity*)zlimdb_get_entity(sizeof(meguco_process_entity), &data, &size);)
+      for(const meguco_process_entity* process = (const meguco_process_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_process_entity));
+          process;
+          process = (const meguco_process_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_process_entity), &process->entity))
       {
         if(!ZlimdbConnection::getString(process->entity, sizeof(*process), process->cmd_size, command))
           continue;
@@ -240,10 +242,11 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
   {
     String tableName;
-    while(connection.getResponse(buffer, size))
+    while(connection.getResponse(buffer))
     {
-      void* data = (byte_t*)buffer;
-      for(const zlimdb_table_entity* entity; entity = (const zlimdb_table_entity*)zlimdb_get_entity(sizeof(zlimdb_table_entity), &data, &size);)
+      for(const zlimdb_table_entity* entity = (const zlimdb_table_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(zlimdb_table_entity));
+          entity;
+          entity = (const zlimdb_table_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(zlimdb_table_entity), &entity->entity))
       {
         if(!ZlimdbConnection::getString(entity->entity, sizeof(*entity), entity->name_size, tableName))
           continue;
@@ -360,11 +363,11 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     TableInfo tableInfoData = {Main::userBroker, userName};
     TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
     byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-    size_t size;
-    while(connection.getResponse(buffer, size))
+    while(connection.getResponse(buffer))
     {
-      void* data = buffer;
-      for(const meguco_user_broker_entity* entity; entity = (const meguco_user_broker_entity*)zlimdb_get_entity(sizeof(meguco_user_broker_entity), &data, &size);)
+      for(const meguco_user_broker_entity* entity = (const meguco_user_broker_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity));
+          entity;
+          entity = (const meguco_user_broker_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity), &entity->entity))
       {
         if(entity->entity.id != 1)
           continue;
@@ -388,11 +391,11 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     TableInfo tableInfoData = {Main::userSession, userName};
     TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
     byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-    size_t size;
-    while(connection.getResponse(buffer, size))
+    while(connection.getResponse(buffer))
     {
-      void* data = buffer;
-      for(const meguco_user_session_entity* entity; entity = (const meguco_user_session_entity*)zlimdb_get_entity(sizeof(meguco_user_session_entity), &data, &size);)
+      for(const meguco_user_session_entity* entity = (const meguco_user_session_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_entity));
+          entity;
+          entity = (const meguco_user_session_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_entity), &entity->entity))
       {
         if(entity->entity.id != 1)
           continue;
@@ -477,11 +480,10 @@ void_t Main::addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguc
   if (state != meguco_user_broker_running)
   {
       String command = market->getExecutable() + " " + String::fromUInt(tableId);
-      Buffer buffer;
-      buffer.resize(ZLIMDB_MAX_MESSAGE_SIZE);
-      meguco_process_entity* process = (meguco_process_entity*)(byte_t*)buffer;
-      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity) + command.length());
-      if(!ZlimdbConnection::setString(process->entity, process->cmd_size, sizeof(*process), command))
+      byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+      meguco_process_entity* process = (meguco_process_entity*)buffer;
+      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
+      if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_MESSAGE_SIZE))
         return;
       uint64_t id;
       connection.add(processesTableId, process->entity, id);
