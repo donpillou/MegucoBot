@@ -218,6 +218,8 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_broker_order_entity>& orders)
     order.price = orderData.find("price")->toDouble();
     order.amount = Math::abs(orderData.find("amount")->toDouble());
     order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
+    order.timeout = 0;
+    order.state = meguco_user_broker_order_open;
 
     this->orders.append(order.raw_id, order);
     orders.append(order);

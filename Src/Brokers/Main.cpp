@@ -188,6 +188,8 @@ void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t control
 void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& createOrderArgs)
 {
   meguco_user_broker_order_entity order;
+  if(orders2.find(createOrderArgs.entity.id) != orders2.end())
+    return;
   if(createOrderArgs.state != meguco_user_broker_order_submitting || 
      !broker->createOrder(createOrderArgs.entity.id, (meguco_user_broker_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
   {
