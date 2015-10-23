@@ -2,6 +2,7 @@
 #include <nstd/Console.h>
 #include <nstd/Thread.h>
 #include <nstd/Log.h>
+#include <nstd/Map.h>
 
 #include "Main.h"
 
@@ -255,6 +256,9 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
       List<meguco_user_broker_order_entity> newOrders;
       if(!broker->loadOrders(newOrders))
         return addLogMessage(meguco_log_error, broker->getLastError());
+      Map<int64_t, meguco_user_broker_order_entity*> sortedNewOrders;
+      for(List<meguco_user_broker_order_entity>::Iterator i = newOrders.begin(), end = newOrders.end(); i != end; ++i)
+        sortedNewOrders.insert((*i).entity.time, &*i);
       HashMap<uint64_t, meguco_user_broker_order_entity> ordersMapByRaw;
       for(HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator i = orders2.begin(), end = orders2.end(); i != end; ++i)
       {
@@ -262,9 +266,9 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
         ordersMapByRaw.append(order.raw_id, order);
       }
       orders2.clear();
-      for(List<meguco_user_broker_order_entity>::Iterator i = newOrders.begin(), end = newOrders.end(); i != end; ++i)
+      for(Map<int64_t, meguco_user_broker_order_entity*>::Iterator i = sortedNewOrders.begin(), end = sortedNewOrders.end(); i != end; ++i)
       {
-        meguco_user_broker_order_entity& order = *i;
+        meguco_user_broker_order_entity& order = **i;
         HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = ordersMapByRaw.find(order.raw_id);
         if(it == ordersMapByRaw.end() || it->entity.id == 0)
         { // add
@@ -293,6 +297,9 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
       List<meguco_user_broker_transaction_entity> newTransactions;
       if(!broker->loadTransactions(newTransactions))
         return addLogMessage(meguco_log_error, broker->getLastError());
+      Map<int64_t, meguco_user_broker_transaction_entity*> sortedNewTransactions;
+      for(List<meguco_user_broker_transaction_entity>::Iterator i = newTransactions.begin(), end = newTransactions.end(); i != end; ++i)
+        sortedNewTransactions.insert((*i).entity.time, &*i);
       HashMap<uint64_t, meguco_user_broker_transaction_entity> transactionsapByRaw;
       for(HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator i = transactions2.begin(), end = transactions2.end(); i != end; ++i)
       {
@@ -300,9 +307,9 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
         transactionsapByRaw.append(transaction.raw_id, transaction);
       }
       transactions2.clear();
-      for(List<meguco_user_broker_transaction_entity>::Iterator i = newTransactions.begin(), end = newTransactions.end(); i != end; ++i)
+      for(Map<int64_t, meguco_user_broker_transaction_entity*>::Iterator i = sortedNewTransactions.begin(), end = sortedNewTransactions.end(); i != end; ++i)
       {
-        meguco_user_broker_transaction_entity& transaction = *i;
+        meguco_user_broker_transaction_entity& transaction = **i;
         HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator it = transactionsapByRaw.find(transaction.raw_id);
         if(it == transactionsapByRaw.end() || it->entity.id == 0)
         { // add
@@ -334,13 +341,13 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
       if(this->balance.entity.id == 0)
       {
         uint64_t id;
-        if(connection.add(userBrokerBalanceTableId, balance.entity, id))
-          balance.entity.id = id;
+        if(connection.add(userBrokerBalanceTableId, newBalance.entity, id))
+          newBalance.entity.id = id;
       }
       else
       {
-        balance.entity.id = this->balance.entity.id;
-        connection.update(userBrokerBalanceTableId, balance.entity);
+        newBalance.entity.id = this->balance.entity.id;
+        connection.update(userBrokerBalanceTableId, newBalance.entity);
       }
       this->balance = newBalance;
     }
