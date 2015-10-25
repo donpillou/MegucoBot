@@ -58,7 +58,7 @@ uint_t ProcessManager::proc()
       HashMap<Process*, uint64_t>::Iterator it = processIdMap.find(process);
       if(it != processIdMap.end())
       {
-        Log::infof("reaped some process");
+        Log::infof("reaped process %d", process->getProcessId());
         callback->terminatedProcess(*it);
         processIdMap.remove(it);
         Array<Process*>::Iterator it2 = processes.find(process);
@@ -89,7 +89,6 @@ uint_t ProcessManager::proc()
             Process* process = new Process();
             String command = action.commandLine;
             command.resize(command.length());
-            Log::infof("launching: %s", (const char_t*)command);
             if(!process->start(action.commandLine))
             {
               Log::infof("could not launch: %s", (const char_t*)command);
@@ -98,6 +97,7 @@ uint_t ProcessManager::proc()
             }
             else
             {
+              Log::infof("started process %u: %s", process->getProcessId(), (const char_t*)command);
               processes.append(process);
               processIdMap.append(process, action.id);
             }
@@ -113,13 +113,18 @@ uint_t ProcessManager::proc()
                 if(it != processes.end())
                 {
                   Process* process = *it;
-                  Log::infof("killing some process");
+                  uint32_t pid = process->getProcessId();
                   if(process->kill())
                   {
+                    Log::infof("killed process %u", pid);
                     callback->terminatedProcess(action.id);
                     processes.remove(it);
                     processIdMap.remove(i);
                     delete process;
+                  }
+                  else
+                  {
+                    Log::infof("could not kill process %u", pid);
                   }
                 }
                 break;

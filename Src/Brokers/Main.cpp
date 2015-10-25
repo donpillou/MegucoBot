@@ -190,6 +190,10 @@ void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& createO
   meguco_user_broker_order_entity order;
   if(orders2.find(createOrderArgs.entity.id) != orders2.end())
     return;
+
+  addLogMessage(meguco_log_error, "test error message");
+  return;
+
   if(createOrderArgs.state != meguco_user_broker_order_submitting || 
      !broker->createOrder(createOrderArgs.entity.id, (meguco_user_broker_order_type)createOrderArgs.type, createOrderArgs.price, createOrderArgs.amount, createOrderArgs.total, order))
   {
@@ -276,21 +280,27 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
         { // add
           uint64_t id;
           if(connection.add(userBrokerOrdersTableId, order.entity, id))
+          {
             order.entity.id = id;
+            orders2.append(order.entity.id, order);
+          }
         }
         else
         { // update
           order.entity.id = it->entity.id;
-          if(Memory::compare(&*it, &order, sizeof(order)) != 0)
-            connection.update(userBrokerOrdersTableId, order.entity);
+          if(Memory::compare(&*it, &order, sizeof(order)) != 0 &&
+             connection.update(userBrokerOrdersTableId, order.entity))
+            orders2.append(order.entity.id, order);
+          else
+            orders2.append(order.entity.id, *it);
           ordersMapByRaw.remove(it);
         }
-        orders2.append(order.entity.id, order);
       }
-      for(HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator i = ordersMapByRaw.end(), end = ordersMapByRaw.end(); i != end; ++i)
+      for(HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator i = ordersMapByRaw.begin(), end = ordersMapByRaw.end(); i != end; ++i)
       { // remove
         meguco_user_broker_order_entity& order = *i;
-        connection.remove(userBrokerOrdersTableId, order.entity.id);
+        if(!connection.remove(userBrokerOrdersTableId, order.entity.id))
+          orders2.append(order.entity.id, order);
       }
     }
     break;
@@ -317,21 +327,27 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
         { // add
           uint64_t id;
           if(connection.add(userBrokerTransactionsTableId, transaction.entity, id))
+          {
             transaction.entity.id = id;
+            transactions2.append(transaction.entity.id, transaction);
+          }
         }
         else
         { // update
           transaction.entity.id = it->entity.id;
-          if(Memory::compare(&*it, &transaction, sizeof(transaction)) != 0)
-            connection.update(userBrokerTransactionsTableId, transaction.entity);
+          if(Memory::compare(&*it, &transaction, sizeof(transaction)) != 0 &&
+             connection.update(userBrokerTransactionsTableId, transaction.entity))
+            transactions2.append(transaction.entity.id, transaction);
+          else
+            transactions2.append(transaction.entity.id, *it);
           transactionsapByRaw.remove(it);
         }
-        transactions2.append(transaction.raw_id, transaction);
       }
-      for(HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator i = transactionsapByRaw.end(), end = transactionsapByRaw.end(); i != end; ++i)
+      for(HashMap<uint64_t, meguco_user_broker_transaction_entity>::Iterator i = transactionsapByRaw.begin(), end = transactionsapByRaw.end(); i != end; ++i)
       { // remove
         meguco_user_broker_transaction_entity& transaction = *i;
-        connection.remove(userBrokerTransactionsTableId, transaction.entity.id);
+        if(!connection.remove(userBrokerTransactionsTableId, transaction.entity.id))
+          transactions2.append(transaction.entity.id, transaction);
       }
     }
     break;
