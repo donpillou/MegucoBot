@@ -193,7 +193,7 @@ void BetBot2::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
       if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
       {
         double gainBase = asset.balanceBase - transaction.total;
-        double gainComm = transaction.amount - asset.investComm + asset.balanceComm;
+        double gainComm = asset.investComm != 0. ? (transaction.amount - asset.investComm + asset.balanceComm) : 0.;
 
         Map<double, const BotProtocol::SessionAsset*> sortedSellAssets;
         Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
@@ -201,14 +201,14 @@ void BetBot2::Session::handleBuy(uint32_t orderId, const BotProtocol::Transactio
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
             const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
+            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price && asset.investBase != 0.)
               sortedSellAssets.insert(asset.profitablePrice, &asset);
           }
         if(gainComm > 0.)
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
             const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
+            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price && asset.investComm != 0.)
               sortedBuyAssets.insert(asset.profitablePrice, &asset);
           }
 
@@ -332,7 +332,7 @@ void BetBot2::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
       const BotProtocol::SessionAsset& asset = *i;
       if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
       {
-        double gainBase = transaction.total - asset.investBase + asset.balanceBase;
+        double gainBase = asset.investBase != 0. ? (transaction.total - asset.investBase + asset.balanceBase) : 0.;
         double gainComm = asset.balanceComm - transaction.amount;
 
         Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
@@ -341,14 +341,14 @@ void BetBot2::Session::handleSell(uint32_t orderId, const BotProtocol::Transacti
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
             const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
+            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price && asset.investComm != 0.)
               sortedBuyAssets.insert(asset.profitablePrice, &asset);
           }
         if(gainBase > 0.)
           for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
             const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
+            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price && asset.investBase != 0.)
               sortedSellAssets.insert(asset.profitablePrice, &asset);
           }
 
