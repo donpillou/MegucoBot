@@ -31,7 +31,7 @@ public:
 
   bool_t loadChannelList();
 
-  bool_t subscribe(const String& channel, uint64_t lastReceivedTradeId, timestamp_t maxAge);
+  bool_t subscribe(const String& channel, uint64_t lastReceivedTradeId, int64_t maxAge);
   bool_t unsubscribe(const String& channel);
 
   //bool readTrade(uint64_t& channelId, DataProtocol::Trade& trade);
@@ -41,7 +41,7 @@ private:
   Buffer recvBuffer;
   String error;
   Callback* callback;
-  timestamp_t serverTimeToLocalTime;
+  int64_t serverTimeToLocalTime;
 
 private:
   void_t handleMessage(DataProtocol::MessageType messageType, char_t* data, uint_t dataSize);

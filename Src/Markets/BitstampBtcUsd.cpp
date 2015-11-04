@@ -438,12 +438,12 @@ bool_t BitstampBtcUsd::request(const String& url, bool_t isPublic, const HashMap
 
 void_t BitstampBtcUsd::avoidSpamming()
 {
-  const timestamp_t queryDelay = 1337LL;
-  timestamp_t now = Time::time();
-  timestamp_t elapsed = lastRequestTime == 0 ? queryDelay : (now - lastRequestTime);
+  const int64_t queryDelay = 1337LL;
+  int64_t now = Time::time();
+  int64_t elapsed = lastRequestTime == 0 ? queryDelay : (now - lastRequestTime);
   if(elapsed < queryDelay)
   {
-    timestamp_t sleepMs = queryDelay - elapsed;
+    int64_t sleepMs = queryDelay - elapsed;
     Thread::sleep(sleepMs);
     lastRequestTime = now + sleepMs;
   }

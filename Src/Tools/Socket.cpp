@@ -405,7 +405,7 @@ void_t Socket::Selector::remove(Socket& socket)
 }
 
 //#include <nstd/Console.h>
-bool_t Socket::Selector::select(Socket*& socket, uint_t& events, timestamp_t timeout)
+bool_t Socket::Selector::select(Socket*& socket, uint_t& events, int64_t timeout)
 {
   SocketSelectorPrivate* p = (SocketSelectorPrivate*)data;
 

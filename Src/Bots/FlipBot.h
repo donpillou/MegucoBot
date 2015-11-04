@@ -24,7 +24,7 @@ private:
     void_t checkSell(const DataProtocol::Trade& trade);
 
   private: // Bot::Session
-    virtual void_t handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge);
+    virtual void_t handleTrade(const DataProtocol::Trade& trade, int64_t tradeAge);
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleBuyTimeout(uint32_t orderId);
@@ -36,5 +36,5 @@ private:
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
-  virtual timestamp_t getMaxTradeAge() const {return 0;}
+  virtual int64_t getMaxTradeAge() const {return 0;}
 };

@@ -19,10 +19,10 @@ private:
   String currencyComm;
   String error;
   HashMap<uint32_t, BotProtocol::Order> openOrders;
-  timestamp_t time;
-  timestamp_t lastBuyTime;
-  timestamp_t lastSellTime;
-  timestamp_t lastOrderRefreshTime;
+  int64_t time;
+  int64_t lastBuyTime;
+  int64_t lastSellTime;
+  int64_t lastOrderRefreshTime;
   HashMap<uint32_t, BotProtocol::Transaction> transactions;
   HashMap<uint32_t, BotProtocol::SessionAsset> assets;
   HashMap<String, BotProtocol::SessionProperty> properties;
@@ -35,15 +35,15 @@ private: // Bot::Broker
   virtual const String& getCurrencyBase() const {return currencyBase;};
   virtual const String& getCurrencyComm() const {return currencyComm;};
 
-  virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
-  virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount);
+  virtual bool_t buy(double price, double amount, double total, int64_t timeout, uint32_t* id, double* orderedAmount);
+  virtual bool_t sell(double price, double amount, double total, int64_t timeout, uint32_t* id, double* orderedAmount);
   virtual bool_t cancelOder(uint32_t id);
   virtual const HashMap<uint32_t, BotProtocol::Order> getOrders() const {return openOrders;}
   virtual const BotProtocol::Order* getOrder(uint32_t id) const;
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
-  virtual timestamp_t getTimeSinceLastBuy() const{return time - lastBuyTime;}
-  virtual timestamp_t getTimeSinceLastSell() const {return time - lastSellTime;}
+  virtual int64_t getTimeSinceLastBuy() const{return time - lastBuyTime;}
+  virtual int64_t getTimeSinceLastSell() const {return time - lastSellTime;}
 
   virtual const HashMap<uint32_t, BotProtocol::SessionAsset>& getAssets() const {return assets;}
   virtual const BotProtocol::SessionAsset* getAsset(uint32_t id) const;

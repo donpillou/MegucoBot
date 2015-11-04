@@ -24,7 +24,7 @@ private:
   BotConnection botConnection;
   HandlerConnection handlerConnection;
   DataConnection dataConnection;
-  timestamp_t maxTradeAge;
+  int64_t maxTradeAge;
   Broker* broker;
   Bot::Session* botSession;
 

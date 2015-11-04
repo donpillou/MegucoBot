@@ -36,7 +36,7 @@ void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Tra
 {
   if(trade.flags & DataProtocol::replayedFlag)
   {
-    timestamp_t tradeAge = Time::time() - trade.time;
+    int64_t tradeAge = Time::time() - trade.time;
     if(tradeAge <= 0LL)
       tradeAge = 1LL;
     botSession.handleTrade(trade, tradeAge);
@@ -57,7 +57,7 @@ void_t LiveBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Tra
   }
   if(!openOrders.isEmpty())
   {
-    timestamp_t now = Time::time();
+    int64_t now = Time::time();
     if(now - lastOrderRefreshTime >= 120 * 1000)
     {
       lastOrderRefreshTime = now;
@@ -166,7 +166,7 @@ void_t LiveBroker::cancelTimedOutOrders(Bot::Session& botSession)
   }
 }
 
-bool_t LiveBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
+bool_t LiveBroker::buy(double price, double amount, double total, int64_t timeout, uint32_t* id, double* orderedAmount)
 {
   BotProtocol::Order order;
   order.entityType = BotProtocol::marketOrder;
@@ -216,7 +216,7 @@ testok:
   return true;
 }
 
-bool_t LiveBroker::sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
+bool_t LiveBroker::sell(double price, double amount, double total, int64_t timeout, uint32_t* id, double* orderedAmount)
 {
   BotProtocol::Order order;
   order.entityType = BotProtocol::marketOrder;

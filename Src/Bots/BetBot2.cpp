@@ -119,7 +119,7 @@ double BetBot2::Session::getSellInComm(double currentPrice, const TradeHandler::
   return comm;
 }
 
-void BetBot2::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
+void BetBot2::Session::handleTrade(const DataProtocol::Trade& trade, int64_t tradeAge)
 {
   tradeHandler.add(trade, tradeAge);
   if(!tradeHandler.isComplete())
@@ -485,11 +485,11 @@ void BetBot2::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeH
   //timestamp_t buyInPriceAge =  (timestamp_t)broker.getProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE) * 1000;
   //double range = (values.regressions[TradeHandler::regression12h].max - values.regressions[TradeHandler::regression12h].min);
   double incline = values.regressions[TradeHandler::regression12h].incline;
-  timestamp_t buyInPredictTime = (timestamp_t)broker.getProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME);
+  int64_t buyInPredictTime = (int64_t)broker.getProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME);
   double newBuyInPrice = trade.price + incline * buyInPredictTime;
 
-  timestamp_t buyInCooldown = (timestamp_t)broker.getProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN) * 1000;
-  if((timestamp_t)trade.time - lastBuyInTime < buyInCooldown)
+  int64_t buyInCooldown = (int64_t)broker.getProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN) * 1000;
+  if((int64_t)trade.time - lastBuyInTime < buyInCooldown)
     return; // do not buy too often
 
   switch(buyInState)
@@ -514,7 +514,7 @@ void BetBot2::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeH
         double buyInBase = getBuyInBase(trade.price, values);
         if(buyInBase == 0.)
           return;
-        timestamp_t buyInTimeout = (timestamp_t)broker.getProperty("BuyIn Timeout", DEFAULT_BUYIN_TIMEOUT) * 1000;
+        int64_t buyInTimeout = (int64_t)broker.getProperty("BuyIn Timeout", DEFAULT_BUYIN_TIMEOUT) * 1000;
         if(broker.buy(buyInPrice, 0., buyInBase, buyInTimeout, &buyInOrderId, 0))
         {
           updateAvailableBalance();
@@ -544,11 +544,11 @@ void BetBot2::Session::checkSellIn(const DataProtocol::Trade& trade, const Trade
   //timestamp_t buyInPriceAge =  (timestamp_t)broker.getProperty("BuyIn Pirce Age", DEFAULT_BUYIN_PRICE_AGE) * 1000;
   //double range = (values.regressions[TradeHandler::regression12h].max - values.regressions[TradeHandler::regression12h].min);
   double incline = values.regressions[TradeHandler::regression12h].incline;
-  timestamp_t buyInPredictTime = (timestamp_t)broker.getProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME);
+  int64_t buyInPredictTime = (int64_t)broker.getProperty("BuyIn Predict Time", DEFAULT_BUYIN_PREDICT_TIME);
   double newSellInPrice = trade.price + incline * buyInPredictTime;
 
-  timestamp_t buyInCooldown = (timestamp_t)broker.getProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN) * 1000;
-  if((timestamp_t)trade.time - lastSellInTime < buyInCooldown)
+  int64_t buyInCooldown = (int64_t)broker.getProperty("BuyIn Cooldown", DEFAULT_BUYIN_COOLDOWN) * 1000;
+  if((int64_t)trade.time - lastSellInTime < buyInCooldown)
     return; // do not sell too often
 
   switch(sellInState)
@@ -573,7 +573,7 @@ void BetBot2::Session::checkSellIn(const DataProtocol::Trade& trade, const Trade
         double sellInComm = getSellInComm(trade.price, values);
         if(sellInComm == 0.)
           return;
-        timestamp_t buyInTimeout = (timestamp_t)broker.getProperty("BuyIn Timeout", DEFAULT_BUYIN_TIMEOUT) * 1000;
+        int64_t buyInTimeout = (int64_t)broker.getProperty("BuyIn Timeout", DEFAULT_BUYIN_TIMEOUT) * 1000;
         if(broker.sell(sellInPrice, sellInComm, 0., buyInTimeout, &sellInOrderId, 0))
         {
           updateAvailableBalance();
@@ -615,8 +615,8 @@ void_t BetBot2::Session::resetBetOrders()
 
 void BetBot2::Session::checkAssetBuy(const DataProtocol::Trade& trade)
 {
-  timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN) * 1000;
-  if((timestamp_t)trade.time - lastAssetBuyTime < sellCooldown)
+  int64_t sellCooldown = (int64_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN) * 1000;
+  if((int64_t)trade.time - lastAssetBuyTime < sellCooldown)
     return; // do not buy too often
 
   double tradePrice = trade.price;
@@ -648,7 +648,7 @@ void BetBot2::Session::checkAssetBuy(const DataProtocol::Trade& trade)
         buyAmountBase = 0.;
       }
 
-      timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT) * 1000;
+      int64_t buyTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT) * 1000;
       if(broker.buy(tradePrice, buyAmountComm, buyAmountBase, buyTimeout, &updatedAsset.orderId, 0))
         broker.updateAsset(updatedAsset);
       else
@@ -663,8 +663,8 @@ void BetBot2::Session::checkAssetBuy(const DataProtocol::Trade& trade)
 
 void BetBot2::Session::checkAssetSell(const DataProtocol::Trade& trade)
 {
-   timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN) * 1000;
-  if((timestamp_t)trade.time - lastAssetSellTime < sellCooldown)
+   int64_t sellCooldown = (int64_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN) * 1000;
+  if((int64_t)trade.time - lastAssetSellTime < sellCooldown)
     return; // do not sell too often
 
   double tradePrice = trade.price;
@@ -696,7 +696,7 @@ void BetBot2::Session::checkAssetSell(const DataProtocol::Trade& trade)
         buyAmountBase = asset.investBase - asset.balanceBase;
       }
 
-      timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT) * 1000;
+      int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT) * 1000;
       if(broker.sell(tradePrice, buyAmountComm, buyAmountBase, sellTimeout, &updatedAsset.orderId, 0))
         broker.updateAsset(updatedAsset);
       else

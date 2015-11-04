@@ -33,7 +33,7 @@ bool DataConnection::connect(uint32_t ip, uint16_t port)
     error = socket.getLastErrorString();
     return false;
   }
-  timestamp_t localResponseTime = Time::time();
+  int64_t localResponseTime = Time::time();
   {
     DataProtocol::Header* header = (DataProtocol::Header*)recvBuffer;
     DataProtocol::TimeResponse* timeResponse2 = (DataProtocol::TimeResponse*)(header + 1);
@@ -187,7 +187,7 @@ bool DataConnection::loadChannelList()
   return true;
 }
 
-bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTradeId, timestamp_t maxAge)
+bool DataConnection::subscribe(const String& channel, uint64_t lastReceivedTradeId, int64_t maxAge)
 {
   byte_t message[sizeof(DataProtocol::Header) + sizeof(DataProtocol::SubscribeRequest)];
   DataProtocol::Header* header = (DataProtocol::Header*)message;

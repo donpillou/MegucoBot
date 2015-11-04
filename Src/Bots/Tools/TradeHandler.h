@@ -58,10 +58,10 @@ public:
   };
 
 public:
-  static timestamp_t getMaxTradeAge() {return depths[sizeof(depths) / sizeof(*depths) - 1] * 1000ULL;}
+  static int64_t getMaxTradeAge() {return depths[sizeof(depths) / sizeof(*depths) - 1] * 1000ULL;}
 
 public:
-  void add(const DataProtocol::Trade& trade, timestamp_t tradeAge)
+  void add(const DataProtocol::Trade& trade, int64_t tradeAge)
   {
     uint64_t tradeAgeSecs = tradeAge / 1000ULL;
     uint64_t timeSecs = trade.time / 1000ULL;

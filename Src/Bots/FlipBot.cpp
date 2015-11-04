@@ -38,7 +38,7 @@ void_t FlipBot::Session::updateBalance()
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
 }
 
-void FlipBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
+void FlipBot::Session::handleTrade(const DataProtocol::Trade& trade, int64_t tradeAge)
 {
   checkBuy(trade);
   checkSell(trade);
@@ -156,7 +156,7 @@ void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade)
 {
   if(broker.getOpenBuyOrderCount() > 0)
     return; // there is already an open buy order
-  timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
+  int64_t buyCooldown = (int64_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
   if(broker.getTimeSinceLastBuy() < buyCooldown * 1000)
     return; // do not buy too often
 
@@ -171,7 +171,7 @@ void FlipBot::Session::checkBuy(const DataProtocol::Trade& trade)
       updatedAsset.state = BotProtocol::SessionAsset::buying;
       broker.updateAsset(updatedAsset);
 
-      timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
+      int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
       if(broker.buy(tradePrice, 0., asset.balanceBase, buyTimeout * 1000, &updatedAsset.orderId, 0))
         broker.updateAsset(updatedAsset);
       else
@@ -188,7 +188,7 @@ void FlipBot::Session::checkSell(const DataProtocol::Trade& trade)
 {
   if(broker.getOpenSellOrderCount() > 0)
     return; // there is already an open sell order
-  timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
+  int64_t sellCooldown = (int64_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
   if(broker.getTimeSinceLastSell() < sellCooldown * 1000)
     return; // do not sell too often
 
@@ -203,7 +203,7 @@ void FlipBot::Session::checkSell(const DataProtocol::Trade& trade)
       updatedAsset.state = BotProtocol::SessionAsset::selling;
       broker.updateAsset(updatedAsset);
 
-      timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+      int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
       if(broker.sell(tradePrice, asset.balanceComm, 0., sellTimeout * 1000, &updatedAsset.orderId, 0))
         broker.updateAsset(updatedAsset);
       else

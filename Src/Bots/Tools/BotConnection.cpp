@@ -83,7 +83,7 @@ bool_t BotConnection::removeMarketOrder(uint32_t id)
   return removeEntity(BotProtocol::marketOrder, id);
 }
 
-bool_t BotConnection::addLogMessage(timestamp_t time, const String& message)
+bool_t BotConnection::addLogMessage(int64_t time, const String& message)
 {
   BotProtocol::SessionLogMessage logMessage;
   logMessage.entityType = BotProtocol::sessionLogMessage;

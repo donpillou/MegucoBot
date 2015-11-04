@@ -26,10 +26,10 @@ private:
     double sellInStartPrice;
     double buyInBase;
     double sellInComm;
-    timestamp_t lastBuyInTime;
-    timestamp_t lastSellInTime;
-    timestamp_t lastAssetBuyTime;
-    timestamp_t lastAssetSellTime;
+    int64_t lastBuyInTime;
+    int64_t lastSellInTime;
+    int64_t lastAssetBuyTime;
+    int64_t lastAssetSellTime;
     double balanceBase;
     double balanceComm;
     double availableBalanceBase;
@@ -52,7 +52,7 @@ private:
     double getSellInComm(double currentPrice, const TradeHandler::Values& values) const;
 
   private: // Bot::Session
-    virtual void_t handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge);
+    virtual void_t handleTrade(const DataProtocol::Trade& trade, int64_t tradeAge);
     virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
     virtual void_t handleBuyTimeout(uint32_t orderId);
@@ -64,5 +64,5 @@ private:
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
-  virtual timestamp_t getMaxTradeAge() const {return TradeHandler::getMaxTradeAge();}
+  virtual int64_t getMaxTradeAge() const {return TradeHandler::getMaxTradeAge();}
 };

@@ -6,7 +6,7 @@
 #include "SimBroker.h"
 #include "BotConnection.h"
 
-SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFee, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties, timestamp_t maxTradeAge) :
+SimBroker::SimBroker(BotConnection& botConnection, const String& currencyBase, const String& currencyComm, double tradeFee, const BotProtocol::Balance& balance, const List<BotProtocol::Transaction>& transactions, const List<BotProtocol::SessionAsset>& assets, const List<BotProtocol::Order>& orders, const List<BotProtocol::SessionProperty>& properties, int64_t maxTradeAge) :
   botConnection(botConnection), currencyBase(currencyBase), currencyComm(currencyComm),
   time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0), maxTradeAge(maxTradeAge)
 {
@@ -36,7 +36,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
 {
   if(startTime == 0)
     startTime = trade.time;
-  if((timestamp_t)(trade.time - startTime) <= maxTradeAge)
+  if((int64_t)(trade.time - startTime) <= maxTradeAge)
   {
     botSession.handleTrade(trade, startTime + maxTradeAge - trade.time);
     return; 
@@ -110,7 +110,7 @@ void_t SimBroker::handleTrade(Bot::Session& botSession, const DataProtocol::Trad
   botSession.handleTrade(trade, 0);
 }
 
-bool_t SimBroker::buy(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
+bool_t SimBroker::buy(double price, double amount, double total, int64_t timeout, uint32_t* id, double* orderedAmount)
 {
   if(amount != 0.)
     total = Math::ceil(amount * price * (1. + tradeFee) * 100.) / 100.;
@@ -131,7 +131,7 @@ bool_t SimBroker::buy(double price, double amount, double total, timestamp_t tim
   order.amount = amount;
   order.price = price;
   order.total = total;
-  timestamp_t orderTimeout = timeout > 0 ? time + timeout : 0;
+  int64_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))
   {
@@ -154,7 +154,7 @@ bool_t SimBroker::buy(double price, double amount, double total, timestamp_t tim
   return true;
 }
 
-bool_t SimBroker::sell(double price, double amount, double total, timestamp_t timeout, uint32_t* id, double* orderedAmount)
+bool_t SimBroker::sell(double price, double amount, double total, int64_t timeout, uint32_t* id, double* orderedAmount)
 {
   if(amount != 0.)
     total = Math::floor(amount * price * (1. - tradeFee) * 100.) / 100.;
@@ -175,7 +175,7 @@ bool_t SimBroker::sell(double price, double amount, double total, timestamp_t ti
   order.amount = amount;
   order.price = price;
   order.total = Math::floor(price * amount * (1 - tradeFee) * 100.) / 100.;
-  timestamp_t orderTimeout = timeout > 0 ? time + timeout : 0;
+  int64_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
   if(!botConnection.createSessionOrder(order))
   {
