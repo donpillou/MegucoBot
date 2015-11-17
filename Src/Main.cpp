@@ -245,6 +245,12 @@ void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
     removedProcess(entityId);
 }
 
+void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
+{
+  if(tableId == processesTableId)
+    controlProcess(entityId, controlCode, data, size);
+}
+
 void_t Main::removedProcess(uint64_t entityId)
 {
   HashMap<uint64_t, Process>::Iterator it = processes.find(entityId);
@@ -254,4 +260,19 @@ void_t Main::removedProcess(uint64_t entityId)
   if(!killProcess(process.entityId))
     return;
   processes.remove(it);
+}
+
+void_t Main::controlProcess(uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
+{
+  switch(controlCode)
+  {
+  case meguco_process_control_start:
+    ??
+    break;
+  case meguco_process_control_stop:
+    {
+    ??
+    }
+    break;
+  }
 }

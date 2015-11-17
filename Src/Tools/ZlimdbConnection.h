@@ -27,7 +27,7 @@ public:
   int getErrno();
   const String& getErrorString() const {return error;}
 
-  bool_t subscribe(uint32_t tableId);
+  bool_t subscribe(uint32_t tableId, uint8_t flags);
   bool_t query(uint32_t tableId);
   bool_t getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE]);
   bool_t queryEntity(uint32_t tableId, uint64_t entityId, zlimdb_entity& entity, size_t minSize, size_t maxSize);

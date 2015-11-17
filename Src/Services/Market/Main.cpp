@@ -76,7 +76,7 @@ bool_t Main::connect()
   // get processes
   if(!connection.createTable("processes", processesTableId))
       return error = connection.getErrorString(), false;
-  if(!connection.subscribe(processesTableId))
+  if(!connection.subscribe(processesTableId, 0))
     return error = connection.getErrorString(), false;
   {
     String tableName;
@@ -103,13 +103,16 @@ bool_t Main::connect()
     if(!market.running)
     {
       const String& command = i.key();
-      meguco_process_entity* process = (meguco_process_entity*)buffer;
-      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
-      if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_MESSAGE_SIZE))
-        continue;
-      uint64_t id;
-      if(!connection.add(processesTableId, process->entity, id))
+      if(!connection.startProcess(command))
         return error = connection.getErrorString(), false;
+
+      //meguco_process_entity* process = (meguco_process_entity*)buffer;
+      //ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
+      //if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_MESSAGE_SIZE))
+      //  continue;
+      //uint64_t id;
+      //if(!connection.add(processesTableId, process->entity, id))
+      //  return error = connection.getErrorString(), false;
     }
   }
 

@@ -40,6 +40,7 @@ private:
 
   void_t addedProcess(uint64_t entityId, const String& cmd);
   void_t removedProcess(uint64_t entityId);
+  void_t controlProcess(uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
 private: // ProcessManager::Callback
   virtual void_t terminatedProcess(uint64_t entityId);
@@ -48,5 +49,5 @@ private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);
   virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) {}
   virtual void_t removedEntity(uint32_t tableId, uint64_t entityId);
-  virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size) {}
+  virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 };

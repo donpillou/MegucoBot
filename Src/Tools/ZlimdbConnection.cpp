@@ -58,9 +58,9 @@ int ZlimdbConnection::getErrno()
   return zlimdb_errno();
 }
 
-bool_t ZlimdbConnection::subscribe(uint32_t tableId)
+bool_t ZlimdbConnection::subscribe(uint32_t tableId, uint8_t flags)
 {
-  if(zlimdb_subscribe(zdb, tableId, zlimdb_query_type_all, 0) != 0)
+  if(zlimdb_subscribe(zdb, tableId, zlimdb_query_type_all, 0, flags) != 0)
     return error = getZlimdbError(), false;
   return true;
 }
