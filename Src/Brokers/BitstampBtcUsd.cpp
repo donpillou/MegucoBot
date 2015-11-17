@@ -111,6 +111,7 @@ bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_broker_order_type ty
     error = "Received invalid order date.";
     return false;
   }
+  order.entity.id = id;
   order.entity.time = time.toTimestamp();
 
   order.price = orderData.find("price")->toDouble();
