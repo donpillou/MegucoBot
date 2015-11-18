@@ -142,7 +142,7 @@ bool_t Main::connect()
     Process& process = *(*i);
     meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
     ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity));
-    if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, process.command, ZLIMDB_MAX_MESSAGE_SIZE))
+    if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, process.command, ZLIMDB_MAX_ENTITY_SIZE))
       continue;
     uint64_t entityId;
     if(!connection.add(processesTableId, processEntity->entity, entityId))
@@ -163,7 +163,7 @@ bool_t Main::connect()
       String cmd = i.key();
       meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
       ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity));
-      if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, cmd, ZLIMDB_MAX_MESSAGE_SIZE))
+      if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, cmd, ZLIMDB_MAX_ENTITY_SIZE))
         continue;
       uint64_t entityId;
       if(!connection.add(processesTableId, processEntity->entity, entityId))

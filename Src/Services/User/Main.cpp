@@ -150,7 +150,7 @@ bool_t Main::connect()
       {
         meguco_broker_type_entity* brokerType = (meguco_broker_type_entity*)buffer;
         ZlimdbConnection::setEntityHeader(brokerType->entity, 0, 0, sizeof(meguco_broker_type_entity));
-        if(!ZlimdbConnection::copyString(brokerType->entity, brokerType->name_size, marketName, ZLIMDB_MAX_MESSAGE_SIZE))
+        if(!ZlimdbConnection::copyString(brokerType->entity, brokerType->name_size, marketName, ZLIMDB_MAX_ENTITY_SIZE))
           continue;
         uint64_t id;
         if(!connection.add(botMarketsTableId, brokerType->entity, id))
@@ -197,7 +197,7 @@ bool_t Main::connect()
       {
         meguco_bot_type_entity* botType = (meguco_bot_type_entity*)buffer;
         ZlimdbConnection::setEntityHeader(botType->entity, 0, 0, sizeof(meguco_bot_type_entity));
-        if(!ZlimdbConnection::copyString(botType->entity, botType->name_size, botEngineName, ZLIMDB_MAX_MESSAGE_SIZE))
+        if(!ZlimdbConnection::copyString(botType->entity, botType->name_size, botEngineName, ZLIMDB_MAX_ENTITY_SIZE))
           continue;
         uint64_t id;
         if(!connection.add(botEnginesTableId, botType->entity, id))
@@ -483,7 +483,7 @@ void_t Main::addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguc
       byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
       meguco_process_entity* process = (meguco_process_entity*)buffer;
       ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
-      if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_MESSAGE_SIZE))
+      if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_ENTITY_SIZE))
         return;
       uint64_t id;
       connection.add(processesTableId, process->entity, id);

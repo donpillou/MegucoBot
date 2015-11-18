@@ -108,7 +108,7 @@ bool_t Main::connect()
 
       //meguco_process_entity* process = (meguco_process_entity*)buffer;
       //ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
-      //if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_MESSAGE_SIZE))
+      //if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_ENTITY_SIZE))
       //  continue;
       //uint64_t id;
       //if(!connection.add(processesTableId, process->entity, id))
