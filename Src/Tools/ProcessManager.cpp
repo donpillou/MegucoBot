@@ -35,6 +35,24 @@ void_t ProcessManager::startProcess(uint64_t id, const String& commandLine)
   Process::interrupt();
 }
 
+void_t ProcessManager::setProcessId(uint64_t id, uint64_t newId)
+{
+  if(id == newId)
+    return;
+  mutex.lock();
+  HashMap<uint64_t, Process*>::Iterator it = processesByIdMap.find(id);
+  if(it == processesByIdMap.end())
+  {
+    mutex.unlock();
+    return;
+  }
+  Process* process = *it;
+  idsByProcessMap.append(process, newId);
+  processesByIdMap.append(newId, process);
+  processesByIdMap.remove(it);
+  mutex.unlock();
+}
+
 void_t ProcessManager::killProcess(uint64_t id)
 {
   mutex.lock();
@@ -47,20 +65,19 @@ void_t ProcessManager::killProcess(uint64_t id)
 
 uint_t ProcessManager::proc()
 {
-  Array<Process*> processes;
-  HashMap<Process*, uint64_t> processIdMap;
-
   for(;;)
   {
     Process* process = Process::wait(processes, processes.size());
     if(process)
     {
-      HashMap<Process*, uint64_t>::Iterator it = processIdMap.find(process);
-      if(it != processIdMap.end())
+      HashMap<Process*, uint64_t>::Iterator it = idsByProcessMap.find(process);
+      if(it != idsByProcessMap.end())
       {
         Log::infof("reaped process %d", process->getProcessId());
-        callback->terminatedProcess(*it);
-        processIdMap.remove(it);
+        uint64_t processEntityId = *it;
+        callback->terminatedProcess(processEntityId);
+        idsByProcessMap.remove(it);
+        processesByIdMap.remove(processEntityId);
         Array<Process*>::Iterator it2 = processes.find(process);
         if(it2 != processes.end())
           processes.remove(it2);
@@ -99,36 +116,36 @@ uint_t ProcessManager::proc()
             {
               Log::infof("started process %u: %s", process->getProcessId(), (const char_t*)command);
               processes.append(process);
-              processIdMap.append(process, action.id);
+              idsByProcessMap.append(process, action.id);
+              processesByIdMap.append(action.id, process);
             }
           }
           break;
         case Action::killType:
           {
-            for(HashMap<Process*, uint64_t>::Iterator i = processIdMap.begin(), end = processIdMap.end(); i != end; ++i)
-              if(*i == action.id)
+            HashMap<uint64_t, Process*>::Iterator it = processesByIdMap.find(action.id);
+            if(it == processesByIdMap.end())
+              break;
+            process = *it;
+            Array<Process*>::Iterator it2 = processes.find(process);
+            if(it2 != processes.end())
+            {
+              uint32_t pid = process->getProcessId();
+              if(process->kill())
               {
-                process = i.key();
-                Array<Process*>::Iterator it = processes.find(process);
-                if(it != processes.end())
-                {
-                  Process* process = *it;
-                  uint32_t pid = process->getProcessId();
-                  if(process->kill())
-                  {
-                    Log::infof("killed process %u", pid);
-                    callback->terminatedProcess(action.id);
-                    processes.remove(it);
-                    processIdMap.remove(i);
-                    delete process;
-                  }
-                  else
-                  {
-                    Log::infof("could not kill process %u", pid);
-                  }
-                }
-                break;
+                Log::infof("killed process %u", pid);
+                callback->terminatedProcess(action.id);
+                processes.remove(it2);
+                processesByIdMap.remove(it);
+                idsByProcessMap.remove(process);
+                delete process;
               }
+              else
+              {
+                Log::infof("could not kill process %u", pid);
+              }
+            }
+            break;
           }
         }
         actions.removeFront();

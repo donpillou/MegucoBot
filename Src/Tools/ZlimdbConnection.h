@@ -14,7 +14,7 @@ public:
     virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity) = 0;
     virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) = 0;
     virtual void_t removedEntity(uint32_t tableId, uint64_t entityId) = 0;
-    virtual void_t controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size) = 0;
+    virtual void_t controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size) = 0;
   };
 
 public:
@@ -37,6 +37,11 @@ public:
   bool_t add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id, bool_t succeedIfExists = false);
   bool_t update(uint32_t tableId, const zlimdb_entity& entity);
   bool_t remove(uint32_t tableId, uint64_t entityId);
+
+  bool_t startProcess(uint32_t tableId, const String& command);
+
+  bool_t sendControlResponse(uint32_t requestId, const byte_t* data, size_t size);
+  bool_t sendControlResponse(uint32_t requestId, uint16_t error);
 
   bool_t process();
   void_t interrupt();

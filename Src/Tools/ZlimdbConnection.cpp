@@ -149,6 +149,35 @@ bool_t ZlimdbConnection::remove(uint32_t tableId, uint64_t entityId)
   return true;
 }
 
+bool_t ZlimdbConnection::startProcess(uint32_t tableId, const String& command)
+{
+  char buffer[ZLIMDB_MAX_ENTITY_SIZE];
+  meguco_process_entity* process = (meguco_process_entity*)buffer;
+  setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
+  if(!copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_ENTITY_SIZE))
+  {
+    zlimdb_seterrno(zlimdb_local_error_invalid_parameter);
+    return error = getZlimdbError(), false;
+  }
+  if(zlimdb_control(zdb, tableId, 0, meguco_process_control_start, process, process->entity.size, 0, 0) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::sendControlResponse(uint32_t requestId, const byte_t* data, size_t size)
+{
+  if(zlimdb_control_respond(zdb, requestId, data, size) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
+bool_t ZlimdbConnection::sendControlResponse(uint32_t requestId, uint16_t error)
+{
+  if(zlimdb_control_respond_error(zdb, requestId, error) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
 bool_t ZlimdbConnection::process()
 {
   for(;;)
@@ -215,7 +244,7 @@ void ZlimdbConnection::zlimdbCallback(const zlimdb_header& message)
     if(message.size >= sizeof(zlimdb_control_request))
     {
       const zlimdb_control_request* controlRequest = (const zlimdb_control_request*)&message;
-      callback->controlEntity(controlRequest->table_id, controlRequest->id, controlRequest->control_code, (byte_t*)(controlRequest + 1), message.size - sizeof(zlimdb_control_request));
+      callback->controlEntity(controlRequest->table_id, controlRequest->header.request_id, controlRequest->id, controlRequest->control_code, (byte_t*)(controlRequest + 1), message.size - sizeof(zlimdb_control_request));
     }
   default:
     break;

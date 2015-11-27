@@ -5,6 +5,9 @@
 #include <nstd/Thread.h>
 #include <nstd/Mutex.h>
 #include <nstd/List.h>
+#include <nstd/Array.h>
+
+class Process;
 
 class ProcessManager
 {
@@ -22,6 +25,7 @@ public:
   void_t stop();
 
   void_t startProcess(uint64_t id, const String& commandLine);
+  void_t setProcessId(uint64_t id, uint64_t newId);
   void_t killProcess(uint64_t id);
 
 private:
@@ -44,6 +48,9 @@ private:
 
   Mutex mutex;
   List<Action> actions;
+  Array<Process*> processes;
+  HashMap<Process*, uint64_t> idsByProcessMap;
+  HashMap<uint64_t, Process*> processesByIdMap;
 
 private:
   static uint_t proc(void_t* param) {return ((ProcessManager*)param)->proc();}

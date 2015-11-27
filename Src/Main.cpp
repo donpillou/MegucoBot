@@ -97,14 +97,14 @@ bool_t Main::connect()
   if(!connection.connect(*this))
     return error = connection.getErrorString(), false;
 
-  HashMap<String, bool_t> autostartProcesses;
-  autostartProcesses.append("Services/Market.exe", false);
-  autostartProcesses.append("Services/User.exe", false);
+  //HashMap<String, bool_t> autostartProcesses;
+  //autostartProcesses.append("Services/Market.exe", false);
+  //autostartProcesses.append("Services/User.exe", false);
 
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.createTable("processes", processesTableId))
     return error = connection.getErrorString(), false;
-  if(!connection.subscribe(processesTableId))
+  if(!connection.subscribe(processesTableId, zlimdb_subscribe_flag_responder))
     return error = connection.getErrorString(), false;
   HashMap<uint64_t, Process> processes;
   String command;
@@ -120,56 +120,50 @@ bool_t Main::connect()
       Process& processInfo = processes.append(process->entity.id, Process());
       processInfo.entityId = process->entity.id;
       processInfo.command = command;
-      HashMap<String, bool_t>::Iterator it = autostartProcesses.find(command);
-      if(it != autostartProcesses.end())
-        *it = true;
-      addedProcess(process->entity.id, command);
     }
   }
   if(connection.getErrno() != 0)
     return error = connection.getErrorString(), false;
 
-  // add known processes not in processes table to processes table
-  List<HashMap<uint64_t, Process>::Iterator> processesToAdd;
+  // add process not in processes table
   for(HashMap<uint64_t, Process>::Iterator i = this->processes.begin(), end = this->processes.end(); i != end; ++i)
   {
-    Process& process = *i;
-    if(processes.find(process.entityId) == processes.end())
-      processesToAdd.append(i);
-  }
-  for(List<HashMap<uint64_t, Process>::Iterator>::Iterator i = processesToAdd.end(), end = processesToAdd.end(); i != end; ++i)
-  {
-    Process& process = *(*i);
-    meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
-    ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity));
-    if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, process.command, ZLIMDB_MAX_ENTITY_SIZE))
-      continue;
-    uint64_t entityId;
-    if(!connection.add(processesTableId, processEntity->entity, entityId))
-      return error = connection.getErrorString(), false;
-    Process newProcess;
-    newProcess.command = process.command;
-    newProcess.entityId = entityId;
-    this->processes.remove(*i);
-    this->processes.append(entityId, newProcess);
-  }
-
-  // start autostart process if they are not already running
-  for(HashMap<String, bool_t>::Iterator i = autostartProcesses.begin(), end = autostartProcesses.end(); i != end; ++i)
-  {
-    bool_t alreadyRunning = *i;
-    if(!alreadyRunning)
-    {
-      String cmd = i.key();
+    uint64_t processEntityId = i.key();
+    const Process& process = *i;
+    HashMap<uint64_t, Process>::Iterator it = processes.find(processEntityId);
+    if(it == processes.end())
+    { // add
       meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
-      ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity));
-      if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, cmd, ZLIMDB_MAX_ENTITY_SIZE))
+      ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_broker_type_entity));
+      if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, process.command, ZLIMDB_MAX_ENTITY_SIZE))
         continue;
-      uint64_t entityId;
-      if(!connection.add(processesTableId, processEntity->entity, entityId))
+      uint64_t id;
+      if(!connection.add(processesTableId, processEntity->entity, id))
+        return error = connection.getErrorString(), false;
+      if(id != processEntityId)
+      {
+        processManager.setProcessId(processEntityId, id);
+        processes.append(id, process);
+        processes.remove(processEntityId);
+      }
+    }
+    else if(it->command != i->command)
+    { // update
+      meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
+      ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_broker_type_entity));
+      if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, process.command, ZLIMDB_MAX_ENTITY_SIZE))
+        continue;
+      if(!connection.update(processesTableId, processEntity->entity))
         return error = connection.getErrorString(), false;
     }
+    else
+      processes.remove(it);
   }
+
+  // remove unknown process in processes table
+  for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(); i != end; ++i)
+    if(!connection.remove(processesTableId, i.key()))
+      return error = connection.getErrorString(), false;
 
   return true;
 }
@@ -199,12 +193,6 @@ void_t Main::removeProcess(uint64_t entityId)
   processes.remove(it);
 }
 
-bool_t Main::killProcess(uint64_t entityId)
-{
-  processManager.killProcess(entityId);
-  return true;
-}
-
 void_t Main::terminatedProcess(uint64_t entityId)
 {
   mutex.lock();
@@ -213,66 +201,44 @@ void_t Main::terminatedProcess(uint64_t entityId)
   connection.interrupt();
 }
 
-void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
+void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == processesTableId)
-  {
-    if(entity.size < sizeof(meguco_process_entity))
-      return;
-    const meguco_process_entity& processEntity = (const meguco_process_entity&)entity;
-    String cmd;
-    if(!ZlimdbConnection::getString(processEntity.entity, sizeof(meguco_process_entity), processEntity.cmd_size, cmd))
-      return;
-    String command = cmd;
-    command += "";
-    addedProcess(processEntity.entity.id, cmd);
-  }
+    controlProcess(requestId, entityId, controlCode, data, size);
 }
 
-void_t Main::addedProcess(uint64_t entityId, const String& cmd)
-{
-  if(processes.find(entityId) != processes.end())
-    return;
-  processManager.startProcess(entityId, binaryDir + "/" + cmd);
-  Process& process = processes.append(entityId, Process());
-  process.command = cmd;
-  process.entityId = entityId;
-}
-
-void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
-{
-  if(tableId == processesTableId)
-    removedProcess(entityId);
-}
-
-void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
-{
-  if(tableId == processesTableId)
-    controlProcess(entityId, controlCode, data, size);
-}
-
-void_t Main::removedProcess(uint64_t entityId)
-{
-  HashMap<uint64_t, Process>::Iterator it = processes.find(entityId);
-  if(it == processes.end())
-    return;
-  const Process& process = *it;
-  if(!killProcess(process.entityId))
-    return;
-  processes.remove(it);
-}
-
-void_t Main::controlProcess(uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
+void_t Main::controlProcess(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   switch(controlCode)
   {
   case meguco_process_control_start:
-    ??
-    break;
-  case meguco_process_control_stop:
     {
-    ??
+      if(size < sizeof(meguco_process_entity) || ((meguco_process_entity*)data)->entity.size < size)
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_message_data);
+      meguco_process_entity* args = (meguco_process_entity*)data;
+      String cmd;
+      if(!ZlimdbConnection::getString(args->entity, sizeof(meguco_process_entity), args->cmd_size, cmd))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_message_data);
+      char_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
+      meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
+      ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity));
+      if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, cmd, ZLIMDB_MAX_ENTITY_SIZE))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_message_data);
+      uint64_t id;
+      if(!connection.add(processesTableId, processEntity->entity, id))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      Process& process = processes.append(id, Process());
+      process.entityId = id;
+      process.command = cmd;
+      connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(id));
+      processManager.startProcess(id, cmd);
     }
     break;
+  case meguco_process_control_stop:
+    processManager.killProcess(entityId);
+    connection.sendControlResponse(requestId, 0, 0);
+    break;
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }
 }
