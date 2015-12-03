@@ -4,6 +4,7 @@
 #include <nstd/File.h>
 #include <nstd/Process.h>
 #include <nstd/Error.h>
+#include <nstd/HashSet.h>
 
 #include <megucoprotocol.h>
 
@@ -97,9 +98,9 @@ bool_t Main::connect()
   if(!connection.connect(*this))
     return error = connection.getErrorString(), false;
 
-  //HashMap<String, bool_t> autostartProcesses;
-  //autostartProcesses.append("Services/Market.exe", false);
-  //autostartProcesses.append("Services/User.exe", false);
+  HashSet<String> autostartProcesses;
+  autostartProcesses.append("Services/Market.exe");
+  autostartProcesses.append("Services/User.exe");
 
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.createTable("processes", processesTableId))
@@ -146,6 +147,7 @@ bool_t Main::connect()
         processes.append(id, process);
         processes.remove(processEntityId);
       }
+      autostartProcesses.remove(process.command);
     }
     else if(it->command != i->command)
     { // update
@@ -155,6 +157,7 @@ bool_t Main::connect()
         continue;
       if(!connection.update(processesTableId, processEntity->entity))
         return error = connection.getErrorString(), false;
+      autostartProcesses.remove(process.command);
     }
     else
       processes.remove(it);
@@ -164,6 +167,23 @@ bool_t Main::connect()
   for(HashMap<uint64_t, Process>::Iterator i = processes.begin(), end = processes.end(); i != end; ++i)
     if(!connection.remove(processesTableId, i.key()))
       return error = connection.getErrorString(), false;
+
+  // start not running autostart processes
+  for(HashSet<String>::Iterator i = autostartProcesses.begin(), end = autostartProcesses.end(); i != end; ++i)
+  {
+    const String& cmd = *i;
+    meguco_process_entity* processEntity = (meguco_process_entity*)buffer;
+    ZlimdbConnection::setEntityHeader(processEntity->entity, 0, 0, sizeof(meguco_process_entity));
+    if(!ZlimdbConnection::copyString(processEntity->entity, processEntity->cmd_size, cmd, ZLIMDB_MAX_ENTITY_SIZE))
+      continue;
+    uint64_t id;
+    if(!connection.add(processesTableId, processEntity->entity, id))
+      return error = connection.getErrorString(), false;
+    Process& process = processes.append(id, Process());
+    process.entityId = id;
+    process.command = cmd;
+    processManager.startProcess(id, cmd);
+  }
 
   return true;
 }
