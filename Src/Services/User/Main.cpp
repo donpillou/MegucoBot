@@ -217,7 +217,7 @@ bool_t Main::connect()
   // get processes
   if(!connection.createTable("processes", processesTableId))
       return error = connection.getErrorString(), false;
-  if(!connection.subscribe(processesTableId))
+  if(!connection.subscribe(processesTableId, 0))
     return error = connection.getErrorString(), false;
   {
     String tableName;
@@ -238,7 +238,7 @@ bool_t Main::connect()
   }
 
   // get table list
-  if(!connection.subscribe(zlimdb_table_tables))
+  if(!connection.subscribe(zlimdb_table_tables, 0))
     return error = connection.getErrorString(), false;
   {
     String tableName;
@@ -358,7 +358,7 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     String userName = userTable.substr(0, userNameEnd - userTable);
 
     // subscribe to broker
-    if(!connection.subscribe(entityId))
+    if(!connection.subscribe(entityId, 0))
       return;
     TableInfo tableInfoData = {Main::userBroker, userName};
     TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
@@ -386,7 +386,7 @@ void_t Main::addedTable(uint32_t entityId, const String& tableName)
     String userName = userTable.substr(0, userNameEnd - userTable);
 
     // subscribe to session
-    if(!connection.subscribe(entityId))
+    if(!connection.subscribe(entityId, 0))
       return;
     TableInfo tableInfoData = {Main::userSession, userName};
     TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
@@ -480,13 +480,7 @@ void_t Main::addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguc
   if (state != meguco_user_broker_running)
   {
       String command = market->getExecutable() + " " + String::fromUInt(tableId);
-      byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-      meguco_process_entity* process = (meguco_process_entity*)buffer;
-      ZlimdbConnection::setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
-      if(!ZlimdbConnection::copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_ENTITY_SIZE))
-        return;
-      uint64_t id;
-      connection.add(processesTableId, process->entity, id);
+      connection.startProcess(processesTableId, command);
   }
 }
 
