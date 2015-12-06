@@ -182,7 +182,7 @@ bool_t Main::connect()
     Process& process = processes.append(id, Process());
     process.entityId = id;
     process.command = cmd;
-    processManager.startProcess(id, cmd);
+    processManager.startProcess(id, binaryDir + "/" + cmd);
   }
 
   return true;
@@ -251,7 +251,8 @@ void_t Main::controlProcess(uint32_t requestId, uint64_t entityId, uint32_t cont
       process.entityId = id;
       process.command = cmd;
       connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(id));
-      processManager.startProcess(id, cmd);
+      processManager.startProcess(id, binaryDir + "/" + cmd);
+      //Log::infof("start? %s", (char_t*)(binaryDir + "/" + cmd));
     }
     break;
   case meguco_process_control_stop:

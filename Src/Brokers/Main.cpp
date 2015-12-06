@@ -90,7 +90,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   String brokerId = tableName.substr(brokerIdStart - tableName, brokerIdEnd - brokerIdStart);
 
   // get and subscribe to user broker table
-  if(!connection.subscribe(userBrokerTableId))
+  if(!connection.subscribe(userBrokerTableId, 0))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -116,7 +116,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   // subscribe to orders table
   if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/orders", userBrokerOrdersTableId))
     return false;
-  if(!connection.subscribe(userBrokerOrdersTableId))
+  if(!connection.subscribe(userBrokerOrdersTableId, 0))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -179,7 +179,7 @@ void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
     return removedUserBrokerOrder(entityId);
 }
 
-void_t Main::controlEntity(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
+void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == userBrokerTableId)
     return controlUserBroker(entityId, controlCode);

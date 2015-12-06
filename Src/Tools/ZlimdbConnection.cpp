@@ -151,7 +151,7 @@ bool_t ZlimdbConnection::remove(uint32_t tableId, uint64_t entityId)
 
 bool_t ZlimdbConnection::startProcess(uint32_t tableId, const String& command)
 {
-  char buffer[ZLIMDB_MAX_ENTITY_SIZE];
+  char buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   meguco_process_entity* process = (meguco_process_entity*)buffer;
   setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
   if(!copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_ENTITY_SIZE))
@@ -159,7 +159,7 @@ bool_t ZlimdbConnection::startProcess(uint32_t tableId, const String& command)
     zlimdb_seterrno(zlimdb_local_error_invalid_parameter);
     return error = getZlimdbError(), false;
   }
-  if(zlimdb_control(zdb, tableId, 0, meguco_process_control_start, process, process->entity.size, 0, 0) != 0)
+  if(zlimdb_control(zdb, tableId, 0, meguco_process_control_start, process, process->entity.size, (zlimdb_header*)buffer, ZLIMDB_MAX_MESSAGE_SIZE) != 0)
     return error = getZlimdbError(), false;
   return true;
 }
