@@ -104,17 +104,15 @@ uint_t ProcessManager::proc()
         case Action::startType:
           {
             Process* process = new Process();
-            String command = action.commandLine;
-            command.resize(command.length());
             if(!process->start(action.commandLine))
             {
-              Log::infof("could not launch: %s", (const char_t*)command);
+              Log::infof("could not launch: %s", (const char_t*)action.commandLine);
               callback->terminatedProcess(action.id);
               delete process;
             }
             else
             {
-              Log::infof("started process %u: %s", process->getProcessId(), (const char_t*)command);
+              Log::infof("started process %u: %s", process->getProcessId(), (const char_t*)action.commandLine);
               processes.append(process);
               idsByProcessMap.append(process, action.id);
               processesByIdMap.append(action.id, process);
