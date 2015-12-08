@@ -6,22 +6,39 @@
 class Session2
 {
 public:
-  Session2(User2& user, uint32_t tableId, const meguco_user_session_entity& sessionEntity, const String& executable) : user(user), tableId(tableId), executable(executable), processId(0)
-  {
-    this->sessionEntity.assign((const byte_t*)&sessionEntity, sessionEntity.entity.size);
-  }
+  Session2(User2& user, uint64_t sessionId) : user(user), sessionId(sessionId), 
+    sessionTableId(0), ordersTableId(0), transactionsTableId(0), assetsTableId(0), logTableId(0), propertiesTableId(0) {}
 
   User2& getUser() {return user;}
-  uint32_t getTableId() const {return tableId;}
-  const String& getExecutable() const {return executable;}
+  uint64_t getSessionId() const {return sessionId;}
+
+  void_t setSessionTableId(uint32_t tableId) {sessionTableId = tableId;}
+  uint32_t getSessionTableId() const {return sessionTableId;}
+  void_t setOrdersTableId(uint32_t tableId) {ordersTableId = tableId;}
+  uint32_t getOrdersTableId() const {return ordersTableId;}
+  void_t setTransactionsTableId(uint32_t tableId) {transactionsTableId = tableId;}
+  uint32_t getTransactionsTableId() const {return transactionsTableId;}
+  void_t setAssetsTableId(uint32_t tableId) {assetsTableId = tableId;}
+  uint32_t getAssetsTableId() const {return assetsTableId;}
+  void_t setLogTableId(uint32_t tableId) {logTableId = tableId;}
+  uint32_t getLogTableId() const {return logTableId;}
+  void_t setPropertiesTableId(uint32_t tableId) {propertiesTableId = tableId;}
+  uint32_t getPropertiesTableId() const {return propertiesTableId;}
+
   meguco_user_session_state getState() const {return (meguco_user_session_state)((const meguco_user_session_entity*)(const byte_t*)sessionEntity)->state;}
   void_t setState(meguco_user_session_state state) {((meguco_user_session_entity*)(byte_t*)sessionEntity)->state = state;}
+  void_t setEntity(const meguco_user_session_entity& entity) {sessionEntity.assign((const byte_t*)&entity, entity.entity.size);}
   const zlimdb_entity& getEntity() const {return ((const meguco_user_session_entity*)(const byte_t*)sessionEntity)->entity;}
 
 private:
   User2& user;
-  uint32_t tableId;
+  uint64_t sessionId;
+  uint32_t sessionTableId;
+  uint32_t ordersTableId;
+  uint32_t transactionsTableId;
+  uint32_t assetsTableId;
+  uint32_t logTableId;
+  uint32_t propertiesTableId;
   Buffer sessionEntity;
-  String executable;
-  uint32_t processId;
+  String executable;uint32_t processId;
 };

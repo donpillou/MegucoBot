@@ -65,6 +65,17 @@ bool_t ZlimdbConnection::subscribe(uint32_t tableId, uint8_t flags)
   return true;
 }
 
+bool_t ZlimdbConnection::listen(uint32_t tableId)
+{
+  if(zlimdb_subscribe(zdb, tableId, zlimdb_query_type_since_next, 0, zlimdb_subscribe_flag_responder) != 0)
+    return error = getZlimdbError(), false;
+  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+  while(zlimdb_get_response(zdb, (zlimdb_header*)buffer, ZLIMDB_MAX_MESSAGE_SIZE) == 0);
+  if(zlimdb_errno() != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
 bool_t ZlimdbConnection::query(uint32_t tableId)
 {
   if(zlimdb_query(zdb, tableId, zlimdb_query_type_all, 0) != 0)

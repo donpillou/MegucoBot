@@ -224,7 +224,8 @@ void_t Main::terminatedProcess(uint64_t entityId)
 void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == processesTableId)
-    controlProcess(requestId, entityId, controlCode, data, size);
+    return controlProcess(requestId, entityId, controlCode, data, size);
+  return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 }
 
 void_t Main::controlProcess(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
@@ -250,15 +251,13 @@ void_t Main::controlProcess(uint32_t requestId, uint64_t entityId, uint32_t cont
       Process& process = processes.append(id, Process());
       process.entityId = id;
       process.command = cmd;
-      connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(id));
       processManager.startProcess(id, binaryDir + "/" + cmd);
-      //Log::infof("start? %s", (char_t*)(binaryDir + "/" + cmd));
+      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(id));
     }
     break;
   case meguco_process_control_stop:
     processManager.killProcess(entityId);
-    connection.sendControlResponse(requestId, 0, 0);
-    break;
+    return (void_t)connection.sendControlResponse(requestId, 0, 0);
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }

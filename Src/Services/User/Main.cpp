@@ -109,6 +109,7 @@ void_t Main::disconnect()
   processes.clear();
   processesByTable.clear();
   tableInfo.clear();
+  users.clear();
 }
 
 bool_t Main::connect()
@@ -256,7 +257,6 @@ bool_t Main::connect()
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
   }
-
   return true;
 }
 
@@ -269,7 +269,7 @@ bool_t Main::process()
 
 User2* Main::createUser(const String& name)
 {
-  User2* user = new User2();
+  User2* user = new User2(name);
   users.append(name, user);
   return user;
 }
@@ -296,91 +296,171 @@ void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
       return;
     addedProcess(process->entity.id, command);
   }
-  else
-  {
-    HashMap<uint32_t, TableInfo>::Iterator it = tableInfo.find(tableId);
-    if(it == tableInfo.end())
-      return;
-    TableInfo& tableInfo = *it;
-    switch(tableInfo.type)
-    {
-    case userBroker:
-      if(entity.id == 1 && entity.size >= sizeof(meguco_user_broker_entity))
-        addedUserBroker(tableId, tableInfo, *(const meguco_user_broker_entity*)&entity);
-      break;
-    case userSession:
-      if(entity.id == 1 && entity.size >= sizeof(meguco_user_session_entity))
-        addedUserSession(tableId, tableInfo, *(const meguco_user_session_entity*)&entity);
-      break;
-    }
-  }
 }
 
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 {
-  if(tableId == zlimdb_table_tables)
-    removedTable((uint32_t)entityId);
-  else if(tableId == processesTableId)
+  if(tableId == processesTableId)
     removedProcess(entityId);
 }
 
-void_t Main::addedTable(uint32_t entityId, const String& tableName)
+void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
-  if(tableName.startsWith("users/") && tableName.endsWith("/broker"))
+  HashMap<uint32_t, TableInfo>::Iterator it = tableInfo.find(tableId);
+  if(it == tableInfo.end())
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+  const TableInfo& tableInfo = *it;
+  switch(tableInfo.type)
   {
-    String userTable = tableName.substr(6, tableName.length() - (6 + 7));
-    const char_t* userNameEnd = userTable.find('/');
-    if(!userNameEnd)
-      return;
-    String userName = userTable.substr(0, userNameEnd - userTable);
-
-    // subscribe to broker
-    if(!connection.subscribe(entityId, 0))
-      return;
-    TableInfo tableInfoData = {Main::userBroker, userName};
-    TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
-    byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-    while(connection.getResponse(buffer))
-    {
-      for(const meguco_user_broker_entity* entity = (const meguco_user_broker_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity));
-          entity;
-          entity = (const meguco_user_broker_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity), &entity->entity))
-      {
-        if(entity->entity.id != 1)
-          continue;
-        addedUserBroker(entityId, tableInfo, *entity);
-      }
-    }
-    if(connection.getErrno() != 0)
-      return;
+  case user:
+    return controlUser(*(User2*)tableInfo.object, requestId, entityId, controlCode, data, size);
+  case userSession:
+    return controlUserSession(*(Session2*)tableInfo.object, requestId, entityId, controlCode, data, size);
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }
-  if(tableName.startsWith("users/") && tableName.endsWith("/session"))
-  {
-    String userTable = tableName.substr(6, tableName.length() - (6 + 8));
-    const char_t* userNameEnd = userTable.find('/');
-    if(!userNameEnd)
-      return;
-    String userName = userTable.substr(0, userNameEnd - userTable);
+}
 
-    // subscribe to session
-    if(!connection.subscribe(entityId, 0))
+void_t Main::addedTable(uint32_t tableId, const String& tableName)
+{
+  if(tableName.startsWith("users/"))
+  {
+    const char_t* start = (const char_t*)tableName + 6;
+    const char_t* end = String::find(start, '/');
+    if(!end)
       return;
-    TableInfo tableInfoData = {Main::userSession, userName};
-    TableInfo& tableInfo = this->tableInfo.append(entityId, tableInfoData);
-    byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-    while(connection.getResponse(buffer))
+    String userName = tableName.substr(6, end - start);
+    User2* user = findUser(userName);
+    if(!user)
+      user = createUser(userName);
+    const char_t* typeNameStar = end + 1;
+
+    if(String::startsWith(typeNameStar, "brokers/"))
     {
-      for(const meguco_user_session_entity* entity = (const meguco_user_session_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_entity));
-          entity;
-          entity = (const meguco_user_session_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_entity), &entity->entity))
+      uint64_t brokerId = String::toUInt64((const char_t*)typeNameStar + 8);
+      Market2* broker = user->findBroker(brokerId);
+      if(!broker)
+        broker = user->createBroker(brokerId);
+
+      if(tableName.endsWith("/balance"))
+        broker->setBalanceTableId(tableId);
+      else if(tableName.endsWith("/orders"))
+        broker->setOrdersTableId(tableId);
+      else if(tableName.endsWith("/transactions"))
+        broker->setTransactionsTableId(tableId);
+      else if(tableName.endsWith("/log"))
+        broker->setLogTableId(tableId);
+      else if(tableName.endsWith("/broker"))
       {
-        if(entity->entity.id != 1)
-          continue;
-        addedUserSession(entityId, tableInfo, *entity);
+        broker->setBrokerTableId(tableId);
+
+        // subscribe to broker
+        if(!connection.subscribe(tableId, 0))
+          return;
+        TableInfo tableInfoData = {Main::userBroker};
+        TableInfo& tableInfo = this->tableInfo.append(tableId, tableInfoData);
+        tableInfo.object = broker;
+        byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+        while(connection.getResponse(buffer))
+        {
+          for(const meguco_user_broker_entity* entity = (const meguco_user_broker_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity));
+              entity;
+              entity = (const meguco_user_broker_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity), &entity->entity))
+          {
+            if(entity->entity.id != 1)
+              continue;
+            BrokerType* brokerType = *brokerTypes.find(entity->broker_type_id);
+            if(!brokerType)
+              continue;
+
+            broker->setEntity(*entity);
+
+            // update user broker state
+            HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(tableId);
+            meguco_user_broker_state state = meguco_user_broker_stopped;
+            if(it != processesByTable.end() && (*it)->type == Main::userBroker)
+              state = meguco_user_broker_running;
+            if (state != broker->getState())
+            {
+              broker->setState(state);
+              connection.update(tableId, broker->getEntity());
+            }
+
+            // todo: autostart 
+          }
+        }
+        if(connection.getErrno() != 0)
+          return;
       }
     }
-    if(connection.getErrno() != 0)
-      return;
+
+    else if(String::startsWith(typeNameStar, "sessions/"))
+    {
+      uint64_t sessionId = String::toUInt64((const char_t*)typeNameStar + 8);
+      Session2* session = user->findSession(sessionId);
+      if(!session)
+        session = user->createSession(sessionId);
+
+      if(tableName.endsWith("/orders"))
+        session->setOrdersTableId(tableId);
+      else if(tableName.endsWith("/transactions"))
+        session->setTransactionsTableId(tableId);
+      else if(tableName.endsWith("/assets"))
+        session->setAssetsTableId(tableId);
+      else if(tableName.endsWith("/log"))
+        session->setLogTableId(tableId);
+      else if(tableName.endsWith("/properties"))
+        session->setPropertiesTableId(tableId);
+      else if(tableName.endsWith("/broker"))
+      {
+        session->setSessionTableId(tableId);
+
+        // subscribe to session
+        if(!connection.subscribe(tableId, zlimdb_subscribe_flag_responder))
+          return;
+        TableInfo tableInfoData = {Main::userSession};
+        TableInfo& tableInfo = this->tableInfo.append(tableId, tableInfoData);
+        tableInfo.object = session;
+        byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+        while(connection.getResponse(buffer))
+        {
+          for(const meguco_user_session_entity* entity = (const meguco_user_session_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_entity));
+              entity;
+              entity = (const meguco_user_session_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_entity), &entity->entity))
+          {
+            if(entity->entity.id != 1)
+              continue;
+            BotType* botType = *botTypes.find(entity->bot_type_id);
+            if(!botType)
+              continue;
+
+            session->setEntity(*entity);
+
+            // update user session state
+            HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(tableId);
+            meguco_user_session_state state = meguco_user_session_stopped;
+            if(it != processesByTable.end() && (*it)->type == Main::userSession)
+              state = meguco_user_session_running;
+            if (state != session->getState())
+            {
+              session->setState(state);
+              connection.update(tableId, session->getEntity());
+            }
+          }
+        }
+        if(connection.getErrno() != 0)
+          return;
+      }
+    }
+
+    else if(tableName.endsWith("/user"))
+    {
+      if(!connection.listen(tableId))
+        return;
+      TableInfo tableInfoData = {Main::user};
+      TableInfo& tableInfo = this->tableInfo.append(tableId, tableInfoData);
+      tableInfo.object = user;
+    }
   }
 }
 
@@ -428,85 +508,6 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
   }
 }
 
-void_t Main::addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguco_user_broker_entity& userBroker)
-{
-  BrokerType* brokerType = *brokerTypes.find(userBroker.broker_type_id);
-  User2* user = findUser(tableInfo.userName);
-  if(!user)
-    user = createUser(tableInfo.userName);
-  if(tableInfo.object)
-  {
-    user->deleteBroker(*(Market2*)tableInfo.object);
-    tableInfo.object = 0;
-  }
-  Market2* market = user->createBroker(tableId, userBroker, brokerType ? brokerType->executable : String());
-  tableInfo.object = market;
-
-  // update user broker state
-  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(tableId);
-  meguco_user_broker_state state = meguco_user_broker_stopped;
-  if(it != processesByTable.end() && (*it)->type == Main::userBroker)
-    state = meguco_user_broker_running;
-  if (state != market->getState())
-  {
-    market->setState(state);
-    connection.update(tableId, market->getEntity());
-  }
-
-  // start broker process if it is not already running
-  if (state != meguco_user_broker_running)
-  {
-      String command = market->getExecutable() + " " + String::fromUInt(tableId);
-      connection.startProcess(processesTableId, command);
-  }
-}
-
-void_t Main::addedUserSession(uint32_t tableId, TableInfo& tableInfo, const meguco_user_session_entity& userSession)
-{
-  BotType* botType = *botTypes.find(userSession.bot_type_id);
-  User2* user = findUser(tableInfo.userName);
-  if(!user)
-    user = createUser(tableInfo.userName);
-  if(tableInfo.object)
-  {
-    user->deleteSession(*(Session2*)tableInfo.object);
-    tableInfo.object = 0;
-  }
-  Session2* session = user->createSession(tableId, userSession, botType ? botType->executable : String());
-  tableInfo.object = session;
-
-  // update user session state
-  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(tableId);
-  meguco_user_session_state state = meguco_user_session_stopped;
-  if(it != processesByTable.end() && (*it)->type == Main::userSession)
-    state = meguco_user_session_running;
-  if (state != session->getState())
-  {
-    session->setState(state);
-    connection.update(tableId, session->getEntity());
-  }
-}
-
-void_t Main::removedTable(uint32_t tableId)
-{
-  HashMap<uint32_t, TableInfo>::Iterator it = tableInfo.find(tableId);
-  if(it != tableInfo.end())
-  {
-    TableInfo& tableInfo = *it;
-    switch(tableInfo.type)
-    {
-    case userBroker:
-      if(tableInfo.object)
-        removedUserBroker(*(Market2*)tableInfo.object);
-      break;
-    case userSession:
-      if(tableInfo.object)
-        removedUserSession(*(Session2*)tableInfo.object);
-      break;
-    }
-  }
-}
-
 void_t Main::removedProcess(uint64_t entityId)
 {
   HashMap<uint64_t, Process>::Iterator it = processes.find(entityId);
@@ -522,11 +523,11 @@ void_t Main::removedProcess(uint64_t entityId)
         {
         case userBroker:
           {
-            Market2* market = (Market2*)tableInfo.object;
-            if(market && market->getState() != meguco_user_broker_stopped)
+            Market2* broker = (Market2*)tableInfo.object;
+            if(broker && broker->getState() != meguco_user_broker_stopped)
             {
-              market->setState(meguco_user_broker_stopped);
-              connection.update(market->getTableId(), market->getEntity());
+              broker->setState(meguco_user_broker_stopped);
+              connection.update(broker->getBrokerTableId(), broker->getEntity());
             }
           }
           break;
@@ -536,7 +537,7 @@ void_t Main::removedProcess(uint64_t entityId)
             if(session && session->getState() != meguco_user_session_stopped)
             {
               session->setState(meguco_user_session_stopped);
-              connection.update(session->getTableId(), session->getEntity());
+              connection.update(session->getSessionTableId(), session->getEntity());
             }
           }
           break;
@@ -548,20 +549,225 @@ void_t Main::removedProcess(uint64_t entityId)
   }
 }
 
-void_t Main::removedUserBroker(Market2& market)
+void_t Main::controlUser(User2& user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
-  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(market.getTableId());
-  if(it != processesByTable.end() && (*it)->type == userBroker)
-    connection.remove(processesTableId, (*it)->entityId);
-  tableInfo.remove(market.getTableId());
-  market.getUser().deleteBroker(market);
+  switch(controlCode)
+  {
+  case meguco_user_control_create_broker:
+    if(size < sizeof(meguco_user_broker_entity))
+      return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+    {
+      // get arguments
+      const meguco_user_broker_entity* createArgs = (const meguco_user_broker_entity*)data;
+      size_t offset = sizeof(meguco_user_broker_entity);
+      String name, key, secret;
+      if(!ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->user_name_size, name) ||
+        !ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->key_size, key) ||
+        !ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->secret_size, secret))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+
+      // prepare broker entity
+      byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
+      meguco_user_broker_entity* brokerEntity = (meguco_user_broker_entity*)buffer;
+      ZlimdbConnection::setEntityHeader(brokerEntity->entity, 0, 0, sizeof(meguco_user_broker_entity));
+      if(!ZlimdbConnection::copyString(brokerEntity->entity, brokerEntity->user_name_size, name, ZLIMDB_MAX_ENTITY_SIZE) ||
+        !ZlimdbConnection::copyString(brokerEntity->entity, brokerEntity->key_size, key, ZLIMDB_MAX_ENTITY_SIZE) ||
+        !ZlimdbConnection::copyString(brokerEntity->entity, brokerEntity->secret_size, secret, ZLIMDB_MAX_ENTITY_SIZE))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+      brokerEntity->broker_type_id = createArgs->broker_type_id;
+      brokerEntity->state = meguco_user_broker_stopped;
+
+      // get new brokerId;
+      uint64_t brokerId = user.getNewBrokerId();
+
+      // create broker table
+      uint32_t brokerTableId;
+      String tablePrefix = String("users/") + user.getName() + "/brokers/" + String::fromUInt64(brokerId);
+      if(!connection.createTable(tablePrefix + "/broker", brokerTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // add broker entity
+      uint64_t id;
+      if(!connection.add(brokerTableId, brokerEntity->entity, id))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // create other tables
+      uint32_t newTableId;
+      if(!connection.createTable(tablePrefix + "/balance", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/orders", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/transactions", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/log", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // send answer
+      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&brokerId, sizeof(brokerId));
+    }
+    break;
+  case meguco_user_control_remove_broker:
+    if(size < sizeof(uint64_t))
+      return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+    {
+      uint64_t brokerId = *(uint64_t*)data;
+
+      // find user
+      Market2* broker = user.findBroker(brokerId);
+      if(!broker)
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
+
+      // kill process
+      HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(broker->getBrokerTableId()); // todo: i should user the brokerid to identify processes
+      if(it != processesByTable.end())
+      {
+        Process* process = *it;
+        if(!connection.remove(processesTableId, process->entityId))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      }
+
+      // remove tables
+      if(broker->getBrokerTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, broker->getBrokerTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(broker->getBalanceTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, broker->getBalanceTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(broker->getOrdersTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, broker->getOrdersTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(broker->getTransactionsTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, broker->getTransactionsTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(broker->getLogTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, broker->getLogTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // send answer
+      return (void_t)connection.sendControlResponse(requestId, 0, 0);
+    }
+    break;
+  case meguco_user_control_create_session:
+    if(size < sizeof(meguco_user_session_entity))
+      return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+    {
+      // get arguments
+      const meguco_user_session_entity* createArgs = (const meguco_user_session_entity*)data;
+      size_t offset = sizeof(meguco_user_session_entity);
+      String name;
+      if(!ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->name_size, name))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+
+      // prepare session entity
+      byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
+      meguco_user_session_entity* sessionEntity = (meguco_user_session_entity*)buffer;
+      ZlimdbConnection::setEntityHeader(sessionEntity->entity, 0, 0, sizeof(meguco_user_broker_entity));
+      if(!ZlimdbConnection::copyString(sessionEntity->entity, sessionEntity->name_size, name, ZLIMDB_MAX_ENTITY_SIZE))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+      sessionEntity->bot_type_id = createArgs->bot_type_id;
+      sessionEntity->state = meguco_user_session_stopped;
+
+      // get new brokerId;
+      uint64_t sessionId = user.getNewSessionId();
+
+      // create broker table
+      uint32_t sessionTableId;
+      String tablePrefix = String("users/") + user.getName() + "/sessions/" + String::fromUInt64(sessionId);
+      if(!connection.createTable(tablePrefix + "/session", sessionTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // add broker entity
+      uint64_t id;
+      if(!connection.add(sessionTableId, sessionEntity->entity, id))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // create other tables
+      uint32_t newTableId;
+      if(!connection.createTable(tablePrefix + "/orders", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/transactions", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/assets", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/log", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(!connection.createTable(tablePrefix + "/properties", newTableId))
+        return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // send answer
+      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&sessionId, sizeof(sessionId));
+
+    }
+    break;
+  case meguco_user_control_remove_session:
+    if(size < sizeof(uint64_t))
+      return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+    {
+      uint64_t sessionId = *(uint64_t*)data;
+
+      // find user
+      Session2* session = user.findSession(sessionId);
+      if(!session)
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
+
+      // kill process
+      HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(session->getSessionTableId()); // todo: i should user the sessionId to identify processes
+      if(it != processesByTable.end())
+      {
+        Process* process = *it;
+        if(!connection.remove(processesTableId, process->entityId))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      }
+
+      // remove tables
+      if(session->getSessionTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, session->getSessionTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(session->getOrdersTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, session->getOrdersTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(session->getTransactionsTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, session->getTransactionsTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(session->getAssetsTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, session->getAssetsTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(session->getLogTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, session->getLogTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+      if(session->getPropertiesTableId() != 0)
+        if(!connection.remove(zlimdb_table_tables, session->getPropertiesTableId()))
+          return (void_t)connection.sendControlResponse(requestId, connection.getErrno());
+
+      // send answer
+      return (void_t)connection.sendControlResponse(requestId, 0, 0);
+    }
+    break;
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+  }
 }
 
-void_t Main::removedUserSession(Session2& session)
+void_t Main::controlUserSession(Session2& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
-  HashMap<uint32_t, Process*>::Iterator it = processesByTable.find(session.getTableId());
-  if(it != processesByTable.end() && (*it)->type == userSession)
-    connection.remove(processesTableId, (*it)->entityId);
-  tableInfo.remove(session.getTableId());
-  session.getUser().deleteSession(session);
+  switch(controlCode)
+  {
+  case meguco_user_session_control_start_live:
+    {
+      //??
+    }
+    break;
+  case meguco_user_session_control_start_simulation:
+    {
+      //??
+    }
+    break;
+  case meguco_user_session_control_stop:
+    {
+      //??
+    }
+    break;
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+  }
 }

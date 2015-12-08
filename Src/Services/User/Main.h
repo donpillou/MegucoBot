@@ -38,25 +38,35 @@ private:
     String executable;
   };
 
-  enum ProcessType
+  enum TableType
   {
+    user,
     userBroker,
     userSession,
   };
 
   struct Process
   {
-    ProcessType type;
+    TableType type;
     uint64_t entityId;
     uint32_t tableId;
   };
 
   struct TableInfo
   {
-    ProcessType type;
-    String userName;
+    TableType type;
     void_t* object;
   };
+  /*
+  class User
+  {
+  public:
+    uint64_t maxBrokerId;
+    uint64_t maxSessionId;
+
+    User() : maxBrokerId(1), maxSessionId(1) {}
+  };
+  */
 
 private:
   ZlimdbConnection connection;
@@ -67,6 +77,7 @@ private:
   HashMap<uint64_t, BotType*> botTypes;
   HashMap<String, User2*> users;
   uint32_t processesTableId;
+  //uint32_t usersTableId;
   HashMap<uint64_t, Process> processes;
   HashMap<uint32_t, Process*> processesByTable;
   HashMap<uint32_t, TableInfo> tableInfo;
@@ -80,18 +91,21 @@ private:
 
   void_t addedTable(uint32_t tableId, const String& tableName);
   void_t addedProcess(uint64_t entityId, const String& command);
-  void_t addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguco_user_broker_entity& userMarket);
-  void_t addedUserSession(uint32_t tableId, TableInfo& tableInfo, const meguco_user_session_entity& userSession);
+  //void_t addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguco_user_broker_entity& userMarket);
+  //void_t addedUserSession(uint32_t tableId, TableInfo& tableInfo, const meguco_user_session_entity& userSession);
   //void_t updatedUserBroker(Market2& market, const meguco_user_broker_entity& entity);
   //void_t updatedUserSession(Session2& session, const meguco_user_session_entity& entity);
-  void_t removedTable(uint32_t tableId);
+  //void_t removedTable(uint32_t tableId);
   void_t removedProcess(uint64_t entityId);
-  void_t removedUserBroker(Market2& market);
-  void_t removedUserSession(Session2& session);
+  //void_t removedUserBroker(Market2& market);
+  //void_t removedUserSession(Session2& session);
+
+  void_t controlUser(User2& user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
+  void_t controlUserSession(Session2& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);
   virtual void_t updatedEntity(uint32_t tableId, const zlimdb_entity& entity) {}
   virtual void_t removedEntity(uint32_t tableId, uint64_t entityId);
-  virtual void_t controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size) {}
+  virtual void_t controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 };

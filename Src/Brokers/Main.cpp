@@ -154,7 +154,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
   this->userBrokerTableId = userBrokerTableId;
   return true;
 }
-
+/*
 void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
   if(tableId == userBrokerOrdersTableId)
@@ -163,7 +163,8 @@ void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
       return addedUserBrokerOrder(*(meguco_user_broker_order_entity*)&entity);
   }
 }
-
+*/
+/*
 void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
 {
   if(tableId == userBrokerOrdersTableId)
@@ -172,19 +173,20 @@ void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
       return updatedUserBrokerOrder(*(meguco_user_broker_order_entity*)&entity);
   }
 }
-
+*/
+/*
 void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 {
   if(tableId == userBrokerOrdersTableId)
     return removedUserBrokerOrder(entityId);
 }
-
+*/
 void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == userBrokerTableId)
     return controlUserBroker(entityId, controlCode);
 }
-
+/*
 void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& newOrder)
 {
   HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(newOrder.entity.id);
@@ -215,7 +217,8 @@ void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& newOrde
   else
     orders2.append(newOrder.entity.id, newOrder);
 }
-
+*/
+/*
 void_t Main::updatedUserBrokerOrder(const meguco_user_broker_order_entity& updatedOrder)
 {
   HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(updatedOrder.entity.id);
@@ -248,7 +251,8 @@ void_t Main::updatedUserBrokerOrder(const meguco_user_broker_order_entity& updat
   else
     orders2.append(updatedOrder.entity.id, updatedOrder);
 }
-
+*/
+/*
 void_t Main::removedUserBrokerOrder(uint64_t entityId)
 {
   HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(entityId);
@@ -264,7 +268,7 @@ void_t Main::removedUserBrokerOrder(uint64_t entityId)
     connection.add(userBrokerOrdersTableId, order.entity, newId);
   }
 }
-
+*/
 void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
 {
   if(entityId != 1)

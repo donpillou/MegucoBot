@@ -28,6 +28,7 @@ public:
   const String& getErrorString() const {return error;}
 
   bool_t subscribe(uint32_t tableId, uint8_t flags);
+  bool_t listen(uint32_t tableId);
   bool_t query(uint32_t tableId);
   bool_t getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE]);
   bool_t queryEntity(uint32_t tableId, uint64_t entityId, zlimdb_entity& entity, size_t minSize, size_t maxSize);
@@ -47,7 +48,7 @@ public:
   void_t interrupt();
 
 public:
-  static bool_t getString(const zlimdb_entity& entity, size_t offset, size_t length, String& result)
+  static bool_t getString(const zlimdb_entity& entity, size_t offset, size_t length, String& result) // todo: remove this
   {
     if(!length || offset + length > entity.size)
       return false;
@@ -55,6 +56,19 @@ public:
     if(str[--length])
       return false;
     result.attach(str, length);
+    return true;
+  }
+
+  static bool_t getString2(const zlimdb_entity& entity, size_t& offset, size_t length, String& result) // todo: rename to getString
+  {
+    if(!length || offset + length > entity.size)
+      return false;
+    char_t* str = (char_t*)&entity + offset;
+    size_t strLen = length - 1;
+    if(str[strLen])
+      return false;
+    result.attach(str, strLen);
+    offset += length;
     return true;
   }
 
