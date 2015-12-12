@@ -8,8 +8,7 @@
 #include "Tools/ZlimdbConnection.h"
 
 class User2;
-class Market2;
-class Session2;
+class Session;
 
 class Main : public ZlimdbConnection::Callback
 {
@@ -101,7 +100,7 @@ private:
   //void_t removedUserSession(Session2& session);
 
   void_t controlUser(User2& user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
-  void_t controlUserSession(Session2& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
+  void_t controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);

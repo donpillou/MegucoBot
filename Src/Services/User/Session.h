@@ -9,10 +9,10 @@
 
 class User2;
 
-class Session2
+class Session
 {
 public:
-  Session2(User2& user, uint64_t sessionId) : user(user), sessionId(sessionId), 
+  Session(User2& user, uint64_t sessionId) : user(user), sessionId(sessionId), 
     sessionTableId(0), ordersTableId(0), transactionsTableId(0), assetsTableId(0), logTableId(0), propertiesTableId(0) {}
 
   User2& getUser() {return user;}

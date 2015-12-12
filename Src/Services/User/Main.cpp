@@ -7,7 +7,7 @@
 #include "Main.h"
 #include "User2.h"
 #include "Broker.h"
-#include "Session2.h"
+#include "Session.h"
 
 int_t main(int_t argc, char_t* argv[])
 {
@@ -315,7 +315,7 @@ void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entity
   case user:
     return controlUser(*(User2*)tableInfo.object, requestId, entityId, controlCode, data, size);
   case userSession:
-    return controlUserSession(*(Session2*)tableInfo.object, requestId, entityId, controlCode, data, size);
+    return controlUserSession(*(Session*)tableInfo.object, requestId, entityId, controlCode, data, size);
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }
@@ -397,7 +397,7 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
     else if(String::startsWith(typeNameStar, "sessions/"))
     {
       uint64_t sessionId = String::toUInt64((const char_t*)typeNameStar + 8);
-      Session2* session = user->findSession(sessionId);
+      Session* session = user->findSession(sessionId);
       if(!session)
         session = user->createSession(sessionId);
 
@@ -499,7 +499,7 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
       HashMap<uint32_t, TableInfo>::Iterator it = tableInfo.find(tableId);
       if(it != tableInfo.end() && it->type == userSession && it->object)
       {
-        Session2* session = (Session2*)it->object;
+        Session* session = (Session*)it->object;
         session->setState(meguco_user_session_running);
         if(!connection.update(tableId, session->getEntity()))
           return;
@@ -533,7 +533,7 @@ void_t Main::removedProcess(uint64_t entityId)
           break;
         case userSession:
           {
-            Session2* session = (Session2*)tableInfo.object;
+            Session* session = (Session*)tableInfo.object;
             if(session && session->getState() != meguco_user_session_stopped)
             {
               session->setState(meguco_user_session_stopped);
@@ -706,7 +706,7 @@ void_t Main::controlUser(User2& user, uint32_t requestId, uint64_t entityId, uin
       uint64_t sessionId = *(uint64_t*)data;
 
       // find user
-      Session2* session = user.findSession(sessionId);
+      Session* session = user.findSession(sessionId);
       if(!session)
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
 
@@ -748,7 +748,7 @@ void_t Main::controlUser(User2& user, uint32_t requestId, uint64_t entityId, uin
   }
 }
 
-void_t Main::controlUserSession(Session2& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
+void_t Main::controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   switch(controlCode)
   {

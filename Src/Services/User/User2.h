@@ -8,7 +8,7 @@
 #include "Tools/ZlimdbConnection.h"
 
 class Broker;
-class Session2;
+class Session;
 
 class User2
 {
@@ -24,14 +24,14 @@ public:
   Broker* createBroker(uint64_t brokerId);
   void_t deleteBroker(Broker& market);
 
-  Session2* findSession(uint64_t sessionId) {return *sessions.find(sessionId);}
-  Session2* createSession(uint64_t sessionId);
-  void_t deleteSession(Session2& session);
+  Session* findSession(uint64_t sessionId) {return *sessions.find(sessionId);}
+  Session* createSession(uint64_t sessionId);
+  void_t deleteSession(Session& session);
 
 private:
   const String name;
   HashMap<uint64_t, Broker*> brokers;
-  HashMap<uint64_t, Session2*> sessions;
+  HashMap<uint64_t, Session*> sessions;
   uint64_t maxBrokerId;
   uint64_t maxSessionId;
 };
