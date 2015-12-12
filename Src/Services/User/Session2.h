@@ -1,7 +1,13 @@
 
 #pragma once
 
+#include <nstd/Buffer.h>
+
+#include <megucoprotocol.h>
+
 #include "Tools/ZlimdbConnection.h"
+
+class User2;
 
 class Session2
 {

@@ -9,10 +9,10 @@
 
 class User2;
 
-class Market2
+class Broker
 {
 public:
-  Market2(User2& user, uint64_t brokerId) : user(user), brokerId(brokerId), 
+  Broker(User2& user, uint64_t brokerId) : user(user), brokerId(brokerId), 
     brokerTableId(0), balanceTableId(0), ordersTableId(0), transactionsTableId(0), logTableId(0) {}
 
   User2& getUser() {return user;}

@@ -6,7 +6,7 @@
 
 #include "Main.h"
 #include "User2.h"
-#include "Market2.h"
+#include "Broker.h"
 #include "Session2.h"
 
 int_t main(int_t argc, char_t* argv[])
@@ -338,7 +338,7 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
     if(String::startsWith(typeNameStar, "brokers/"))
     {
       uint64_t brokerId = String::toUInt64((const char_t*)typeNameStar + 8);
-      Market2* broker = user->findBroker(brokerId);
+      Broker* broker = user->findBroker(brokerId);
       if(!broker)
         broker = user->createBroker(brokerId);
 
@@ -479,9 +479,9 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
       HashMap<uint32_t, TableInfo>::Iterator it = tableInfo.find(tableId);
       if(it != tableInfo.end() && it->type == userBroker && it->object)
       {
-        Market2* market = (Market2*)it->object;
-        market->setState(meguco_user_broker_running);
-        if(!connection.update(tableId, market->getEntity()))
+        Broker* broker = (Broker*)it->object;
+        broker->setState(meguco_user_broker_running);
+        if(!connection.update(tableId, broker->getEntity()))
           return;
       }
     }
@@ -523,7 +523,7 @@ void_t Main::removedProcess(uint64_t entityId)
         {
         case userBroker:
           {
-            Market2* broker = (Market2*)tableInfo.object;
+            Broker* broker = (Broker*)tableInfo.object;
             if(broker && broker->getState() != meguco_user_broker_stopped)
             {
               broker->setState(meguco_user_broker_stopped);
@@ -613,7 +613,7 @@ void_t Main::controlUser(User2& user, uint32_t requestId, uint64_t entityId, uin
       uint64_t brokerId = *(uint64_t*)data;
 
       // find user
-      Market2* broker = user.findBroker(brokerId);
+      Broker* broker = user.findBroker(brokerId);
       if(!broker)
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
 

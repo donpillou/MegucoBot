@@ -1,13 +1,13 @@
 
 #include "User2.h"
-#include "Market2.h"
+#include "Broker.h"
 #include "Session2.h"
 
 User2::~User2()
 {
-  HashMap<uint64_t, Market2*> brokers;
+  HashMap<uint64_t, Broker*> brokers;
   brokers.swap(this->brokers);
-  for(HashMap<uint64_t, Market2*>::Iterator i = brokers.begin(), end = brokers.end(); i != end; ++i)
+  for(HashMap<uint64_t, Broker*>::Iterator i = brokers.begin(), end = brokers.end(); i != end; ++i)
     delete *i;
   HashMap<uint64_t, Session2*> sessions;
   sessions.swap(this->sessions);
@@ -15,13 +15,13 @@ User2::~User2()
     delete *i;
 }
 
-Market2* User2::createBroker(uint64_t brokerId)
+Broker* User2::createBroker(uint64_t brokerId)
 {
   if(brokerId > maxBrokerId)
     maxBrokerId = brokerId;
-  Market2* market = new Market2(*this, brokerId);
-  brokers.append(brokerId, market);
-  return market;
+  Broker* broker = new Broker(*this, brokerId);
+  brokers.append(brokerId, broker);
+  return broker;
 }
 
 Session2* User2::createSession(uint64_t sessionId)
@@ -33,7 +33,7 @@ Session2* User2::createSession(uint64_t sessionId)
   return session;
 }
 
-void_t User2::deleteBroker(Market2& market)
+void_t User2::deleteBroker(Broker& market)
 {
   brokers.remove(market.getBrokerId());
   delete &market;
