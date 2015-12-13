@@ -10,3 +10,5 @@ ipch/
 *.vcxproj
 *.vcxproj.filters
 *.sln
+.*
+CMakeLists.txt
