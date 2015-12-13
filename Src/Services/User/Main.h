@@ -57,16 +57,6 @@ private:
     TableType type;
     void_t* object;
   };
-  /*
-  class User
-  {
-  public:
-    uint64_t maxBrokerId;
-    uint64_t maxSessionId;
-
-    User() : maxBrokerId(1), maxSessionId(1) {}
-  };
-  */
 
 private:
   ZlimdbConnection connection;
@@ -77,7 +67,6 @@ private:
   HashMap<uint64_t, BotType*> botTypes;
   HashMap<String, User2*> users;
   uint32_t processesTableId;
-  //uint32_t usersTableId;
   HashMap<uint64_t, Process> processes;
   HashMap<String, Process*> processesByCommand;
   HashMap<uint32_t, TableInfo> tableInfo;
@@ -86,19 +75,9 @@ private:
   User2* findUser(const String& name) {return *users.find(name);}
   User2* createUser(const String& name);
 
-  //bool_t setUserBrokerState(Market2& market, meguco_user_broker_state state);
-  //bool_t setUserSessionState(Session2& session, meguco_user_session_state state);
-
   void_t addedTable(uint32_t tableId, const String& tableName);
   void_t addedProcess(uint64_t entityId, const String& command);
-  //void_t addedUserBroker(uint32_t tableId, TableInfo& tableInfo, const meguco_user_broker_entity& userMarket);
-  //void_t addedUserSession(uint32_t tableId, TableInfo& tableInfo, const meguco_user_session_entity& userSession);
-  //void_t updatedUserBroker(Market2& market, const meguco_user_broker_entity& entity);
-  //void_t updatedUserSession(Session2& session, const meguco_user_session_entity& entity);
-  //void_t removedTable(uint32_t tableId);
   void_t removedProcess(uint64_t entityId);
-  //void_t removedUserBroker(Market2& market);
-  //void_t removedUserSession(Session2& session);
 
   void_t controlUser(User2& user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size);
   void_t controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
