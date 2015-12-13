@@ -10,11 +10,11 @@
 class Broker;
 class Session;
 
-class User2
+class User
 {
 public:
-  User2(const String& name) : name(name), maxBrokerId(0), maxSessionId(0) {}
-  ~User2();
+  User(const String& name) : name(name), maxBrokerId(0), maxSessionId(0) {}
+  ~User();
 
   const String& getName() const {return name;}
   uint64_t getNewBrokerId() {return ++maxBrokerId;}

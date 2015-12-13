@@ -7,15 +7,15 @@
 
 #include "Tools/ZlimdbConnection.h"
 
-class User2;
+class User;
 
 class Broker
 {
 public:
-  Broker(User2& user, uint64_t brokerId) : user(user), brokerId(brokerId), 
-    brokerTableId(0), balanceTableId(0), ordersTableId(0), transactionsTableId(0), logTableId(0) {}
+  Broker(User & user, uint64_t brokerId) : user(user), brokerId(brokerId),
+                                           brokerTableId(0), balanceTableId(0), ordersTableId(0), transactionsTableId(0), logTableId(0) {}
 
-  User2& getUser() {return user;}
+  User & getUser() {return user;}
   uint64_t getBrokerId() const {return brokerId;}
 
   void_t setBrokerTableId(uint32_t tableId) {brokerTableId = tableId;}
@@ -39,7 +39,7 @@ public:
   void_t setCommand(const String& command) {this->command = command;}
 
 private:
-  User2& user;
+  User & user;
   uint64_t brokerId;
   uint32_t brokerTableId;
   uint32_t balanceTableId;

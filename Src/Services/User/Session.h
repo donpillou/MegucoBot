@@ -7,15 +7,15 @@
 
 #include "Tools/ZlimdbConnection.h"
 
-class User2;
+class User;
 
 class Session
 {
 public:
-  Session(User2& user, uint64_t sessionId) : user(user), sessionId(sessionId), 
-    sessionTableId(0), ordersTableId(0), transactionsTableId(0), assetsTableId(0), logTableId(0), propertiesTableId(0) {}
+  Session(User & user, uint64_t sessionId) : user(user), sessionId(sessionId),
+                                             sessionTableId(0), ordersTableId(0), transactionsTableId(0), assetsTableId(0), logTableId(0), propertiesTableId(0) {}
 
-  User2& getUser() {return user;}
+  User & getUser() {return user;}
   uint64_t getSessionId() const {return sessionId;}
 
   void_t setSessionTableId(uint32_t tableId) {sessionTableId = tableId;}
@@ -43,7 +43,7 @@ public:
   void_t setCommand(const String& command) {this->command = command;}
 
 private:
-  User2& user;
+  User & user;
   uint64_t sessionId;
   uint32_t sessionTableId;
   uint32_t ordersTableId;

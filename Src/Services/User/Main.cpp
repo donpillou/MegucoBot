@@ -5,7 +5,7 @@
 #include <nstd/Directory.h>
 
 #include "Main.h"
-#include "User2.h"
+#include "User.h"
 #include "Broker.h"
 #include "Session.h"
 
@@ -103,7 +103,7 @@ void_t Main::addBotType(const String& name, const String& executable)
 void_t Main::disconnect()
 {
   connection.close();
-  for(HashMap<String, User2*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
+  for(HashMap<String, User *>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
     delete *i;
   users.clear();
   processes.clear();
@@ -266,9 +266,9 @@ bool_t Main::process()
       return error = connection.getErrorString(), false;
 }
 
-User2* Main::createUser(const String& name)
+User * Main::createUser(const String& name)
 {
-  User2* user = new User2(name);
+  User * user = new User(name);
   users.append(name, user);
   return user;
 }
@@ -312,7 +312,7 @@ void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entity
   switch(tableInfo.type)
   {
   case user:
-    return controlUser(*(User2*)tableInfo.object, requestId, controlCode, data, size);
+    return controlUser(*(User *)tableInfo.object, requestId, controlCode, data, size);
   case userSession:
     return controlUserSession(*(Session*)tableInfo.object, requestId, entityId, controlCode, data, size);
   default:
@@ -329,7 +329,7 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
     if(!end)
       return;
     String userName = tableName.substr(6, end - start);
-    User2* user = findUser(userName);
+    User * user = findUser(userName);
     if(!user)
       user = createUser(userName);
     const char_t* typeNameStart = end + 1;
@@ -479,7 +479,7 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
     Process processData = {userBroker, command, entityId};
     Process& process = processes.append(entityId, processData);
     processesByCommand.append(command, &process);
-    User2* user = findUser(userName);
+    User * user = findUser(userName);
     if(user)
     {
       Broker* broker = user->findBroker(brokerId);
@@ -502,7 +502,7 @@ void_t Main::addedProcess(uint64_t entityId, const String& command)
     Process processData = {userSession, command, entityId};
     Process& process = processes.append(entityId, processData);
     processesByCommand.append(command, &process);
-    User2* user = findUser(userName);
+    User * user = findUser(userName);
     if(user)
     {
       Session* session = user->findSession(sessionId);
@@ -553,7 +553,7 @@ void_t Main::removedProcess(uint64_t entityId)
   }
 }
 
-void_t Main::controlUser(User2& user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size)
+void_t Main::controlUser(User & user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   switch(controlCode)
   {

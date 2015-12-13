@@ -7,7 +7,7 @@
 
 #include "Tools/ZlimdbConnection.h"
 
-class User2;
+class User;
 class Session;
 
 class Main : public ZlimdbConnection::Callback
@@ -65,21 +65,21 @@ private:
   HashMap<String, BotType> botTypesByName;
   HashMap<uint64_t, BrokerType*> brokerTypes;
   HashMap<uint64_t, BotType*> botTypes;
-  HashMap<String, User2*> users;
+  HashMap<String, User *> users;
   uint32_t processesTableId;
   HashMap<uint64_t, Process> processes;
   HashMap<String, Process*> processesByCommand;
   HashMap<uint32_t, TableInfo> tableInfo;
 
 private:
-  User2* findUser(const String& name) {return *users.find(name);}
-  User2* createUser(const String& name);
+  User * findUser(const String& name) {return *users.find(name);}
+  User * createUser(const String& name);
 
   void_t addedTable(uint32_t tableId, const String& tableName);
   void_t addedProcess(uint64_t entityId, const String& command);
   void_t removedProcess(uint64_t entityId);
 
-  void_t controlUser(User2& user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size);
+  void_t controlUser(User & user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size);
   void_t controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
   static String getArg(const String& str, size_t& pos, char_t separator)
