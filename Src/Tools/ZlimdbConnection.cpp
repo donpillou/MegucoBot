@@ -175,6 +175,14 @@ bool_t ZlimdbConnection::startProcess(uint32_t tableId, const String& command)
   return true;
 }
 
+bool_t ZlimdbConnection::stopProcess(uint32_t tableId, uint64_t entityId)
+{
+  char buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+  if(zlimdb_control(zdb, tableId, entityId, meguco_process_control_stop, 0, 0, (zlimdb_header*)buffer, ZLIMDB_MAX_MESSAGE_SIZE) != 0)
+    return error = getZlimdbError(), false;
+  return true;
+}
+
 bool_t ZlimdbConnection::sendControlResponse(uint32_t requestId, const byte_t* data, size_t size)
 {
   if(zlimdb_control_respond(zdb, requestId, data, size) != 0)

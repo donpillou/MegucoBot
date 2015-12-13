@@ -40,6 +40,7 @@ public:
   bool_t remove(uint32_t tableId, uint64_t entityId);
 
   bool_t startProcess(uint32_t tableId, const String& command);
+  bool_t stopProcess(uint32_t tableId, uint64_t entityId);
 
   bool_t sendControlResponse(uint32_t requestId, const byte_t* data, size_t size);
   bool_t sendControlResponse(uint32_t requestId, uint16_t error);

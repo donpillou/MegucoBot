@@ -31,8 +31,12 @@ public:
 
   meguco_user_broker_state getState() const {return (meguco_user_broker_state)((const meguco_user_broker_entity*)(const byte_t*)brokerEntity)->state;}
   void_t setState(meguco_user_broker_state state) {((meguco_user_broker_entity*)(byte_t*)brokerEntity)->state = state;}
+  bool_t hasEntity() const {return !brokerEntity.isEmpty();}
   void_t setEntity(const meguco_user_broker_entity& entity) {brokerEntity.assign((const byte_t*)&entity, entity.entity.size);}
   const zlimdb_entity& getEntity() const {return ((const meguco_user_broker_entity*)(const byte_t*)brokerEntity)->entity;}
+
+  const String& getCommand() const {return command;}
+  void_t setCommand(const String& command) {this->command = command;}
 
 private:
   User2& user;
@@ -43,5 +47,5 @@ private:
   uint32_t transactionsTableId;
   uint32_t logTableId;
   Buffer brokerEntity;
-  uint32_t processId;
+  String command;
 };

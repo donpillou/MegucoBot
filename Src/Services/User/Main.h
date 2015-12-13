@@ -47,8 +47,9 @@ private:
   struct Process
   {
     TableType type;
+    String command;
     uint64_t entityId;
-    uint32_t tableId;
+    void_t* object;
   };
 
   struct TableInfo
@@ -78,7 +79,7 @@ private:
   uint32_t processesTableId;
   //uint32_t usersTableId;
   HashMap<uint64_t, Process> processes;
-  HashMap<uint32_t, Process*> processesByTable;
+  HashMap<String, Process*> processesByCommand;
   HashMap<uint32_t, TableInfo> tableInfo;
 
 private:
@@ -99,8 +100,23 @@ private:
   //void_t removedUserBroker(Market2& market);
   //void_t removedUserSession(Session2& session);
 
-  void_t controlUser(User2& user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
+  void_t controlUser(User2& user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size);
   void_t controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
+
+  static String getArg(const String& str, size_t& pos, char_t separator)
+  {
+    const char_t* end = str.find(separator, pos);
+    if(end)
+    {
+      size_t len = end - ((const char_t*)str + pos);
+      String result = str.substr(pos, len);
+      pos += len + 1;
+      return result;
+    }
+    String result = str.substr(pos);
+    pos = str.length();
+    return result;
+  }
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);

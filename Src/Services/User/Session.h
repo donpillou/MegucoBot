@@ -33,8 +33,14 @@ public:
 
   meguco_user_session_state getState() const {return (meguco_user_session_state)((const meguco_user_session_entity*)(const byte_t*)sessionEntity)->state;}
   void_t setState(meguco_user_session_state state) {((meguco_user_session_entity*)(byte_t*)sessionEntity)->state = state;}
+  meguco_user_session_mode getMode() const {return (meguco_user_session_mode)((const meguco_user_session_entity*)(const byte_t*)sessionEntity)->mode;}
+  void_t setMode(meguco_user_session_mode mode) {((meguco_user_session_entity*)(byte_t*)sessionEntity)->mode = mode;}
+  bool_t hasEntity() const {return !sessionEntity.isEmpty();}
   void_t setEntity(const meguco_user_session_entity& entity) {sessionEntity.assign((const byte_t*)&entity, entity.entity.size);}
   const zlimdb_entity& getEntity() const {return ((const meguco_user_session_entity*)(const byte_t*)sessionEntity)->entity;}
+
+  const String& getCommand() const {return command;}
+  void_t setCommand(const String& command) {this->command = command;}
 
 private:
   User2& user;
@@ -46,5 +52,5 @@ private:
   uint32_t logTableId;
   uint32_t propertiesTableId;
   Buffer sessionEntity;
-  String executable;uint32_t processId;
+  String command;
 };
