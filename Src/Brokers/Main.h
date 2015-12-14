@@ -15,7 +15,7 @@ public:
   Main() : broker(0) {}
   ~Main();
 
-  bool_t connect2(uint32_t userBrokerTableId);
+  bool_t connect2(const String& userName, uint64_t brokerId);
   bool_t process() {return connection.process();}
   String getErrorString() const {return connection.getErrorString();}
 

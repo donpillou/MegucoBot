@@ -13,12 +13,13 @@ typedef BitstampBtcUsd BrokerImpl;
 
 int_t main(int_t argc, char_t* argv[])
 {
-  if(argc < 2)
+  if(argc < 3)
   {
-    Console::errorf("error: Missing market table id\n");
+    Console::errorf("error: Missing broker attributes\n");
     return -1;
   }
-  uint32_t userMarketTableId = String(argv[1], String::length(argv[1])).toUInt();
+  String userName(argv[1], String::length(argv[1]));
+  uint64_t brokerId = String::toUInt64(argv[2]);
 
   Log::setFormat("%P> %m");
 
@@ -33,7 +34,7 @@ int_t main(int_t argc, char_t* argv[])
   Main main;
   for(;; Thread::sleep(10 * 1000))
   {
-    if(!main.connect2(userMarketTableId))
+    if(!main.connect2(userName, brokerId))
     {
       Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)main.getErrorString());
       continue;
@@ -53,7 +54,7 @@ Main::~Main()
   delete broker;
 }
 
-bool_t Main::connect2(uint32_t userBrokerTableId)
+bool_t Main::connect2(const String& userName, uint64_t brokerId)
 {
   delete broker;
   broker = 0;
@@ -66,28 +67,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
 
   // get user name and broker id
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-  if(!connection.queryEntity(zlimdb_table_tables, userBrokerTableId, *(zlimdb_entity*)buffer, sizeof(zlimdb_table_entity), ZLIMDB_MAX_MESSAGE_SIZE))
-    return false;
-  zlimdb_table_entity* tableEntity = (zlimdb_table_entity*)buffer;
-  String tableName; // e.g. users/user1/brokers/<id>/broker
-  if(!ZlimdbConnection::getString(tableEntity->entity, sizeof(*tableEntity), tableEntity->name_size, tableName))
-    return false;
-  if(!tableName.startsWith("users/"))
-    return false;
-  const char_t* userNameStart = (const tchar_t*)tableName + 6;
-  const char_t* userNameEnd = String::find(userNameStart, '/');
-  if(!userNameEnd)
-    return false;
-  if(String::compare(userNameEnd + 1, "brokers/", 8) != 0)
-    return false;
-  const char_t* brokerIdStart = userNameEnd + 9;
-  const char_t* brokerIdEnd = String::find(brokerIdStart, '/');
-  if(!brokerIdEnd)
-    return false;
-  if(String::compare(brokerIdEnd + 1, "broker") != 0)
-    return false;
-  String userName = tableName.substr(userNameStart - tableName, userNameEnd - userNameStart);
-  String brokerId = tableName.substr(brokerIdStart - tableName, brokerIdEnd - brokerIdStart);
+  String brokerIdStr = String::fromUInt64(brokerId);
 
   // get and subscribe to user broker table
   if(!connection.subscribe(userBrokerTableId, 0))
@@ -114,7 +94,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
     return false;
 
   // subscribe to orders table
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/orders", userBrokerOrdersTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/orders", userBrokerOrdersTableId))
     return false;
   if(!connection.subscribe(userBrokerOrdersTableId, 0))
     return false;
@@ -129,7 +109,7 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
     return false;
 
   // get transaction table
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/transactions", userBrokerTransactionsTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/transactions", userBrokerTransactionsTableId))
     return false;
   if(!connection.query(userBrokerTransactionsTableId))
     return false;
@@ -144,11 +124,11 @@ bool_t Main::connect2(uint32_t userBrokerTableId)
     return false;
 
   // get balance table id
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/balance", userBrokerBalanceTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/balance", userBrokerBalanceTableId))
     return false;
 
   // get log table id
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerId + "/log", userBrokerLogTableId))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/log", userBrokerLogTableId))
     return false;
 
   this->userBrokerTableId = userBrokerTableId;
