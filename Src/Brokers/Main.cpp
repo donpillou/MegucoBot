@@ -70,7 +70,9 @@ bool_t Main::connect2(const String& userName, uint64_t brokerId)
   String brokerIdStr = String::fromUInt64(brokerId);
 
   // get and subscribe to user broker table
-  if(!connection.subscribe(userBrokerTableId, 0))
+  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/broker", userBrokerTableId))
+    return false;
+  if(!connection.subscribe(userBrokerTableId, zlimdb_subscribe_flag_responder))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -164,7 +166,9 @@ void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == userBrokerTableId)
-    return controlUserBroker(entityId, controlCode);
+    return controlUserBroker(requestId, entityId, controlCode);
+  else
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 }
 /*
 void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& newOrder)
@@ -249,10 +253,10 @@ void_t Main::removedUserBrokerOrder(uint64_t entityId)
   }
 }
 */
-void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
+void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode)
 {
   if(entityId != 1)
-    return;
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 
   switch(controlCode)
   {
@@ -302,7 +306,7 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
           orders2.append(order.entity.id, order);
       }
     }
-    break;
+    return (void_t)connection.sendControlResponse(requestId, 0, 0);
   case meguco_user_broker_control_refresh_transactions:
     {
       List<meguco_user_broker_transaction_entity> newTransactions;
@@ -349,7 +353,7 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
           transactions2.append(transaction.entity.id, transaction);
       }
     }
-    break;
+    return (void_t)connection.sendControlResponse(requestId, 0, 0);
   case meguco_user_broker_control_refresh_balance:
     {
       meguco_user_broker_balance_entity newBalance;
@@ -368,7 +372,9 @@ void_t Main::controlUserBroker(uint64_t entityId, uint32_t controlCode)
       }
       this->balance = newBalance;
     }
-    break;
+    return (void_t)connection.sendControlResponse(requestId, 0, 0);
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }
 }
 

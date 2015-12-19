@@ -387,7 +387,18 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
               connection.update(tableId, broker->getEntity());
             }
 
-            // todo: autostart 
+            // start broker process
+            if(state != meguco_user_broker_running)
+            {
+              // start process
+              if(!connection.startProcess(processesTableId, broker->getCommand()))
+                return;
+
+              // set state to starting
+              broker->setState(meguco_user_broker_starting);
+              if(!connection.update(tableId, broker->getEntity()))
+                return;
+            }
           }
         }
         if(connection.getErrno() != 0)
