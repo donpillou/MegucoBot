@@ -3,6 +3,7 @@
 #include <nstd/Thread.h>
 #include <nstd/Log.h>
 #include <nstd/Map.h>
+#include <megucoprotocol.h>
 
 #include "Main.h"
 
@@ -45,8 +46,6 @@ int_t main(int_t argc, char_t* argv[])
     main.process();
     Log::errorf("Lost connection to zlimdb server: %s", (const char_t*)main.getErrorString());
   }
-
-  return 0;
 }
 
 Main::~Main()
@@ -98,7 +97,7 @@ bool_t Main::connect2(const String& userName, uint64_t brokerId)
   // subscribe to orders table
   if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/orders", userBrokerOrdersTableId))
     return false;
-  if(!connection.subscribe(userBrokerOrdersTableId, 0))
+  if(!connection.subscribe(userBrokerOrdersTableId, zlimdb_subscribe_flag_responder))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -166,7 +165,9 @@ void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
 void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == userBrokerTableId)
-    return controlUserBroker(requestId, entityId, controlCode);
+    return controlUserBroker(requestId, entityId, controlCode, data, size);
+  else if(tableId == userBrokerOrdersTableId)
+    return controlUserBrokerOrder(requestId, entityId, controlCode);
   else
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 }
@@ -253,7 +254,7 @@ void_t Main::removedUserBrokerOrder(uint64_t entityId)
   }
 }
 */
-void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode)
+void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(entityId != 1)
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
@@ -264,7 +265,10 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
     {
       List<meguco_user_broker_order_entity> newOrders;
       if(!broker->loadOrders(newOrders))
-        return addLogMessage(meguco_log_error, broker->getLastError());
+      {
+        addLogMessage(meguco_log_error, broker->getLastError());
+        return (void_t)connection.sendControlResponse(requestId, 0);
+      }
       Map<int64_t, meguco_user_broker_order_entity*> sortedNewOrders;
       for(List<meguco_user_broker_order_entity>::Iterator i = newOrders.begin(), end = newOrders.end(); i != end; ++i)
         sortedNewOrders.insert((*i).entity.time, &*i);
@@ -311,7 +315,10 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
     {
       List<meguco_user_broker_transaction_entity> newTransactions;
       if(!broker->loadTransactions(newTransactions))
-        return addLogMessage(meguco_log_error, broker->getLastError());
+      {
+        addLogMessage(meguco_log_error, broker->getLastError());
+        return (void_t)connection.sendControlResponse(requestId, 0);
+      }
       Map<int64_t, meguco_user_broker_transaction_entity*> sortedNewTransactions;
       for(List<meguco_user_broker_transaction_entity>::Iterator i = newTransactions.begin(), end = newTransactions.end(); i != end; ++i)
         sortedNewTransactions.insert((*i).entity.time, &*i);
@@ -358,7 +365,10 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
     {
       meguco_user_broker_balance_entity newBalance;
       if(!broker->loadBalance(newBalance))
-        return addLogMessage(meguco_log_error, broker->getLastError());
+      {
+        addLogMessage(meguco_log_error, broker->getLastError());
+        return (void_t)connection.sendControlResponse(requestId, 0);
+      }
       if(this->balance.entity.id == 0)
       {
         uint64_t id;
@@ -373,6 +383,48 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       this->balance = newBalance;
     }
     return (void_t)connection.sendControlResponse(requestId, 0, 0);
+  case meguco_user_broker_control_create_order:
+    if(size < sizeof(meguco_user_broker_order_entity))
+      return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+    {
+      const meguco_user_broker_order_entity& newOrder = *(const meguco_user_broker_order_entity*)data;
+      meguco_user_broker_order_entity order;
+      if(!broker->createOrder(0, (meguco_user_broker_order_type)newOrder.type, newOrder.price, newOrder.amount, newOrder.total, order))
+      {
+        addLogMessage(meguco_log_error, broker->getLastError());
+        return (void_t)connection.sendControlResponse(requestId, 0);
+      }
+
+      order.state = meguco_user_broker_order_open;
+      order.timeout = newOrder.timeout;
+      ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(meguco_user_broker_order_entity));
+
+      // add entity to user brokers table
+      uint64_t id;
+      if(!connection.add(userBrokerOrdersTableId, order.entity, id))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+
+      // return entity id
+      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(uint64_t));
+    }
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+  }
+}
+
+void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint32_t controlCode)
+{
+  switch(controlCode)
+  {
+  case meguco_user_broker_order_control_cancel:
+    // todo
+    break;
+  case meguco_user_broker_order_control_update:
+    // todo
+    break;
+  case meguco_user_broker_order_control_remove:
+    // todo
+    break;
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }
