@@ -40,9 +40,6 @@ private: // ZlimdbConnection::Callback
   virtual void_t controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
 private:
-  //void_t addedUserBrokerOrder(const meguco_user_broker_order_entity& createOrderArgs);
-  //void_t updatedUserBrokerOrder(const meguco_user_broker_order_entity& updateOrderArgs);
-  //void_t removedUserBrokerOrder(uint64_t entityId);
   void_t controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
   void_t controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
   void_t addLogMessage(meguco_log_type type, const String& message);

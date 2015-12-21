@@ -135,33 +135,7 @@ bool_t Main::connect2(const String& userName, uint64_t brokerId)
   this->userBrokerTableId = userBrokerTableId;
   return true;
 }
-/*
-void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
-{
-  if(tableId == userBrokerOrdersTableId)
-  {
-    if(entity.size >= sizeof(meguco_user_broker_order_entity))
-      return addedUserBrokerOrder(*(meguco_user_broker_order_entity*)&entity);
-  }
-}
-*/
-/*
-void_t Main::updatedEntity(uint32_t tableId, const zlimdb_entity& entity)
-{
-  if(tableId == userBrokerOrdersTableId)
-  {
-    if(entity.size >= sizeof(meguco_user_broker_order_entity))
-      return updatedUserBrokerOrder(*(meguco_user_broker_order_entity*)&entity);
-  }
-}
-*/
-/*
-void_t Main::removedEntity(uint32_t tableId, uint64_t entityId)
-{
-  if(tableId == userBrokerOrdersTableId)
-    return removedUserBrokerOrder(entityId);
-}
-*/
+
 void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(tableId == userBrokerTableId)
@@ -171,89 +145,7 @@ void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entity
   else
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 }
-/*
-void_t Main::addedUserBrokerOrder(const meguco_user_broker_order_entity& newOrder)
-{
-  HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(newOrder.entity.id);
-  if(it != orders2.end())
-  {
-    meguco_user_broker_order_entity& order = *it;
-    if(Memory::compare(&order, &newOrder, sizeof(order)) == 0)
-      return;
-    connection.update(userBrokerOrdersTableId, order.entity);
-    return;
-  }
 
-  if(newOrder.state == meguco_user_broker_order_submitting)
-  {
-    meguco_user_broker_order_entity order;
-    if(!broker->createOrder(newOrder.entity.id, (meguco_user_broker_order_type)newOrder.type, newOrder.price, newOrder.amount, newOrder.total, order))
-    {
-      addLogMessage(meguco_log_error, broker->getLastError());
-      order = newOrder;
-      order.state = meguco_user_broker_order_error;
-    }
-    else
-      order.state = meguco_user_broker_order_open;
-    order.timeout = newOrder.timeout;
-    connection.update(userBrokerOrdersTableId, order.entity);
-    orders2.append(order.entity.id, order);
-  }
-  else
-    orders2.append(newOrder.entity.id, newOrder);
-}
-*/
-/*
-void_t Main::updatedUserBrokerOrder(const meguco_user_broker_order_entity& updatedOrder)
-{
-  HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(updatedOrder.entity.id);
-  if(it == orders2.end())
-    return;
-  meguco_user_broker_order_entity& order = *it;
-  if(Memory::compare(&order, &updatedOrder, sizeof(order)) == 0)
-    return;
-
-  if(updatedOrder.state == meguco_user_broker_order_open)
-  {
-    // step #1 cancel current order
-    if(!broker->cancelOrder(updatedOrder.entity.id))
-      return addLogMessage(meguco_log_error, broker->getLastError());
-    
-    // step #2 create new order with same id
-    meguco_user_broker_order_entity order;
-    if(!broker->createOrder(updatedOrder.entity.id, (meguco_user_broker_order_type)updatedOrder.type, updatedOrder.price, updatedOrder.amount, updatedOrder.total, order))
-    {
-      addLogMessage(meguco_log_error, broker->getLastError());
-      order = updatedOrder;
-      order.state = meguco_user_broker_order_error;
-    }
-    else
-      order.state = meguco_user_broker_order_open;
-    order.timeout = updatedOrder.timeout;
-    connection.update(userBrokerOrdersTableId, order.entity);
-    orders2.append(updatedOrder.entity.id, updatedOrder);
-  }
-  else
-    orders2.append(updatedOrder.entity.id, updatedOrder);
-}
-*/
-/*
-void_t Main::removedUserBrokerOrder(uint64_t entityId)
-{
-  HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(entityId);
-  if(it == orders2.end())
-    return;
-  orders2.remove(entityId);
-  if(!broker->cancelOrder(entityId))
-  {
-    meguco_user_broker_order_entity order = *it;
-    order.entity.id = 0;
-    order.entity.time = 0;
-    uint64_t newId;
-    connection.add(userBrokerOrdersTableId, order.entity, newId);
-  }
-}
-*/
 void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
   if(entityId != 1)
