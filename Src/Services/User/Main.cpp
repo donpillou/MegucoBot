@@ -151,7 +151,7 @@ bool_t Main::connect()
       {
         meguco_broker_type_entity* brokerType = (meguco_broker_type_entity*)buffer;
         ZlimdbConnection::setEntityHeader(brokerType->entity, 0, 0, sizeof(meguco_broker_type_entity));
-        if(!ZlimdbConnection::copyString(brokerType->entity, brokerType->name_size, marketName, ZLIMDB_MAX_ENTITY_SIZE))
+        if(!ZlimdbConnection::copyString(marketName, brokerType->entity, brokerType->name_size, ZLIMDB_MAX_ENTITY_SIZE))
           continue;
         uint64_t id;
         if(!connection.add(botMarketsTableId, brokerType->entity, id))
@@ -198,7 +198,7 @@ bool_t Main::connect()
       {
         meguco_bot_type_entity* botType = (meguco_bot_type_entity*)buffer;
         ZlimdbConnection::setEntityHeader(botType->entity, 0, 0, sizeof(meguco_bot_type_entity));
-        if(!ZlimdbConnection::copyString(botType->entity, botType->name_size, botEngineName, ZLIMDB_MAX_ENTITY_SIZE))
+        if(!ZlimdbConnection::copyString(botEngineName, botType->entity, botType->name_size, ZLIMDB_MAX_ENTITY_SIZE))
           continue;
         uint64_t id;
         if(!connection.add(botEnginesTableId, botType->entity, id))
@@ -576,18 +576,18 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint32_t controlCode, 
       const meguco_user_broker_entity* createArgs = (const meguco_user_broker_entity*)data;
       size_t offset = sizeof(meguco_user_broker_entity);
       String name, key, secret;
-      if(!ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->user_name_size, name) ||
-        !ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->key_size, key) ||
-        !ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->secret_size, secret))
+      if(!ZlimdbConnection::getString(createArgs->entity, createArgs->user_name_size, name, offset) ||
+        !ZlimdbConnection::getString(createArgs->entity, createArgs->key_size, key, offset) ||
+        !ZlimdbConnection::getString(createArgs->entity, createArgs->secret_size, secret, offset))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 
       // prepare broker entity
       byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
       meguco_user_broker_entity* brokerEntity = (meguco_user_broker_entity*)buffer;
       ZlimdbConnection::setEntityHeader(brokerEntity->entity, 0, 0, sizeof(meguco_user_broker_entity));
-      if(!ZlimdbConnection::copyString(brokerEntity->entity, brokerEntity->user_name_size, name, ZLIMDB_MAX_ENTITY_SIZE) ||
-        !ZlimdbConnection::copyString(brokerEntity->entity, brokerEntity->key_size, key, ZLIMDB_MAX_ENTITY_SIZE) ||
-        !ZlimdbConnection::copyString(brokerEntity->entity, brokerEntity->secret_size, secret, ZLIMDB_MAX_ENTITY_SIZE))
+      if(!ZlimdbConnection::copyString(name, brokerEntity->entity, brokerEntity->user_name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+        !ZlimdbConnection::copyString(key, brokerEntity->entity, brokerEntity->key_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+        !ZlimdbConnection::copyString(secret, brokerEntity->entity, brokerEntity->secret_size, ZLIMDB_MAX_ENTITY_SIZE))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       brokerEntity->broker_type_id = createArgs->broker_type_id;
       brokerEntity->state = meguco_user_broker_stopped;
@@ -668,16 +668,15 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint32_t controlCode, 
     {
       // get arguments
       const meguco_user_session_entity* createArgs = (const meguco_user_session_entity*)data;
-      size_t offset = sizeof(meguco_user_session_entity);
       String name;
-      if(!ZlimdbConnection::getString2(createArgs->entity, offset, createArgs->name_size, name))
+      if(!ZlimdbConnection::getString(createArgs->entity, sizeof(meguco_user_session_entity), createArgs->name_size, name))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 
       // prepare session entity
       byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
       meguco_user_session_entity* sessionEntity = (meguco_user_session_entity*)buffer;
       ZlimdbConnection::setEntityHeader(sessionEntity->entity, 0, 0, sizeof(meguco_user_broker_entity));
-      if(!ZlimdbConnection::copyString(sessionEntity->entity, sessionEntity->name_size, name, ZLIMDB_MAX_ENTITY_SIZE))
+      if(!ZlimdbConnection::copyString(name, sessionEntity->entity, sessionEntity->name_size, ZLIMDB_MAX_ENTITY_SIZE))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       sessionEntity->bot_type_id = createArgs->bot_type_id;
       sessionEntity->state = meguco_user_session_stopped;

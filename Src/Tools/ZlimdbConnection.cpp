@@ -165,7 +165,7 @@ bool_t ZlimdbConnection::startProcess(uint32_t tableId, const String& command)
   char buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   meguco_process_entity* process = (meguco_process_entity*)buffer;
   setEntityHeader(process->entity, 0, 0, sizeof(meguco_process_entity));
-  if(!copyString(process->entity, process->cmd_size, command, ZLIMDB_MAX_ENTITY_SIZE))
+  if(!copyString(command, process->entity, process->cmd_size, ZLIMDB_MAX_ENTITY_SIZE))
   {
     zlimdb_seterrno(zlimdb_local_error_invalid_parameter);
     return error = getZlimdbError(), false;

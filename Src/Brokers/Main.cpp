@@ -384,11 +384,11 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
 
 void_t Main::addLogMessage(meguco_log_type type, const String& message)
 {
-  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
+  byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
   meguco_log_entity* logEntity = (meguco_log_entity*)buffer;
   ZlimdbConnection::setEntityHeader(logEntity->entity, 0, 0, sizeof(meguco_log_entity));
   logEntity->type = type;
-  if(!ZlimdbConnection::copyString(logEntity->entity, logEntity->message_size, message, ZLIMDB_MAX_MESSAGE_SIZE))
+  if(!ZlimdbConnection::copyString(message, logEntity->entity, logEntity->message_size, ZLIMDB_MAX_ENTITY_SIZE))
     return;
   uint64_t id;
   connection.add(userBrokerLogTableId, logEntity->entity, id);

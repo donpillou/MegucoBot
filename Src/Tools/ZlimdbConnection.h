@@ -49,7 +49,8 @@ public:
   void_t interrupt();
 
 public:
-  static bool_t getString(const zlimdb_entity& entity, size_t offset, size_t length, String& result) // todo: remove this
+
+  static bool_t getString(const zlimdb_entity& entity, size_t offset, size_t length, String& result)
   {
     if(!length || offset + length > entity.size)
       return false;
@@ -60,7 +61,7 @@ public:
     return true;
   }
 
-  static bool_t getString2(const zlimdb_entity& entity, size_t& offset, size_t length, String& result) // todo: rename to getString
+  static bool_t getString(const zlimdb_entity& entity, size_t length, String& result, size_t& offset)
   {
     if(!length || offset + length > entity.size)
       return false;
@@ -80,7 +81,7 @@ public:
     entity.size = size;
   }
 
-  static bool_t copyString(zlimdb_entity& entity, uint16_t& length, const String& str, size_t maxSize)
+  static bool_t copyString(const String& str, zlimdb_entity& entity, uint16_t& length, size_t maxSize)
   {
     length = str.length() + 1;
     if((size_t)entity.size + length > maxSize)
