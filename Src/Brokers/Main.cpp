@@ -344,10 +344,10 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
   case meguco_user_broker_order_control_update:
-    if(size < sizeof(meguco_user_broker_order_entity))
+    if(size < sizeof(meguco_user_broker_order_control_update_params))
       return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
     {
-      const meguco_user_broker_order_entity& args = *(const meguco_user_broker_order_entity*)data;
+      const meguco_user_broker_order_control_update_params& params = *(const meguco_user_broker_order_control_update_params*)data;
 
       // cancel order
       if(!broker->cancelOrder(order.entity.id))
@@ -358,16 +358,16 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
 
       // create new order with same id
       meguco_user_broker_order_entity newOrder;
-      if(!broker->createOrder(order.entity.id, (meguco_user_broker_order_type)args.type, args.price, args.amount, args.total, newOrder))
+      if(!broker->createOrder(order.entity.id, (meguco_user_broker_order_type)order.type, params.price, params.amount, params.total, newOrder))
       {
         addLogMessage(meguco_log_error, broker->getLastError());
         order.state = meguco_user_broker_order_error;
       }
       else
       {
+        newOrder.timeout = order.timeout;
         order = newOrder;
         order.state = meguco_user_broker_order_open;
-        order.timeout = args.timeout;
       }
 
       // update order state in table
@@ -375,7 +375,7 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
 
       // send answer
-      return (void_t)connection.sendControlResponse(requestId, 0);
+      return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
