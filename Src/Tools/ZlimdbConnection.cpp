@@ -193,7 +193,7 @@ bool_t ZlimdbConnection::sendControlResponse(uint32_t requestId, const byte_t* d
 bool_t ZlimdbConnection::sendControlResponse(uint32_t requestId, uint16_t error)
 {
   if(zlimdb_control_respond_error(zdb, requestId, error) != 0)
-    return error = getZlimdbError(), false;
+    return this->error = getZlimdbError(), false;
   return true;
 }
 
