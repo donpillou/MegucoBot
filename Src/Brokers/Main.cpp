@@ -375,7 +375,10 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
 
       // send answer
-      return (void_t)connection.sendControlResponse(requestId, 0, 0);
+      if(order.state == meguco_user_broker_order_error)
+        return (void_t)connection.sendControlResponse(requestId, 0);
+      else
+        return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
