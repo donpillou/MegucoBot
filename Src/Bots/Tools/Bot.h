@@ -27,15 +27,15 @@ public:
     virtual const String& getCurrencyBase() const = 0;
     virtual const String& getCurrencyComm() const = 0;
 
-    virtual bool_t buy(double price, double amount, double total, timestamp_t timeout, uint64_t* id = 0, double* orderedAmount = 0) = 0;
-    virtual bool_t sell(double price, double amount, double total, timestamp_t timeout, uint64_t* id = 0, double* orderedAmount = 0) = 0;
+    virtual bool_t buy(double price, double amount, double total, int64_t timeout, uint64_t* id = 0, double* orderedAmount = 0) = 0;
+    virtual bool_t sell(double price, double amount, double total, int64_t timeout, uint64_t* id = 0, double* orderedAmount = 0) = 0;
     virtual bool_t cancelOder(uint64_t id) = 0;
-    virtual const HashMap<uint64_t, meguco_user_market_order_entity> getOrders() const = 0;
-    virtual const meguco_user_market_order_entity* getOrder(uint64_t id) const = 0;
+    virtual const HashMap<uint64_t, meguco_user_broker_order_entity> getOrders() const = 0;
+    virtual const meguco_user_broker_order_entity* getOrder(uint64_t id) const = 0;
     virtual size_t getOpenBuyOrderCount() const = 0;
     virtual size_t getOpenSellOrderCount() const = 0;
-    virtual timestamp_t getTimeSinceLastBuy() const = 0;
-    virtual timestamp_t getTimeSinceLastSell() const = 0;
+    virtual int64_t getTimeSinceLastBuy() const = 0;
+    virtual int64_t getTimeSinceLastSell() const = 0;
 
     virtual const HashMap<uint64_t, meguco_user_session_asset_entity>& getAssets() const = 0;
     virtual const meguco_user_session_asset_entity* getAsset(uint64_t id) const = 0;
@@ -62,9 +62,9 @@ public:
   {
   public:
     virtual ~Session() {};
-    virtual void_t handleTrade(const meguco_trade_entity& trade, timestamp_t tradeAge) = 0;
-    virtual void_t handleBuy(uint64_t orderId, const meguco_user_market_transaction_entity& transaction) = 0;
-    virtual void_t handleSell(uint64_t orderId, const meguco_user_market_transaction_entity& transaction) = 0;
+    virtual void_t handleTrade(const meguco_trade_entity& trade, int64_t tradeAge) = 0;
+    virtual void_t handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction) = 0;
+    virtual void_t handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction) = 0;
     virtual void_t handleBuyTimeout(uint64_t orderId) = 0;
     virtual void_t handleSellTimeout(uint64_t orderId) = 0;
     virtual void_t handlePropertyUpdate(const meguco_user_session_property_entity& property) = 0;
@@ -74,5 +74,5 @@ public:
   
   virtual ~Bot() {}
   virtual Session* createSession(Broker& broker) = 0;
-  virtual timestamp_t getMaxTradeAge() const = 0;
+  virtual int64_t getMaxTradeAge() const = 0;
 };

@@ -24,9 +24,9 @@ private:
     void_t checkSell(const meguco_trade_entity& trade);
 
   private: // Bot::Session
-    virtual void_t handleTrade(const meguco_trade_entity& trade, timestamp_t tradeAge);
-    virtual void_t handleBuy(uint64_t orderId, const meguco_user_market_transaction_entity& transaction);
-    virtual void_t handleSell(uint64_t orderId, const meguco_user_market_transaction_entity& transaction);
+    virtual void_t handleTrade(const meguco_trade_entity& trade, int64_t tradeAge);
+    virtual void_t handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
+    virtual void_t handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
     virtual void_t handleBuyTimeout(uint64_t orderId);
     virtual void_t handleSellTimeout(uint64_t orderId);
     virtual void_t handlePropertyUpdate(const meguco_user_session_property_entity& property) {};
@@ -36,5 +36,5 @@ private:
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
-  virtual timestamp_t getMaxTradeAge() const {return 0;}
+  virtual int64_t getMaxTradeAge() const {return 0;}
 };

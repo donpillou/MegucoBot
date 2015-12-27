@@ -15,7 +15,7 @@ public:
   Main() : broker(0) {}
   ~Main();
 
-  bool_t connect2(const String& userName, uint64_t brokerId);
+  bool_t connect(const String& userName, uint64_t brokerId);
   bool_t process() {return connection.process();}
   String getErrorString() const {return connection.getErrorString();}
 
@@ -41,6 +41,5 @@ private: // ZlimdbConnection::Callback
 
 private:
   void_t controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
-  void_t controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
   void_t addLogMessage(meguco_log_type type, const String& message);
 };

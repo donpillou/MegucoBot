@@ -69,7 +69,7 @@ private:
   uint32_t processesTableId;
   HashMap<uint64_t, Process> processes;
   HashMap<String, Process*> processesByCommand;
-  HashMap<uint32_t, TableInfo> tableInfo;
+  HashMap<uint32_t, TableInfo> tableInfo; // todo: remove this
 
 private:
   User * findUser(const String& name) {return *users.find(name);}
@@ -79,23 +79,7 @@ private:
   void_t addedProcess(uint64_t entityId, const String& command);
   void_t removedProcess(uint64_t entityId);
 
-  void_t controlUser(User & user, uint32_t requestId, uint32_t controlCode, const byte_t* data, size_t size);
-  void_t controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
-
-  static String getArg(const String& str, size_t& pos, char_t separator)
-  {
-    const char_t* end = str.find(separator, pos);
-    if(end)
-    {
-      size_t len = end - ((const char_t*)str + pos);
-      String result = str.substr(pos, len);
-      pos += len + 1;
-      return result;
-    }
-    String result = str.substr(pos);
-    pos = str.length();
-    return result;
-  }
+  void_t controlUser(User & user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);

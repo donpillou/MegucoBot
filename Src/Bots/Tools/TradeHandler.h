@@ -4,7 +4,6 @@
 #include <nstd/Math.h>
 
 #include "Bot.h"
-#include "DataProtocol.h"
 
 class TradeHandler
 {
@@ -58,13 +57,13 @@ public:
   };
 
 public:
-  static timestamp_t getMaxTradeAge() {return depths[sizeof(depths) / sizeof(*depths) - 1] * 1000ULL;}
+  static int64_t getMaxTradeAge() {return depths[sizeof(depths) / sizeof(*depths) - 1] * 1000ULL;}
 
 public:
-  void add(const DataProtocol::Trade& trade, timestamp_t tradeAge)
+  void add(const meguco_trade_entity& trade, int64_t tradeAge)
   {
     uint64_t tradeAgeSecs = tradeAge / 1000ULL;
-    uint64_t timeSecs = trade.time / 1000ULL;
+    uint64_t timeSecs = trade.entity.time / 1000ULL;
 
     for(int i = 0; i < (int)numOfRegressions; ++i)
       averager[i].add(timeSecs, tradeAgeSecs, trade.amount, trade.price, depths[i]);
@@ -299,12 +298,12 @@ private:
       }
     }
 
-    void getLine(timestamp_t ageDeviation, Values::RegressionLine& rl)
+    void getLine(int64_t ageDeviation, Values::RegressionLine& rl)
     {
       // recompute
       sumXY = sumY = sumX = sumXX = sumN = 0.;
       double deviation = (double)ageDeviation;
-      timestamp_t endTime = data.back().time;
+      int64_t endTime = data.back().time;
       for(List<DataEntry>::Iterator i = --List<DataEntry>::Iterator(data.end()), begin = data.begin();; --i)
       {
         DataEntry& dataEntry = *i;

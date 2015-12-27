@@ -24,20 +24,23 @@ public:
   bool_t connect(Callback& callback);
   void_t close();
   bool_t isOpen() const;
-  int getErrno();
-  const String& getErrorString() const {return error;}
 
   bool_t subscribe(uint32_t tableId, uint8_t flags);
+  bool_t subscribe(uint32_t tableId, zlimdb_query_type type, uint64_t param, uint8_t flags);
   bool_t listen(uint32_t tableId);
+  bool_t sync(uint32_t tableId, int64_t& serverTime, int64_t& tableTime);
   bool_t query(uint32_t tableId);
   bool_t getResponse(byte_t (&buffer)[ZLIMDB_MAX_MESSAGE_SIZE]);
   bool_t queryEntity(uint32_t tableId, uint64_t entityId, zlimdb_entity& entity, size_t minSize, size_t maxSize);
   bool_t createTable(const String& name, uint32_t& tableId);
+  bool_t findTable(const String& name, uint32_t& tableId);
   bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists = false);
+  bool_t moveTable(const String& sourceName, const String& destName, uint32_t destTableId, uint32_t& newDestTableId, bool succeedIfNotExist = false);
   bool_t clearTable(uint32_t tableId);
   bool_t add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id, bool_t succeedIfExists = false);
   bool_t update(uint32_t tableId, const zlimdb_entity& entity);
   bool_t remove(uint32_t tableId, uint64_t entityId);
+  bool_t control(uint32_t tableId, uint64_t entityId, uint32_t controlCode, const void_t* data, uint32_t size, byte_t(&buffer)[ZLIMDB_MAX_MESSAGE_SIZE]);
 
   bool_t startProcess(uint32_t tableId, const String& command);
   bool_t stopProcess(uint32_t tableId, uint64_t entityId);
@@ -49,28 +52,42 @@ public:
   void_t interrupt();
 
 public:
+  static int_t getErrno();
+  static void_t setErrno(int_t error);
+  static String getErrorString();
 
   static bool_t getString(const zlimdb_entity& entity, size_t offset, size_t length, String& result)
   {
     if(!length || offset + length > entity.size)
-      return false;
+      return zlimdb_seterrno(zlimdb_local_error_invalid_message_data), false;
     char_t* str = (char_t*)&entity + offset;
     if(str[--length])
-      return false;
+      return zlimdb_seterrno(zlimdb_local_error_invalid_message_data), false;
     result.attach(str, length);
     return true;
   }
 
-  static bool_t getString(const zlimdb_entity& entity, size_t length, String& result, size_t& offset)
+  static  bool_t getString(const zlimdb_entity& entity, size_t length, String& result, size_t& offset)
   {
     if(!length || offset + length > entity.size)
-      return false;
+      return zlimdb_seterrno(zlimdb_local_error_invalid_message_data), false;
     char_t* str = (char_t*)&entity + offset;
     size_t strLen = length - 1;
     if(str[strLen])
-      return false;
+      return zlimdb_seterrno(zlimdb_local_error_invalid_message_data), false;
     result.attach(str, strLen);
     offset += length;
+    return true;
+  }
+
+  static  bool_t getString(const void* data, size_t size, size_t offset, size_t length, String& result)
+  {
+    if(!length || offset + length > size)
+      return zlimdb_seterrno(zlimdb_local_error_invalid_message_data), false;
+    const char_t* str = (char_t*)data + offset;
+    if(str[--length])
+      return zlimdb_seterrno(zlimdb_local_error_invalid_message_data), false;
+    result.attach(str, length);
     return true;
   }
 
@@ -85,22 +102,19 @@ public:
   {
     length = (uint16_t)(str.length() + 1);
     if((size_t)entity.size + length > maxSize)
-      return false;
+      return zlimdb_seterrno(zlimdb_local_error_invalid_parameter), false;
     Memory::copy((byte_t*)&entity + entity.size, (const char_t*)str, length);
     entity.size += length;
     return true;
   }
 
 private:
-  String error;
   zlimdb* zdb;
   Callback* callback;
 
 private:
-  static String getZlimdbError();
-
   void zlimdbCallback(const zlimdb_header& message);
 
 private:
-  static void zlimdbCallback(void* user_data, const zlimdb_header* message) {((ZlimdbConnection*)user_data)->zlimdbCallback(*message);}
+  static void zlimdbCallback(void* userData, const zlimdb_header* message) {((ZlimdbConnection*)userData)->zlimdbCallback(*message);}
 };

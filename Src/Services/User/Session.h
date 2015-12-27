@@ -12,8 +12,9 @@ class User;
 class Session
 {
 public:
-  Session(User & user, uint64_t sessionId) : user(user), sessionId(sessionId),
-                                             sessionTableId(0), ordersTableId(0), transactionsTableId(0), assetsTableId(0), logTableId(0), propertiesTableId(0) {}
+  Session(User & user, uint64_t sessionId)
+    : user(user), sessionId(sessionId), sessionTableId(0),
+    ordersTableId(0), transactionsTableId(0), assetsTableId(0), logTableId(0), propertiesTableId(0), markersTableId(0) {}
 
   User & getUser() {return user;}
   uint64_t getSessionId() const {return sessionId;}
@@ -30,6 +31,8 @@ public:
   uint32_t getLogTableId() const {return logTableId;}
   void_t setPropertiesTableId(uint32_t tableId) {propertiesTableId = tableId;}
   uint32_t getPropertiesTableId() const {return propertiesTableId;}
+  void_t setMarkersTableId(uint32_t tableId) {markersTableId = tableId;}
+  uint32_t getMarkersTableId() const {return markersTableId;}
 
   meguco_user_session_state getState() const {return (meguco_user_session_state)((const meguco_user_session_entity*)(const byte_t*)sessionEntity)->state;}
   void_t setState(meguco_user_session_state state) {((meguco_user_session_entity*)(byte_t*)sessionEntity)->state = state;}
@@ -51,6 +54,7 @@ private:
   uint32_t assetsTableId;
   uint32_t logTableId;
   uint32_t propertiesTableId;
+  uint32_t markersTableId;
   Buffer sessionEntity;
   String command;
 };

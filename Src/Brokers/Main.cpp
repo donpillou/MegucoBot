@@ -35,7 +35,7 @@ int_t main(int_t argc, char_t* argv[])
   Main main;
   for(;; Thread::sleep(10 * 1000))
   {
-    if(!main.connect2(userName, brokerId))
+    if(!main.connect(userName, brokerId))
     {
       Log::errorf("Could not connect to zlimdb server: %s", (const char_t*)main.getErrorString());
       continue;
@@ -48,31 +48,29 @@ int_t main(int_t argc, char_t* argv[])
   }
 }
 
-Main::~Main()
-{
-  delete broker;
-}
+Main::~Main() {delete broker;}
 
-bool_t Main::connect2(const String& userName, uint64_t brokerId)
+bool_t Main::connect(const String& userName, uint64_t brokerId)
 {
+  // cleanup
   delete broker;
   broker = 0;
   orders2.clear();
   transactions2.clear();
   balance.entity.id = 0;
 
+  // establish connection to ZlimDB server
   if(!connection.connect(*this))
     return false;
 
-  // get user name and broker id
-  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
-  String brokerIdStr = String::fromUInt64(brokerId);
-
-  // get and subscribe to user broker table
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/broker", userBrokerTableId))
+  // subscribe to user broker table
+  String tablePrefix = String("users/") + userName + "/brokers/" + String::fromUInt64(brokerId);
+  if(!connection.createTable(tablePrefix + "/broker", userBrokerTableId))
     return false;
   if(!connection.subscribe(userBrokerTableId, zlimdb_subscribe_flag_responder))
     return false;
+  String brokerUserName, brokerKey, brokerSecret;
+  byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   while(connection.getResponse(buffer))
   {
     for(const meguco_user_broker_entity* userBrokerEntity = (const meguco_user_broker_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_entity));
@@ -81,23 +79,21 @@ bool_t Main::connect2(const String& userName, uint64_t brokerId)
     {
       if(userBrokerEntity->entity.id != 1)
         continue;
-      String userName, key, secret;
-      if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity), userBrokerEntity->user_name_size, userName))
+      size_t offset = sizeof(meguco_user_broker_entity);
+      if(!ZlimdbConnection::getString(userBrokerEntity->entity, userBrokerEntity->user_name_size, brokerUserName, offset) ||
+        !ZlimdbConnection::getString(userBrokerEntity->entity, userBrokerEntity->key_size, brokerKey, offset) ||
+        !ZlimdbConnection::getString(userBrokerEntity->entity, userBrokerEntity->secret_size, brokerSecret, offset))
         return false;
-      if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity) + userName.length() + 1, userBrokerEntity->key_size, key))
-        return false;
-      if(!ZlimdbConnection::getString(userBrokerEntity->entity, sizeof(*userBrokerEntity) + userName.length() + 1 + key.length() + 1, userBrokerEntity->secret_size, secret))
-        return false;
-      broker = new BrokerImpl(userName, key, secret);
     }
   }
   if(connection.getErrno() != 0)
     return false;
+  broker = new BrokerImpl(brokerUserName, brokerKey, brokerSecret);
 
-  // subscribe to orders table
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/orders", userBrokerOrdersTableId))
+  // load orders table
+  if(!connection.createTable(tablePrefix + "/orders", userBrokerOrdersTableId))
     return false;
-  if(!connection.subscribe(userBrokerOrdersTableId, zlimdb_subscribe_flag_responder))
+  if(!connection.query(userBrokerOrdersTableId))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -109,8 +105,8 @@ bool_t Main::connect2(const String& userName, uint64_t brokerId)
   if(connection.getErrno() != 0)
     return false;
 
-  // get transaction table
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/transactions", userBrokerTransactionsTableId))
+  // load transactions table
+  if(!connection.createTable(tablePrefix + "/transactions", userBrokerTransactionsTableId))
     return false;
   if(!connection.query(userBrokerTransactionsTableId))
     return false;
@@ -125,14 +121,13 @@ bool_t Main::connect2(const String& userName, uint64_t brokerId)
     return false;
 
   // get balance table id
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/balance", userBrokerBalanceTableId))
+  if(!connection.createTable(tablePrefix + "/balance", userBrokerBalanceTableId))
     return false;
 
   // get log table id
-  if(!connection.createTable(String("users/") + userName + "/brokers/" + brokerIdStr + "/log", userBrokerLogTableId))
+  if(!connection.createTable(tablePrefix + "/log", userBrokerLogTableId))
     return false;
 
-  this->userBrokerTableId = userBrokerTableId;
   return true;
 }
 
@@ -140,17 +135,12 @@ void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entity
 {
   if(tableId == userBrokerTableId)
     return controlUserBroker(requestId, entityId, controlCode, data, size);
-  else if(tableId == userBrokerOrdersTableId)
-    return controlUserBrokerOrder(requestId, entityId, controlCode, data, size);
   else
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 }
 
 void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
 {
-  if(entityId != 1)
-    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
-
   switch(controlCode)
   {
   case meguco_user_broker_control_refresh_orders:
@@ -274,7 +264,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       }
       this->balance = newBalance;
     }
-    return (void_t)connection.sendControlResponse(requestId, 0, 0);
+    return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&balance, sizeof(meguco_user_broker_balance_entity));
   case meguco_user_broker_control_create_order:
     if(size < sizeof(meguco_user_broker_order_entity))
       return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
@@ -299,23 +289,14 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       // return entity id
       return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(uint64_t));
     }
-  default:
-    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
-  }
-}
-
-void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
-{
-  HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(entityId);
-  if(it == orders2.end())
-    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
-  meguco_user_broker_order_entity& order = *it;
-
-  switch(controlCode)
-  {
-  case meguco_user_broker_order_control_cancel:
-  case meguco_user_broker_order_control_remove:
+  case meguco_user_broker_control_cancel_order:
+  case meguco_user_broker_control_remove_order:
     {
+      HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(entityId);
+      if(it == orders2.end())
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
+      meguco_user_broker_order_entity& order = *it;
+
       // cancel order
       if(order.state == meguco_user_broker_order_open)
       {
@@ -327,7 +308,7 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
       }
 
       // update order state
-      if(controlCode == meguco_user_broker_order_control_cancel)
+      if(controlCode == meguco_user_broker_control_cancel_order)
       {
         order.state = meguco_user_broker_order_canceled;
         if(!connection.update(userBrokerOrdersTableId, order.entity))
@@ -343,10 +324,15 @@ void_t Main::controlUserBrokerOrder(uint32_t requestId, uint64_t entityId, uint3
       // send answer
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
-  case meguco_user_broker_order_control_update:
+  case meguco_user_broker_control_update_order:
     if(size < sizeof(meguco_user_broker_order_control_update_params))
       return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
     {
+      HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(entityId);
+      if(it == orders2.end())
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
+      meguco_user_broker_order_entity& order = *it;
+
       const meguco_user_broker_order_control_update_params& params = *(const meguco_user_broker_order_control_update_params*)data;
 
       // cancel order

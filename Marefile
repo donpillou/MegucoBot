@@ -96,8 +96,8 @@ targets = {
     buildDir = "Build/$(configuration)/Bots/$(target)"
     outputDir = "Build/$(configuration)/Bots"
     includePaths = {
-      "Src",
       "Src/Bots",
+      "Src",
       "Ext/libnstd/include"
       "Ext/libzlimdbclient/include"
       "Ext/libmegucoprotocol/include"
@@ -115,7 +115,7 @@ targets = {
       "Src/Bots/Tools/*.cpp" = cppSource
       "Src/Bots/Tools/*.h"
       "Src/Bots/Main.cpp" = cppSource
-      // "Src/Bots/Main.h"
+      "Src/Bots/Main.h"
       "Src/Tools/Hex.cpp" = cppSource
       "Src/Tools/Hex.h"
       "Src/Tools/Json.cpp" = cppSource
@@ -142,8 +142,8 @@ targets = {
     buildDir = "Build/$(configuration)/Brokers/$(name)"
     output = "Build/$(configuration)/Brokers/$(name)$(if $(Win32),.exe,)"
     includePaths = {
-      "Src",
       "Src/Brokers",
+      "Src",
       "Ext/libnstd/include"
       "Ext/libzlimdbclient/include"
       "Ext/libmegucoprotocol/include"
@@ -200,8 +200,8 @@ targets = {
     buildDir = "Build/$(configuration)/Markets/$(name)"
     output = "Build/$(configuration)/Markets/$(name)$(if $(Win32),.exe,)"
     includePaths = {
-      "Src",
       "Src/Markets",
+      "Src",
       "Ext/libnstd/include"
       "Ext/libzlimdbclient/include"
       "Ext/libmegucoprotocol/include"
