@@ -29,11 +29,11 @@ BetBot::Session::Session(Broker& broker) : broker(broker), buyInOrderId(0), sell
   broker.registerProperty("Buy Min Price Shift", DEFAULT_BUY_MIN_PRICE_SHIFT);
   broker.registerProperty("Sell Min Price Shift", DEFAULT_SELL_MIN_PRICE_SHIFT);
 
-  broker.registerProperty(String("Balance ") + broker.getCurrencyBase(), 0, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
-  broker.registerProperty(String("Balance ") + broker.getCurrencyComm(), 0, BotProtocol::SessionProperty::none, broker.getCurrencyComm());
-  broker.registerProperty(String("Available Balance ") + broker.getCurrencyBase(), 0, BotProtocol::SessionProperty::readOnly, broker.getCurrencyBase());
-  broker.registerProperty(String("Available Balance ") + broker.getCurrencyComm(), 0, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
-  broker.registerProperty("Min Bet", DEFAULT_MIN_BET, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
+  broker.registerProperty(String("Balance ") + broker.getCurrencyBase(), 0, meguco_user_session_property_none, broker.getCurrencyBase());
+  broker.registerProperty(String("Balance ") + broker.getCurrencyComm(), 0, meguco_user_session_property_none, broker.getCurrencyComm());
+  broker.registerProperty(String("Available Balance ") + broker.getCurrencyBase(), 0, meguco_user_session_property_read_only, broker.getCurrencyBase());
+  broker.registerProperty(String("Available Balance ") + broker.getCurrencyComm(), 0, meguco_user_session_property_read_only, broker.getCurrencyComm());
+  broker.registerProperty("Min Bet", DEFAULT_MIN_BET, meguco_user_session_property_none, broker.getCurrencyBase());
 
   balanceBase = broker.getProperty(String("Balance ") + broker.getCurrencyBase(), 0);
   balanceComm = broker.getProperty(String("Balance ") + broker.getCurrencyComm(), 0);
@@ -45,36 +45,36 @@ void_t BetBot::Session::updateAvailableBalance()
 {
   availableBalanceBase = balanceBase;
   availableBalanceComm = balanceComm;
-  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionAsset& asset = *i;
+    const meguco_user_session_asset_entity& asset = *i;
     // todo: allow reinvesting assets!
-    availableBalanceComm -= asset.balanceComm;
-    availableBalanceBase -= asset.balanceBase;
+    availableBalanceComm -= asset.balance_comm;
+    availableBalanceBase -= asset.balance_base;
   }
-  const HashMap<uint32_t, BotProtocol::Order>& orders = broker.getOrders();
-  for(HashMap<uint32_t, BotProtocol::Order>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
+  const HashMap<uint64_t, meguco_user_broker_order_entity>& orders = broker.getOrders();
+  for(HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator i = orders.begin(), end = orders.end(); i != end; ++i)
   {
-    const BotProtocol::Order& order = *i;
-    if(order.entityId == buyInOrderId || order.entityId == sellInOrderId)
+    const meguco_user_broker_order_entity& order = *i;
+    if(order.entity.id == buyInOrderId || order.entity.id == sellInOrderId)
     {
-      if(order.type == BotProtocol::Order::buy)
+      if(order.type == meguco_user_broker_order_buy)
         availableBalanceBase -= order.total;
       else
         availableBalanceComm -= order.amount;
     }
   }
-  broker.setProperty(String("Available Balance ") + broker.getCurrencyBase(), availableBalanceBase, BotProtocol::SessionProperty::readOnly, broker.getCurrencyBase());
-  broker.setProperty(String("Available Balance ") + broker.getCurrencyComm(), availableBalanceComm, BotProtocol::SessionProperty::readOnly, broker.getCurrencyComm());
+  broker.setProperty(String("Available Balance ") + broker.getCurrencyBase(), availableBalanceBase);
+  broker.setProperty(String("Available Balance ") + broker.getCurrencyComm(), availableBalanceComm);
 }
 
 void_t BetBot::Session::applyBalanceUpdate(double base, double comm)
 {
   balanceBase += base;
   balanceComm += comm;
-  broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase, BotProtocol::SessionProperty::none, broker.getCurrencyBase());
-  broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, BotProtocol::SessionProperty::none, broker.getCurrencyComm());
+  broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase);
+  broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm);
   updateAvailableBalance();
 }
 
@@ -106,7 +106,7 @@ double BetBot::Session::getSellInComm(double currentPrice, const TradeHandler::V
   return comm;
 }
 
-void BetBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
+void BetBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tradeAge)
 {
   tradeHandler.add(trade, tradeAge);
   if(!tradeHandler.isComplete())
@@ -119,7 +119,7 @@ void BetBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t 
   checkSellIn(trade, values);
 }
 
-void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
+void BetBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction)
 {
   applyBalanceUpdate(-transaction.total, transaction.amount);
 
@@ -132,78 +132,76 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
       -transaction.total, (const char_t*)broker.getCurrencyBase());
     broker.warning(message);
 
-    BotProtocol::SessionAsset sessionAsset;
-    sessionAsset.entityId = 0;
-    sessionAsset.entityType = BotProtocol::sessionAsset;
-    sessionAsset.type = BotProtocol::SessionAsset::buy;
-    sessionAsset.state = BotProtocol::SessionAsset::waitSell;
-    sessionAsset.date = transaction.date;
+    meguco_user_session_asset_entity sessionAsset;
+    sessionAsset.type = meguco_user_session_asset_buy;
+    sessionAsset.state = meguco_user_session_asset_wait_sell;
+    sessionAsset.time = transaction.entity.time;
     sessionAsset.price = transaction.price;
-    sessionAsset.investComm = 0.;
-    sessionAsset.investBase = transaction.total;
-    sessionAsset.balanceComm = transaction.amount;
-    sessionAsset.balanceBase = 0.;
+    sessionAsset.invest_comm = 0.;
+    sessionAsset.invest_base = transaction.total;
+    sessionAsset.balance_comm = transaction.amount;
+    sessionAsset.balance_base = 0.;
     double fee = 0.005;
-    sessionAsset.profitablePrice = transaction.price * (1. + fee * 2.);
+    sessionAsset.profitable_price = transaction.price * (1. + fee * 2.);
     double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
-    sessionAsset.flipPrice = transaction.price * (1. + fee * (1. + sellProfitGain) * 2.);
-    sessionAsset.orderId = 0;
+    sessionAsset.flip_price = transaction.price * (1. + fee * (1. + sellProfitGain) * 2.);
+    sessionAsset.order_id = 0;
     broker.createAsset(sessionAsset);
 
     buyInOrderId = 0;
     resetBetOrders();
-    lastBuyInTime = transaction.date;
+    lastBuyInTime = broker.getTime();
     updateAvailableBalance();
   }
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+    const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+    for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionAsset& asset = *i;
-      if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
+      const meguco_user_session_asset_entity& asset = *i;
+      if(asset.state == meguco_user_session_asset_buying && asset.order_id == orderId)
       {
-        double gainBase = asset.balanceBase - transaction.total;
-        double gainComm = transaction.amount - asset.investComm + asset.balanceComm;
+        double gainBase = asset.balance_base - transaction.total;
+        double gainComm = transaction.amount - asset.invest_comm + asset.balance_comm;
 
-        Map<double, const BotProtocol::SessionAsset*> sortedSellAssets;
-        Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
+        Map<double, const meguco_user_session_asset_entity*> sortedSellAssets;
+        Map<double, const meguco_user_session_asset_entity*> sortedBuyAssets;
         if(gainBase > 0.)
-          for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+          for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
-            const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
-              sortedSellAssets.insert(asset.profitablePrice, &asset);
+            const meguco_user_session_asset_entity& asset = *i;
+            if(asset.state == meguco_user_session_asset_wait_sell && asset.profitable_price > transaction.price)
+              sortedSellAssets.insert(asset.profitable_price, &asset);
           }
         if(gainComm > 0.)
-          for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+          for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
-            const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
-              sortedBuyAssets.insert(asset.profitablePrice, &asset);
+            const meguco_user_session_asset_entity& asset = *i;
+            if(asset.state == meguco_user_session_asset_wait_buy && asset.profitable_price < transaction.price)
+              sortedBuyAssets.insert(asset.profitable_price, &asset);
           }
 
         String message;
         message.printf("Sold asset: %.08f %s @ %.02f => %.02f %s @ %.02f + %.08f %s => %.08f %s + %.02f %s (Balance: %+.08f %s, %+.02f %s)",
-          asset.investComm, (const char_t*)broker.getCurrencyComm(), asset.price,
-          asset.balanceBase, (const char_t*)broker.getCurrencyBase(), transaction.price, asset.balanceComm, (const char_t*)broker.getCurrencyComm(),
-          transaction.amount + asset.balanceComm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase(),
+          asset.invest_comm, (const char_t*)broker.getCurrencyComm(), asset.price,
+          asset.balance_base, (const char_t*)broker.getCurrencyBase(), transaction.price, asset.balance_comm, (const char_t*)broker.getCurrencyComm(),
+          transaction.amount + asset.balance_comm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase(),
           gainComm, (const char_t*)broker.getCurrencyComm(), gainBase, (const char_t*)broker.getCurrencyBase());
         broker.warning(message);
 
         if(!sortedSellAssets.isEmpty())
         {
-          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
+          meguco_user_session_asset_entity lowestSellAsset = *sortedSellAssets.front();
 
           String message;
           message.printf("Updated asset:  %.02f %s @ %.02f => %.08f %s + %.02f %s => %.08f %s + %.02f %s (Balance: %+.02f %s)",
-            lowestSellAsset.investBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
-            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase, (const char_t*)broker.getCurrencyBase(),
-            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase + gainBase, (const char_t*)broker.getCurrencyBase(),
+            lowestSellAsset.invest_base, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
+            lowestSellAsset.balance_comm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balance_base, (const char_t*)broker.getCurrencyBase(),
+            lowestSellAsset.balance_comm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balance_base + gainBase, (const char_t*)broker.getCurrencyBase(),
             -gainBase, (const char_t*)broker.getCurrencyBase());
           broker.warning(message);
 
-          lowestSellAsset.balanceBase += gainBase;
+          lowestSellAsset.balance_base += gainBase;
 
           double fee = 0.005;
           // lowestSellAsset.balanceBase + lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice / (1. + fee) = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee);
@@ -211,25 +209,25 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee) - lowestSellAsset.balanceBase) * (1. + fee);
           // approx:
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
-          lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+          lowestSellAsset.profitable_price = (lowestSellAsset.balance_comm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balance_base * (1. + fee)) / lowestSellAsset.balance_comm;
 
           broker.updateAsset(lowestSellAsset);
         }
         if(!sortedBuyAssets.isEmpty())
         {
-          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
+          meguco_user_session_asset_entity highestBuyAsset = *sortedBuyAssets.back();
 
           gainComm *= 0.5;
 
           String message;
           message.printf("Updated asset:  %.08f %s @ %.02f => %.02f %s + %.08f %s => %.02f %s + %.08f %s (Balance: %+.08f %s)",
-            highestBuyAsset.investComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price,
-            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm, (const char_t*)broker.getCurrencyComm(),
-            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm + gainComm, (const char_t*)broker.getCurrencyComm(),
+            highestBuyAsset.invest_comm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price,
+            highestBuyAsset.balance_base, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balance_comm, (const char_t*)broker.getCurrencyComm(),
+            highestBuyAsset.balance_base, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balance_comm + gainComm, (const char_t*)broker.getCurrencyComm(),
             -gainComm, (const char_t*)broker.getCurrencyComm());
           broker.warning(message);
 
-          highestBuyAsset.balanceComm += gainComm;
+          highestBuyAsset.balance_comm += gainComm;
 
           double fee = 0.005;
           // highestBuyAsset.balanceComm + highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice / (1. + fee) = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + fee);
@@ -238,13 +236,13 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
           // approx:
           // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee);
           // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
-          highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+          highestBuyAsset.profitable_price = highestBuyAsset.balance_base / (highestBuyAsset.balance_base / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balance_comm * (1. + fee));
 
           broker.updateAsset(highestBuyAsset);
         }
 
-        broker.removeAsset(asset.entityId);
-        lastAssetBuyTime = transaction.date;
+        broker.removeAsset(asset.entity.id);
+        lastAssetBuyTime = broker.getTime();
         updateAvailableBalance();
         break;
       }
@@ -252,7 +250,7 @@ void BetBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction
   }
 }
 
-void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction)
+void BetBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction)
 {
   applyBalanceUpdate(transaction.total, -transaction.amount);
 
@@ -265,78 +263,76 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
       -transaction.amount, (const char_t*)broker.getCurrencyComm());
     broker.warning(message);
 
-    BotProtocol::SessionAsset sessionAsset;
-    sessionAsset.entityId = 0;
-    sessionAsset.entityType = BotProtocol::sessionAsset;
-    sessionAsset.type = BotProtocol::SessionAsset::sell;
-    sessionAsset.state = BotProtocol::SessionAsset::waitBuy;
-    sessionAsset.date = transaction.date;
+    meguco_user_session_asset_entity sessionAsset;
+    sessionAsset.type = meguco_user_session_asset_sell;
+    sessionAsset.state = meguco_user_session_asset_wait_buy;
+    sessionAsset.time = transaction.entity.time;
     sessionAsset.price = transaction.price;
-    sessionAsset.investComm = transaction.amount;
-    sessionAsset.investBase = 0.;
-    sessionAsset.balanceComm = 0.;
-    sessionAsset.balanceBase = transaction.total;
+    sessionAsset.invest_comm = transaction.amount;
+    sessionAsset.invest_base = 0.;
+    sessionAsset.balance_comm = 0.;
+    sessionAsset.balance_base = transaction.total;
     double fee = 0.005;
-    sessionAsset.profitablePrice = transaction.price / (1. + fee * 2.);
+    sessionAsset.profitable_price = transaction.price / (1. + fee * 2.);
     double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
-    sessionAsset.flipPrice = transaction.price / (1. + fee * (1. + buyProfitGain) * 2.);
-    sessionAsset.orderId = 0;
+    sessionAsset.flip_price = transaction.price / (1. + fee * (1. + buyProfitGain) * 2.);
+    sessionAsset.order_id = 0;
     broker.createAsset(sessionAsset);
 
     sellInOrderId = 0;
     resetBetOrders();
-    lastSellInTime = transaction.date;
+    lastSellInTime = broker.getTime();
     updateAvailableBalance();
   }
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+    const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+    for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionAsset& asset = *i;
-      if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
+      const meguco_user_session_asset_entity& asset = *i;
+      if(asset.state == meguco_user_session_asset_selling && asset.order_id == orderId)
       {
-        double gainBase = transaction.total - asset.investBase + asset.balanceBase;
-        double gainComm = asset.balanceComm - transaction.amount;
+        double gainBase = transaction.total - asset.invest_base + asset.balance_base;
+        double gainComm = asset.balance_comm - transaction.amount;
 
-        Map<double, const BotProtocol::SessionAsset*> sortedBuyAssets;
-        Map<double, const BotProtocol::SessionAsset*> sortedSellAssets;
+        Map<double, const meguco_user_session_asset_entity*> sortedBuyAssets;
+        Map<double, const meguco_user_session_asset_entity*> sortedSellAssets;
         if(gainComm > 0.)
-          for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+          for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
-            const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitBuy && asset.profitablePrice < transaction.price)
-              sortedBuyAssets.insert(asset.profitablePrice, &asset);
+            const meguco_user_session_asset_entity& asset = *i;
+            if(asset.state == meguco_user_session_asset_wait_buy && asset.profitable_price < transaction.price)
+              sortedBuyAssets.insert(asset.profitable_price, &asset);
           }
         if(gainBase > 0.)
-          for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+          for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
           {
-            const BotProtocol::SessionAsset& asset = *i;
-            if(asset.state == BotProtocol::SessionAsset::waitSell && asset.profitablePrice > transaction.price)
-              sortedSellAssets.insert(asset.profitablePrice, &asset);
+            const meguco_user_session_asset_entity& asset = *i;
+            if(asset.state == meguco_user_session_asset_wait_sell && asset.profitable_price > transaction.price)
+              sortedSellAssets.insert(asset.profitable_price, &asset);
           }
 
         String message;
         message.printf("Sold asset: %.02f %s @ %.02f => %.08f %s @ %.02f + %.02f %s => %.02f %s + %.08f %s (Balance: %+.02f %s, %+.08f %s)",
-          asset.investBase, (const char_t*)broker.getCurrencyBase(), asset.price,
-          asset.balanceComm, (const char_t*)broker.getCurrencyComm(), transaction.price, asset.balanceBase, (const char_t*)broker.getCurrencyBase(),
-          transaction.total + asset.balanceBase, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm(),
+          asset.invest_base, (const char_t*)broker.getCurrencyBase(), asset.price,
+          asset.balance_comm, (const char_t*)broker.getCurrencyComm(), transaction.price, asset.balance_base, (const char_t*)broker.getCurrencyBase(),
+          transaction.total + asset.balance_base, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm(),
           gainBase, (const char_t*)broker.getCurrencyBase(), gainComm, (const char_t*)broker.getCurrencyComm());
         broker.warning(message);
 
         if(!sortedBuyAssets.isEmpty())
         {
-          BotProtocol::SessionAsset highestBuyAsset = *sortedBuyAssets.back();
+          meguco_user_session_asset_entity highestBuyAsset = *sortedBuyAssets.back();
 
           String message;
           message.printf("Updated asset:  %.08f %s @ %.02f => %.02f %s + %.08f %s => %.02f %s + %.08f %s (Balance: %+.08f %s)",
-            highestBuyAsset.investComm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price,
-            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm, (const char_t*)broker.getCurrencyComm(),
-            highestBuyAsset.balanceBase, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balanceComm + gainComm, (const char_t*)broker.getCurrencyComm(),
+            highestBuyAsset.invest_comm, (const char_t*)broker.getCurrencyComm(), highestBuyAsset.price,
+            highestBuyAsset.balance_base, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balance_comm, (const char_t*)broker.getCurrencyComm(),
+            highestBuyAsset.balance_base, (const char_t*)broker.getCurrencyBase(), highestBuyAsset.balance_comm + gainComm, (const char_t*)broker.getCurrencyComm(),
             -gainComm, (const char_t*)broker.getCurrencyComm());
           broker.warning(message);
 
-          highestBuyAsset.balanceComm += gainComm;
+          highestBuyAsset.balance_comm += gainComm;
 
           double fee = 0.005;
           // highestBuyAsset.balanceComm + highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice / (1. + fee) = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + fee);
@@ -345,25 +341,25 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           // approx:
           // highestBuyAsset.balanceBase / highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee);
           // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
-          highestBuyAsset.profitablePrice = highestBuyAsset.balanceBase / (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee));
+          highestBuyAsset.profitable_price = highestBuyAsset.balance_base / (highestBuyAsset.balance_base / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balance_comm * (1. + fee));
 
           broker.updateAsset(highestBuyAsset);
         }
         if(!sortedSellAssets.isEmpty())
         {
-          BotProtocol::SessionAsset lowestSellAsset = *sortedSellAssets.front();
+          meguco_user_session_asset_entity lowestSellAsset = *sortedSellAssets.front();
 
           gainBase *= 0.5;
 
           String message;
           message.printf("Updated asset:  %.02f %s @ %.02f => %.08f %s + %.02f %s => %.08f %s + %.02f %s (Balance: %+.02f %s)",
-            lowestSellAsset.investBase, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
-            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase, (const char_t*)broker.getCurrencyBase(),
-            lowestSellAsset.balanceComm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balanceBase + gainBase, (const char_t*)broker.getCurrencyBase(),
+            lowestSellAsset.invest_base, (const char_t*)broker.getCurrencyBase(), lowestSellAsset.price,
+            lowestSellAsset.balance_comm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balance_base, (const char_t*)broker.getCurrencyBase(),
+            lowestSellAsset.balance_comm, (const char_t*)broker.getCurrencyComm(), lowestSellAsset.balance_base + gainBase, (const char_t*)broker.getCurrencyBase(),
             -gainBase, (const char_t*)broker.getCurrencyBase());
           broker.warning(message);
 
-          lowestSellAsset.balanceBase += gainBase;
+          lowestSellAsset.balance_base += gainBase;
 
           double fee = 0.005;
           // lowestSellAsset.balanceBase + lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice / (1. + fee) = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee);
@@ -371,13 +367,13 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + fee) - lowestSellAsset.balanceBase) * (1. + fee);
           // approx:
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
-          lowestSellAsset.profitablePrice = (lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee)) / lowestSellAsset.balanceComm;
+          lowestSellAsset.profitable_price = (lowestSellAsset.balance_comm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balance_base * (1. + fee)) / lowestSellAsset.balance_comm;
 
           broker.updateAsset(lowestSellAsset);
         }
 
-        broker.removeAsset(asset.entityId);
-        lastAssetSellTime = transaction.date;
+        broker.removeAsset(asset.entity.id);
+        lastAssetSellTime = broker.getTime();
         updateAvailableBalance();
         break;
       }
@@ -385,21 +381,21 @@ void BetBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transactio
   }
 }
 
-void_t BetBot::Session::handleBuyTimeout(uint32_t orderId)
+void_t BetBot::Session::handleBuyTimeout(uint64_t orderId)
 {
   if(orderId == buyInOrderId)
     buyInOrderId = 0;
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+    const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+    for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionAsset& asset = *i;
-      if(asset.state == BotProtocol::SessionAsset::buying && asset.orderId == orderId)
+      const meguco_user_session_asset_entity& asset = *i;
+      if(asset.state == meguco_user_session_asset_buying && asset.order_id == orderId)
       {
-        BotProtocol::SessionAsset updatedAsset = asset;
-        updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
-        updatedAsset.orderId = 0;
+        meguco_user_session_asset_entity updatedAsset = asset;
+        updatedAsset.state = meguco_user_session_asset_wait_buy;
+        updatedAsset.order_id = 0;
         broker.updateAsset(updatedAsset);
         break;
       }
@@ -408,21 +404,21 @@ void_t BetBot::Session::handleBuyTimeout(uint32_t orderId)
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleSellTimeout(uint32_t orderId)
+void_t BetBot::Session::handleSellTimeout(uint64_t orderId)
 {
   if(orderId == sellInOrderId)
     sellInOrderId = 0;
   else
   {
-    const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-    for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+    const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+    for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
     {
-      const BotProtocol::SessionAsset& asset = *i;
-      if(asset.state == BotProtocol::SessionAsset::selling && asset.orderId == orderId)
+      const meguco_user_session_asset_entity& asset = *i;
+      if(asset.state == meguco_user_session_asset_selling && asset.order_id == orderId)
       {
-        BotProtocol::SessionAsset updatedAsset = asset;
-        updatedAsset.state = BotProtocol::SessionAsset::waitSell;
-        updatedAsset.orderId = 0;
+        meguco_user_session_asset_entity updatedAsset = asset;
+        updatedAsset.state = meguco_user_session_asset_wait_sell;
+        updatedAsset.order_id = 0;
         broker.updateAsset(updatedAsset);
         break;
       }
@@ -432,10 +428,10 @@ void_t BetBot::Session::handleSellTimeout(uint32_t orderId)
 }
 
 #include <cmath>
-void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values)
+void BetBot::Session::checkBuyIn(const meguco_trade_entity& trade, const TradeHandler::Values& values)
 {
-  timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
-  if((timestamp_t)trade.time - lastBuyInTime < buyCooldown * 1000)
+  int64_t buyCooldown = (int64_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
+  if((int64_t)trade.entity.time - lastBuyInTime < buyCooldown * 1000)
     return; // do not buy too often
 
   if(buyInOrderId == 0)
@@ -448,13 +444,13 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHa
       return;
     buyInIncline = values.regressions[TradeHandler::regression6h].incline;
     buyInStartPrice = trade.price;
-    maxBuyInPrice = buyInStartPrice + buyInIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
+    maxBuyInPrice = buyInStartPrice + buyInIncline * (int64_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
     if(!std::isnormal(maxBuyInPrice))
       return;
     buyInBase = getBuyInBase(trade.price, values);
     if(buyInBase == 0.)
       return;
-    timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
+    int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
     if(!broker.buy(maxBuyInPrice, 0., buyInBase, buyTimeout * 1000, &buyInOrderId, 0))
       return;
     updateAvailableBalance();
@@ -464,7 +460,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHa
     double newBuyIncline = values.regressions[TradeHandler::regression6h].incline;
     if(newBuyIncline < buyInIncline)
     {
-      double newMaxBuyPrice = buyInStartPrice + newBuyIncline * (timestamp_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
+      double newMaxBuyPrice = buyInStartPrice + newBuyIncline * (int64_t)broker.getProperty("Buy Predict Time", DEFAULT_BUY_PREDICT_TIME);
       if(!std::isnormal(newMaxBuyPrice))
         return;
       if(newMaxBuyPrice < maxBuyInPrice * (1. - 0.00002))
@@ -481,7 +477,7 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHa
         maxBuyInPrice = newMaxBuyPrice;
         buyInIncline = newBuyIncline;
         buyInBase = newBuyInBase;
-        timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
+        int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
         if(!broker.buy(maxBuyInPrice, 0., newBuyInBase, buyTimeout * 1000, &buyInOrderId, 0))
           return;
         updateAvailableBalance();
@@ -492,13 +488,13 @@ void BetBot::Session::checkBuyIn(const DataProtocol::Trade& trade, const TradeHa
   if(trade.price > maxBuyInPrice)
     return;
 
-  broker.addMarker(BotProtocol::Marker::goodBuy);
+  broker.addMarker(meguco_user_session_marker_good_buy);
 }
 
-void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values)
+void BetBot::Session::checkSellIn(const meguco_trade_entity& trade, const TradeHandler::Values& values)
 {
-  timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
-  if((timestamp_t)trade.time - lastSellInTime < sellCooldown * 1000)
+  int64_t sellCooldown = (int64_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
+  if((int64_t)trade.entity.time - lastSellInTime < sellCooldown * 1000)
     return; // do not sell too often
 
   if(sellInOrderId == 0)
@@ -511,13 +507,13 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeH
       return;
     sellInIncline = values.regressions[TradeHandler::regression6h].incline;
     sellInStartPrice = trade.price;
-    minSellInPrice = sellInStartPrice + sellInIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
+    minSellInPrice = sellInStartPrice + sellInIncline * (int64_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
     if(!std::isnormal(minSellInPrice))
       return;
     sellInComm = getSellInComm(trade.price, values);
     if(sellInComm == 0.)
       return;
-    timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+    int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
     if(!broker.sell(minSellInPrice, sellInComm, 0., sellTimeout * 1000, &sellInOrderId, 0))
       return;
     updateAvailableBalance();
@@ -527,7 +523,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeH
     double newSellIncline = values.regressions[TradeHandler::regression6h].incline;
     if(newSellIncline > sellInIncline)
     {
-      double newMinSellPrice = sellInStartPrice + newSellIncline * (timestamp_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
+      double newMinSellPrice = sellInStartPrice + newSellIncline * (int64_t)broker.getProperty("Sell Predict Time", DEFAULT_SELL_PREDICT_TIME);
       if(!std::isnormal(newMinSellPrice))
         return;
       if(newMinSellPrice > minSellInPrice * (1. + 0.00002))
@@ -544,7 +540,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeH
         minSellInPrice = newMinSellPrice;
         sellInIncline = newSellIncline;
         sellInComm = newSellInComm;
-        timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+        int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
         if(!broker.sell(minSellInPrice, newSellInComm, 0., sellTimeout * 1000, &sellInOrderId, 0))
           return;
         updateAvailableBalance();
@@ -555,7 +551,7 @@ void BetBot::Session::checkSellIn(const DataProtocol::Trade& trade, const TradeH
   if(trade.price < minSellInPrice)
     return;
 
-  broker.addMarker(BotProtocol::Marker::goodSell);
+  broker.addMarker(meguco_user_session_marker_good_sell);
 }
 
 void_t BetBot::Session::resetBetOrders()
@@ -568,47 +564,47 @@ void_t BetBot::Session::resetBetOrders()
       sellInOrderId = 0;
 }
 
-void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
+void BetBot::Session::checkAssetBuy(const meguco_trade_entity& trade)
 {
-  timestamp_t buyCooldown = (timestamp_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
-  if((timestamp_t)trade.time - lastAssetBuyTime < buyCooldown * 1000)
+  int64_t buyCooldown = (int64_t)broker.getProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
+  if((int64_t)trade.entity.time - lastAssetBuyTime < buyCooldown * 1000)
     return; // do not buy too often
 
   double tradePrice = trade.price;
-  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionAsset& asset = *i;
-    if(asset.state == BotProtocol::SessionAsset::waitBuy && tradePrice <= asset.flipPrice)
+    const meguco_user_session_asset_entity& asset = *i;
+    if(asset.state == meguco_user_session_asset_wait_buy && tradePrice <= asset.flip_price)
     {
-      BotProtocol::SessionAsset updatedAsset = asset;
-      updatedAsset.state = BotProtocol::SessionAsset::buying;
+      meguco_user_session_asset_entity updatedAsset = asset;
+      updatedAsset.state = meguco_user_session_asset_buying;
       broker.updateAsset(updatedAsset);
 
       bool waitingForSell = false;
-      for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+      for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
       {
-        const BotProtocol::SessionAsset& asset = *i;
-        if(asset.state == BotProtocol::SessionAsset::waitSell)
+        const meguco_user_session_asset_entity& asset = *i;
+        if(asset.state == meguco_user_session_asset_wait_sell)
         {
           waitingForSell = true;
           break;
         }
       }
       double buyAmountComm = 0.;
-      double buyAmountBase = asset.balanceBase;
-      if(waitingForSell && asset.investComm > 0.)
+      double buyAmountBase = asset.balance_base;
+      if(waitingForSell && asset.invest_comm > 0.)
       {
-        buyAmountComm = asset.investComm - asset.balanceComm;
+        buyAmountComm = asset.invest_comm - asset.balance_comm;
         buyAmountBase = 0.;
       }
 
-      timestamp_t buyTimeout = (timestamp_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
-      if(broker.buy(tradePrice, buyAmountComm, buyAmountBase, buyTimeout * 1000, &updatedAsset.orderId, 0))
+      int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
+      if(broker.buy(tradePrice, buyAmountComm, buyAmountBase, buyTimeout * 1000, &updatedAsset.order_id, 0))
         broker.updateAsset(updatedAsset);
       else
       {
-        updatedAsset.state = BotProtocol::SessionAsset::waitBuy;
+        updatedAsset.state = meguco_user_session_asset_wait_buy;
         broker.updateAsset(updatedAsset);
       }
       break;
@@ -616,47 +612,47 @@ void BetBot::Session::checkAssetBuy(const DataProtocol::Trade& trade)
   }
 }
 
-void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
+void BetBot::Session::checkAssetSell(const meguco_trade_entity& trade)
 {
-  timestamp_t sellCooldown = (timestamp_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
-  if((timestamp_t)trade.time - lastAssetSellTime < sellCooldown * 1000)
+  int64_t sellCooldown = (int64_t)broker.getProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
+  if((int64_t)trade.entity.time - lastAssetSellTime < sellCooldown * 1000)
     return; // do not sell too often
 
   double tradePrice = trade.price;
-  const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
-  for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const BotProtocol::SessionAsset& asset = *i;
-    if(asset.state == BotProtocol::SessionAsset::waitSell && tradePrice >= asset.flipPrice)
+    const meguco_user_session_asset_entity& asset = *i;
+    if(asset.state == meguco_user_session_asset_wait_sell && tradePrice >= asset.flip_price)
     {
-      BotProtocol::SessionAsset updatedAsset = asset;
-      updatedAsset.state = BotProtocol::SessionAsset::selling;
+      meguco_user_session_asset_entity updatedAsset = asset;
+      updatedAsset.state = meguco_user_session_asset_selling;
       broker.updateAsset(updatedAsset);
 
       bool waitingForBuy = false;
-      for(HashMap<uint32_t, BotProtocol::SessionAsset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+      for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
       {
-        const BotProtocol::SessionAsset& asset = *i;
-        if(asset.state == BotProtocol::SessionAsset::waitBuy)
+        const meguco_user_session_asset_entity& asset = *i;
+        if(asset.state == meguco_user_session_asset_wait_buy)
         {
           waitingForBuy = true;
           break;
         }
       }
-      double buyAmountComm = asset.balanceComm;
+      double buyAmountComm = asset.balance_comm;
       double buyAmountBase = 0.;
-      if(waitingForBuy && asset.investBase > 0.)
+      if(waitingForBuy && asset.invest_base > 0.)
       {
         buyAmountComm = 0.;
-        buyAmountBase = asset.investBase - asset.balanceBase;
+        buyAmountBase = asset.invest_base - asset.balance_base;
       }
 
-      timestamp_t sellTimeout = (timestamp_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
-      if(broker.sell(tradePrice, buyAmountComm, buyAmountBase, sellTimeout * 1000, &updatedAsset.orderId, 0))
+      int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+      if(broker.sell(tradePrice, buyAmountComm, buyAmountBase, sellTimeout * 1000, &updatedAsset.order_id, 0))
         broker.updateAsset(updatedAsset);
       else
       {
-        updatedAsset.state = BotProtocol::SessionAsset::waitSell;
+        updatedAsset.state = meguco_user_session_asset_wait_sell;
         broker.updateAsset(updatedAsset);
       }
       break;
@@ -664,7 +660,7 @@ void BetBot::Session::checkAssetSell(const DataProtocol::Trade& trade)
   }
 }
 
-void_t BetBot::Session::handlePropertyUpdate(const BotProtocol::SessionProperty& property)
+void_t BetBot::Session::handlePropertyUpdate(const meguco_user_session_property_entity& property)
 {
   balanceBase = broker.getProperty(String("Balance ") + broker.getCurrencyBase(), 0);
   balanceComm = broker.getProperty(String("Balance ") + broker.getCurrencyComm(), 0);
@@ -672,12 +668,12 @@ void_t BetBot::Session::handlePropertyUpdate(const BotProtocol::SessionProperty&
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleAssetUpdate(const BotProtocol::SessionAsset& asset)
+void_t BetBot::Session::handleAssetUpdate(const meguco_user_session_asset_entity& asset)
 {
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleAssetRemoval(const BotProtocol::SessionAsset& asset)
+void_t BetBot::Session::handleAssetRemoval(const meguco_user_session_asset_entity& asset)
 {
   updateAvailableBalance();
 }

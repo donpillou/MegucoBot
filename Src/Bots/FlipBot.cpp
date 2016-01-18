@@ -26,7 +26,6 @@ FlipBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.),
   broker.registerProperty(String("Balance ") + broker.getCurrencyComm(), 0, meguco_user_session_property_read_only, broker.getCurrencyComm());
 
   updateBalance();
-
 }
 
 void_t FlipBot::Session::updateBalance()
