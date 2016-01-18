@@ -16,7 +16,7 @@ private:
   private:
     Broker& broker;
 
-    virtual ~Session() {}
+    //virtual ~Session() {}
 
     void_t updateBalance();
 

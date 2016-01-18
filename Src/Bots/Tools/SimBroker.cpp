@@ -289,41 +289,15 @@ String SimBroker::getProperty(const String& name, const String& defaultValue) co
 
 void SimBroker::registerProperty(const String& name, double value, uint32_t flags, const String& unit)
 {
-  HashMap<String, Property*>::Iterator it = propertiesByName.find(name);
-  if(it == propertiesByName.end())
-    setProperty(name, value, flags, unit);
-  else
-  {
-    Property& property = **it;
-    if(property.property.flags = flags || property.unit != unit)
-      setProperty(name, value, flags, unit);
-  }
+  registerProperty(name, String::fromDouble(value), meguco_user_session_property_number, flags, unit);
 }
 
 void SimBroker::registerProperty(const String& name, const String& value, uint32_t flags, const String& unit)
 {
-  HashMap<String, Property*>::Iterator it = propertiesByName.find(name);
-  if(it == propertiesByName.end())
-    setProperty(name, value, flags, unit);
-  else
-  {
-    Property& property = **it;
-    if(property.property.flags = flags || property.unit != unit)
-      setProperty(name, value, flags, unit);
-  }
+  registerProperty(name, value, meguco_user_session_property_string, flags, unit);
 }
 
-void SimBroker::setProperty(const String& name, double value, uint32_t flags, const String& unit)
-{
-  setProperty(name, String::fromDouble(value), flags, unit);
-}
-
-void SimBroker::setProperty(const String& name, const String& value, uint32_t flags, const String& unit)
-{
-  setProperty(name, String::fromDouble(value), flags, unit);
-}
-
-void SimBroker::setProperty(const String& name, const String& value, meguco_user_session_property_type type, uint32_t flags, const String& unit)
+void SimBroker::registerProperty(const String& name, const String& value, meguco_user_session_property_type type, uint32_t flags, const String& unit)
 {
   HashMap<String, Property*>::Iterator it = propertiesByName.find(name);
   if(it == propertiesByName.end())
@@ -343,23 +317,29 @@ void SimBroker::setProperty(const String& name, const String& value, meguco_user
   else
   {
     Property& property = **it;
-    property.property.flags = flags;
-    property.property.type = type;
-    main.updateSessionProperty(property.property, name, value, unit);
-    property.unit = unit;
-    property.value = value;
+    if(flags != property.property.flags || type != property.property.type || property.unit != unit)
+    { // update property attributes, but keep value
+      property.property.flags = flags;
+      property.property.type = type;
+      main.updateSessionProperty(property.property, name, property.value, unit);
+      property.unit = unit;
+    }
   }
 }
 
-void SimBroker::removeProperty(const String& name)
+void SimBroker::setProperty(const String& name, double value)
+{
+  setProperty(name, String::fromDouble(value));
+}
+
+void SimBroker::setProperty(const String& name, const String& value)
 {
   HashMap<String, Property*>::Iterator it = propertiesByName.find(name);
   if(it == propertiesByName.end())
     return;
-  uint64_t propertyId = (*it)->property.entity.id;
-  main.removeSessionProperty(propertyId);
-  propertiesByName.remove(it);
-  properties.remove(propertyId);
+  Property& property = **it;
+  main.updateSessionProperty(property.property, name, value, property.unit);
+  property.value = value;
 }
 
 void_t SimBroker::addMarker(meguco_user_session_marker_type markerType)

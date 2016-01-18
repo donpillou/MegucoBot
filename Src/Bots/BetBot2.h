@@ -17,20 +17,20 @@ private:
   private:
     struct ValueSample
     {
-      timestamp_t time;
+      int64_t time;
       double value;
     };
 
   private:
     Broker& broker;
-    uint32_t buyInOrderId;
-    uint32_t sellInOrderId;;
+    uint64_t buyInOrderId;
+    uint64_t sellInOrderId;;
     double buyInPrice;
     double sellInPrice;
-    timestamp_t lastBuyInTime;
-    timestamp_t lastSellInTime;
-    timestamp_t lastAssetBuyTime;
-    timestamp_t lastAssetSellTime;
+    int64_t lastBuyInTime;
+    int64_t lastSellInTime;
+    int64_t lastAssetBuyTime;
+    int64_t lastAssetSellTime;
     double balanceBase;
     double balanceComm;
     double availableBalanceBase;
@@ -49,13 +49,13 @@ private:
     State buyInState;
     State sellInState;
 
-    virtual ~Session() {}
+    //virtual ~Session() {}
 
-    void_t checkBuyIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values);
-    void_t checkSellIn(const DataProtocol::Trade& trade, const TradeHandler::Values& values);
+    void_t checkBuyIn(const meguco_trade_entity& trade, const TradeHandler::Values& values);
+    void_t checkSellIn(const meguco_trade_entity& trade, const TradeHandler::Values& values);
 
-    void_t checkAssetBuy(const DataProtocol::Trade& trade);
-    void_t checkAssetSell(const DataProtocol::Trade& trade);
+    void_t checkAssetBuy(const meguco_trade_entity& trade);
+    void_t checkAssetSell(const meguco_trade_entity& trade);
 
     void_t resetBetOrders();
     void_t updateAvailableBalance();
@@ -65,9 +65,9 @@ private:
     double getSellInComm(double currentPrice, const TradeHandler::Values& values) const;
 
   private: // Bot::Session
-    virtual void_t handleTrade(const meguco_trade_entity& trade, timestamp_t tradeAge);
-    virtual void_t handleBuy(uint64_t orderId, const meguco_user_market_transaction_entity& transaction);
-    virtual void_t handleSell(uint64_t orderId, const meguco_user_market_transaction_entity& transaction);
+    virtual void_t handleTrade(const meguco_trade_entity& trade, int64_t tradeAge);
+    virtual void_t handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
+    virtual void_t handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
     virtual void_t handleBuyTimeout(uint64_t orderId);
     virtual void_t handleSellTimeout(uint64_t orderId);
     virtual void_t handlePropertyUpdate(const meguco_user_session_property_entity& property);
@@ -77,5 +77,5 @@ private:
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
-  virtual timestamp_t getMaxTradeAge() const {return TradeHandler::getMaxTradeAge();}
+  virtual int64_t getMaxTradeAge() const {return TradeHandler::getMaxTradeAge();}
 };

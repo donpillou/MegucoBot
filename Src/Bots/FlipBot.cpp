@@ -15,14 +15,18 @@
 
 FlipBot::Session::Session(Broker& broker) : broker(broker)//, minBuyInPrice(0.), maxSellInPrice(0.)
 {
-  updateBalance();
-
   broker.registerProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
   broker.registerProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
   broker.registerProperty("Buy Cooldown", DEFAULT_BUY_COOLDOWN);
   broker.registerProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
   broker.registerProperty("Sell Cooldown", DEFAULT_SELL_COOLDOWN);
   broker.registerProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
+
+  broker.registerProperty(String("Balance ") + broker.getCurrencyBase(), 0, meguco_user_session_property_read_only, broker.getCurrencyBase());
+  broker.registerProperty(String("Balance ") + broker.getCurrencyComm(), 0, meguco_user_session_property_read_only, broker.getCurrencyComm());
+
+  updateBalance();
+
 }
 
 void_t FlipBot::Session::updateBalance()
@@ -36,8 +40,8 @@ void_t FlipBot::Session::updateBalance()
     balanceComm += asset.balance_comm;
     balanceBase += asset.balance_base;
   }
-  broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase, meguco_user_session_property_read_only, broker.getCurrencyBase());
-  broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm, meguco_user_session_property_read_only, broker.getCurrencyComm());
+  broker.setProperty(String("Balance ") + broker.getCurrencyBase(), balanceBase);
+  broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm);
 }
 
 void FlipBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tradeAge)

@@ -24,6 +24,8 @@ public:
   public:
     virtual ~Broker() {}
 
+    virtual int64_t getTime() const = 0;
+
     virtual const String& getCurrencyBase() const = 0;
     virtual const String& getCurrencyComm() const = 0;
 
@@ -50,9 +52,8 @@ public:
     virtual String getProperty(const String& name, const String& defaultValue) const = 0;
     virtual void_t registerProperty(const String& name, double value, uint32_t flags = meguco_user_session_property_none, const String& unit = String()) = 0;
     virtual void_t registerProperty(const String& name, const String& value, uint32_t flags = meguco_user_session_property_none, const String& unit = String()) = 0;
-    virtual void_t setProperty(const String& name, double value, uint32_t flags = meguco_user_session_property_none, const String& unit = String()) = 0;
-    virtual void_t setProperty(const String& name, const String& value, uint32_t flags = meguco_user_session_property_none, const String& unit = String()) = 0;
-    virtual void_t removeProperty(const String& name) = 0;
+    virtual void_t setProperty(const String& name, double value) = 0;
+    virtual void_t setProperty(const String& name, const String& value) = 0;
 
     virtual void_t addMarker(meguco_user_session_marker_type markerType) = 0;
     virtual void_t warning(const String& message) = 0;

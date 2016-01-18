@@ -320,6 +320,7 @@ bool_t Main::getBrokerOrders(List<meguco_user_broker_order_entity>& orders)
 
 bool_t Main::createBrokerOrder(meguco_user_broker_order_entity& order)
 {
+  ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(meguco_user_broker_order_entity));
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.control(brokerTableId, 1, meguco_user_broker_control_create_order, &order, sizeof(meguco_user_broker_order_entity), buffer))
     return false;
@@ -340,6 +341,7 @@ bool_t Main::removeBrokerOrder(uint64_t id)
 
 bool_t Main::createSessionTransaction(meguco_user_broker_transaction_entity& transaction)
 {
+  ZlimdbConnection::setEntityHeader(transaction.entity, 0, 0, sizeof(meguco_user_broker_transaction_entity));
   if(!connection.add(transactionsTableId, transaction.entity, transaction.entity.id))
     return false;
   return true;
@@ -347,6 +349,7 @@ bool_t Main::createSessionTransaction(meguco_user_broker_transaction_entity& tra
 
 bool_t Main::createSessionOrder(meguco_user_broker_order_entity& order)
 {
+  ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(meguco_user_broker_order_entity));
   if(!connection.add(ordersTableId, order.entity, order.entity.id))
     return false;
   return true;
@@ -361,6 +364,7 @@ bool_t Main::removeSessionOrder(uint64_t id)
 
 bool_t Main::createSessionAsset(meguco_user_session_asset_entity& asset)
 {
+  ZlimdbConnection::setEntityHeader(asset.entity, 0, 0, sizeof(meguco_user_session_asset_entity));
   if(!connection.add(assetsTableId, asset.entity, asset.entity.id))
     return false;
   return true;
@@ -382,6 +386,7 @@ bool_t Main::removeSessionAsset(uint64_t id)
 
 bool_t Main::createSessionMarker(meguco_user_session_marker_entity& marker)
 {
+  ZlimdbConnection::setEntityHeader(marker.entity, 0, 0, sizeof(meguco_user_session_marker_entity));
   if(!connection.add(markersTableId, marker.entity, marker.entity.id))
     return false;
   return true;
@@ -523,7 +528,7 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       // update property
       if(!connection.update(propertiesTableId, updatedProperty->entity))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
-      broker->setProperty(name, newValue, property->flags, unit);
+      broker->registerProperty(*updatedProperty, name, newValue, unit);
       botSession->handlePropertyUpdate(*updatedProperty);
 
       return (void_t)connection.sendControlResponse(requestId, 0, 0);

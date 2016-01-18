@@ -40,11 +40,13 @@ private:
   int64_t maxTradeAge;
 
 private:
-  void_t setProperty(const String& name, const String& value, meguco_user_session_property_type type, uint32_t flags, const String& unit);
+  void_t registerProperty(const String& name, const String& value, meguco_user_session_property_type type, uint32_t flags, const String& unit);
 
 private: // Bot::Broker
   virtual const String& getCurrencyBase() const {return currencyBase;};
   virtual const String& getCurrencyComm() const {return currencyComm;};
+
+  virtual int64_t getTime() const {return time;}
 
   virtual bool_t buy(double price, double amount, double total, int64_t timeout, uint64_t* id, double* orderedAmount);
   virtual bool_t sell(double price, double amount, double total, int64_t timeout, uint64_t* id, double* orderedAmount);
@@ -69,9 +71,8 @@ private: // Bot::Broker
   virtual String getProperty(const String& name, const String& defaultValue) const;
   virtual void_t registerProperty(const String& name, double value, uint32_t flags = meguco_user_session_property_none, const String& unit = String());
   virtual void_t registerProperty(const String& name, const String& value, uint32_t flags = meguco_user_session_property_none, const String& unit = String());
-  virtual void_t setProperty(const String& name, double value, uint32_t flags, const String& unit);
-  virtual void_t setProperty(const String& name, const String& value, uint32_t flags, const String& unit);
-  virtual void_t removeProperty(const String& name);
+  virtual void_t setProperty(const String& name, double value);
+  virtual void_t setProperty(const String& name, const String& value);
 
   virtual void_t addMarker(meguco_user_session_marker_type markerType);
   virtual void_t warning(const String& message);
