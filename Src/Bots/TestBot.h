@@ -11,27 +11,27 @@ private:
   class Session : public Bot::Session
   {
   public:
-    Session(Broker& broker) : broker(broker), updateCount(0) {}
+    Session(Broker& broker);
 
   private:
     Broker& broker;
     int_t updateCount;
 
-  private:
-    virtual ~Session() {}
+  //private:
+    //virtual ~Session() {}
 
   private: // Bot::Session
-    virtual void_t handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge);
-    virtual void_t handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction);
-    virtual void_t handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction);
-    virtual void_t handleBuyTimeout(uint32_t orderId) {}
-    virtual void_t handleSellTimeout(uint32_t orderId) {}
-    virtual void_t handlePropertyUpdate(const BotProtocol::SessionProperty& property) {};
-    virtual void_t handleAssetUpdate(const BotProtocol::SessionAsset& asset) {};
-    virtual void_t handleAssetRemoval(const BotProtocol::SessionAsset& asset) {};
+    virtual void_t handleTrade(const meguco_trade_entity& trade, int64_t tradeAge);
+    virtual void_t handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
+    virtual void_t handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
+    virtual void_t handleBuyTimeout(uint64_t orderId) {}
+    virtual void_t handleSellTimeout(uint64_t orderId) {}
+    virtual void_t handlePropertyUpdate(const meguco_user_session_property_entity& property) {};
+    virtual void_t handleAssetUpdate(const meguco_user_session_asset_entity& asset) {};
+    virtual void_t handleAssetRemoval(const meguco_user_session_asset_entity& asset) {};
   };
 
 public: // Bot
   virtual Session* createSession(Broker& broker) {return new Session(broker);};
-  virtual timestamp_t getMaxTradeAge() const {return 0;}
+  virtual int64_t getMaxTradeAge() const {return 0;}
 };

@@ -1,7 +1,14 @@
 
 #include "TestBot.h"
 
-void TestBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t tradeAge)
+TestBot::Session::Session(Broker& broker) : broker(broker), updateCount(0)
+{
+  broker.registerProperty("prop1", 42., meguco_user_session_property_read_only, "leet");
+  broker.registerProperty("prop2", "sda", meguco_user_session_property_read_only, "teel");
+  broker.registerProperty("prop4ro", "edit me", meguco_user_session_property_none, "teel");
+}
+
+void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tradeAge)
 {
   if(updateCount++ == 0)
   {
@@ -18,78 +25,66 @@ void TestBot::Session::handleTrade(const DataProtocol::Trade& trade, timestamp_t
       broker.warning("sell order count is not 1.");
 
     // test item creating, updating and removing
-    BotProtocol::SessionAsset asset;
-    asset.entityType = BotProtocol::sessionAsset;
-    asset.type = BotProtocol::SessionAsset::buy;
-    asset.state = BotProtocol::SessionAsset::waitSell;
-    asset.date = 89;
+    meguco_user_session_asset_entity asset;
+    asset.type = meguco_user_session_asset_buy;
+    asset.state = meguco_user_session_asset_wait_sell;
+    asset.time = 89;
     asset.price = 300;
-    asset.investComm = 0.;
-    asset.investBase = 0.;
-    asset.balanceComm = 0.;
-    asset.balanceBase = 12.;
+    asset.invest_comm = 0.;
+    asset.invest_base = 0.;
+    asset.balance_comm = 0.;
+    asset.balance_base = 12.;
     asset.price = 320;
-    asset.profitablePrice = 330;
-    asset.flipPrice = 340;
+    asset.profitable_price = 330;
+    asset.flip_price = 340;
     if(!broker.createAsset(asset))
       broker.warning("createItem returned false.");
     {
-      const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+      const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
       if(assets.size() == 0)
         broker.warning("items size is 0.");
       else
       {
-        BotProtocol::SessionAsset asset = *assets.begin();
-        double newBalanceBase = asset.balanceBase / 2.;
-        asset.balanceBase = newBalanceBase;
+        meguco_user_session_asset_entity asset = *assets.begin();
+        double newBalanceBase = asset.balance_base / 2.;
+        asset.balance_base = newBalanceBase;
         broker.updateAsset(asset);
         size_t assetCount = assets.size();
-        const HashMap<uint32_t, BotProtocol::SessionAsset>& assets = broker.getAssets();
+        const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
         if(assets.size() != assetCount)
           broker.warning("asset count changed after update.");
-        BotProtocol::SessionAsset& asset2 = *assets.find(asset.entityId);
-        if(asset.balanceBase != asset2.balanceBase)
+        meguco_user_session_asset_entity& asset2 = *assets.find(asset.entity.id);
+        if(asset.balance_base != asset2.balance_base)
           broker.warning("asset update failed.");
-        broker.removeAsset(asset2.entityId);
-        const HashMap<uint32_t, BotProtocol::SessionAsset>& assets2 = broker.getAssets();
+        broker.removeAsset(asset2.entity.id);
+        const HashMap<uint64_t, meguco_user_session_asset_entity>& assets2 = broker.getAssets();
         if(assets2.size() != assetCount - 1)
           broker.warning("asset remove failed.");
       }
     }
 
     // test properties
-    broker.removeProperty("prop1");
-    broker.removeProperty("prop2");
-    broker.removeProperty("prop3");
-    broker.removeProperty("prop4ro");
-    size_t propCount = broker.getProperties().size();
-    broker.setProperty("prop1", 42., BotProtocol::SessionProperty::readOnly, "leet");
-    broker.setProperty("prop2", "sda", BotProtocol::SessionProperty::readOnly, "teel");
-    broker.setProperty("prop4ro", "edit me", BotProtocol::SessionProperty::none, "teel");
-    if(broker.getProperties().size() != propCount + 3)
-      broker.warning("property creating did not increase property count.");
+    broker.setProperty("prop1", 42.);
+    broker.setProperty("prop2", "sda");
+    broker.setProperty("prop4ro", "edit me");
     if(broker.getProperty("prop1", 23.) != 42.)
       broker.warning("property has incorrect value.");
-    broker.setProperty("prop1", 43., BotProtocol::SessionProperty::readOnly, "leet2");
+    broker.setProperty("prop1", 43.);
     if(broker.getProperty("prop1", 23.) != 43.)
       broker.warning("property has incorrect value.");
     if(broker.getProperty("prop2", "hallo") != "sda")
       broker.warning("property has incorrect value.");
-    if(broker.getProperty("prop3", 123.) != 123.)
+    if(broker.getProperty("prop3", 123.) == 123.)
       broker.warning("property has incorrect value.");
-    propCount = broker.getProperties().size();
-    broker.removeProperty("prop2");
-    if(broker.getProperties().size() != propCount - 1)
-      broker.warning("property remove failed.");
 
     broker.warning("finished test.");
   }
 }
 
-void TestBot::Session::handleBuy(uint32_t orderId, const BotProtocol::Transaction& transaction)
+void TestBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction)
 {
 }
 
-void TestBot::Session::handleSell(uint32_t orderId, const BotProtocol::Transaction& transaction)
+void TestBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction)
 {
 }

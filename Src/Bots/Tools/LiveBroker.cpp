@@ -164,22 +164,22 @@ bool_t LiveBroker::buy(double price, double amount, double total, int64_t timeou
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-#ifdef BOT_TESTBOT
-  List<BotProtocol::Order> marketOrders;
-  connectionHandler.getMarketOrders(marketOrders);
-  for(List<BotProtocol::Order>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
-  {
-    if(i->entityId == order.entityId)
-    {
-      ASSERT(i->type == BotProtocol::Order::buy);
-      ASSERT(i->amount == order.amount);
-      ASSERT(i->price == order.price);
-      goto testok;
-    }
-  }
-  ASSERT(false);
-testok:
-#endif
+//#ifdef BOT_TESTBOT
+//  List<meguco_user_broker_order_entity> marketOrders;
+//  connectionHandler.getMarketOrders(marketOrders);
+//  for(List<meguco_user_broker_order_entity>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
+//  {
+//    if(i->entityId == order.entityId)
+//    {
+//      ASSERT(i->type == BotProtocol::Order::buy);
+//      ASSERT(i->amount == order.amount);
+//      ASSERT(i->price == order.price);
+//      goto testok;
+//    }
+//  }
+//  ASSERT(false);
+//testok:
+//#endif
 
   main.createSessionOrder(order);
 
@@ -212,22 +212,22 @@ bool_t LiveBroker::sell(double price, double amount, double total, int64_t timeo
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-#ifdef BOT_TESTBOT
-  List<BotProtocol::Order> marketOrders;
-  connectionHandler.getMarketOrders(marketOrders);
-  for(List<BotProtocol::Order>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
-  {
-    if(i->entityId == order.entityId)
-    {
-      ASSERT(i->type == BotProtocol::Order::sell);
-      ASSERT(i->amount == order.amount);
-      ASSERT(i->price == order.price);
-      goto testok;
-    }
-  }
-  ASSERT(false);
-testok:
-#endif
+//#ifdef BOT_TESTBOT
+//  List<meguco_user_broker_order_entity> marketOrders;
+//  connectionHandler.getMarketOrders(marketOrders);
+//  for(List<BotProtocol::Order>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
+//  {
+//    if(i->entityId == order.entityId)
+//    {
+//      ASSERT(i->type == BotProtocol::Order::sell);
+//      ASSERT(i->amount == order.amount);
+//      ASSERT(i->price == order.price);
+//      goto testok;
+//    }
+//  }
+//  ASSERT(false);
+//testok:
+//#endif
   
   main.createSessionOrder(order);
 
