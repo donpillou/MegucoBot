@@ -30,7 +30,7 @@ private:
   ZlimdbConnection connection;
   uint32_t processesTableId;
   ProcessManager processManager;
-  HashMap<uint64_t, Process> processes;
+  HashMap<uint64_t, Process> localProcesses;
   Mutex mutex;
   List<uint64_t> terminatedProcesses;
 
