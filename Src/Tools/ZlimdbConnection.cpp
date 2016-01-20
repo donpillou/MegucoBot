@@ -29,11 +29,7 @@ bool_t ZlimdbConnection::connect(Callback& callback)
   if(!zdb)
     return false;
   if(zlimdb_connect(zdb, 0, 0, "root", "root") != 0)
-  {
-    zlimdb_free(zdb);
-    zdb = 0;
     return false;
-  }
   this->callback = &callback;
   return true;
 }
