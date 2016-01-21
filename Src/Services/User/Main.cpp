@@ -552,9 +552,11 @@ void_t Main::removedProcess(uint64_t entityId)
         if(session && session->getState() != meguco_user_session_stopped)
         {
           session->setState(meguco_user_session_stopped);
+          meguco_user_session_mode stoppedMode = session->getMode();
+          session->setMode(meguco_user_session_none);
           connection.update(session->getSessionTableId(), session->getEntity());
 
-          if(session->getMode() == meguco_user_session_simulation)
+          if(stoppedMode == meguco_user_session_simulation)
           {
             const String& userName = session->getUser().getName();
             String sessionIdStr = String::fromUInt64(session->getSessionId());
@@ -697,6 +699,8 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       sessionEntity->bot_type_id = createArgs->bot_type_id;
       sessionEntity->state = meguco_user_session_stopped;
+      sessionEntity->broker_id = createArgs->broker_id;
+      sessionEntity->mode = meguco_user_session_none;
 
       // get new sessionId;
       uint64_t sessionId = user.getNewSessionId();
