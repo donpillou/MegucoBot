@@ -692,22 +692,22 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
       // prepare session entity
       byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
       meguco_user_session_entity* sessionEntity = (meguco_user_session_entity*)buffer;
-      ZlimdbConnection::setEntityHeader(sessionEntity->entity, 0, 0, sizeof(meguco_user_broker_entity));
+      ZlimdbConnection::setEntityHeader(sessionEntity->entity, 0, 0, sizeof(meguco_user_session_entity));
       if(!ZlimdbConnection::copyString(name, sessionEntity->entity, sessionEntity->name_size, ZLIMDB_MAX_ENTITY_SIZE))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       sessionEntity->bot_type_id = createArgs->bot_type_id;
       sessionEntity->state = meguco_user_session_stopped;
 
-      // get new brokerId;
+      // get new sessionId;
       uint64_t sessionId = user.getNewSessionId();
 
-      // create broker table
+      // create session table
       uint32_t sessionTableId;
       String tablePrefix = String("users/") + user.getName() + "/sessions/" + String::fromUInt64(sessionId);
       if(!connection.createTable(tablePrefix + "/session", sessionTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
 
-      // add broker entity
+      // add session entity
       uint64_t id;
       if(!connection.add(sessionTableId, sessionEntity->entity, id))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
