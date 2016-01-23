@@ -406,7 +406,7 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
 
     else if(String::startsWith(typeNameStart, "sessions/"))
     {
-      uint64_t sessionId = String::toUInt64(typeNameStart + 8);
+      uint64_t sessionId = String::toUInt64(typeNameStart + 9);
       Session* session = user->findSession(sessionId);
       if(!session)
         session = user->createSession(sessionId);
