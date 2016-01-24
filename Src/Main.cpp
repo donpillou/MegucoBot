@@ -99,8 +99,13 @@ bool_t Main::connect()
     return error = connection.getErrorString(), false;
 
   HashSet<String> autostartProcesses;
+#ifdef _WIN32
   autostartProcesses.append("Services/Market.exe");
   autostartProcesses.append("Services/User.exe");
+#else
+  autostartProcesses.append("Services/Market");
+  autostartProcesses.append("Services/User");
+#endif
 
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.createTable("processes", processesTableId))
