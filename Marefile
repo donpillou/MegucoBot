@@ -17,22 +17,22 @@ if configuration == "Debug" {
   defines += { "NDEBUG" }
 }
 
-buildDir = "Build/$(configuration)/$(target)"
+buildDir = "Build/$(configuration)/.$(target)"
 
 targets = {
 
   MegucoServer = cppApplication + {
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" } + bots + brokers + markets + services
-    buildDir = "Build/$(configuration)"
+    outputDir = "Build/$(configuration)"
     includePaths = {
       "Ext/libnstd/include"
       "Ext/libzlimdbclient/include"
       "Ext/libmegucoprotocol/include"
     }
     libPaths = {
-      "Build/$(configuration)/libnstd"
-      "Build/$(configuration)/libzlimdbclient"
-      "Build/$(configuration)/liblz4"
+      "Build/$(configuration)/.libnstd"
+      "Build/$(configuration)/.libzlimdbclient"
+      "Build/$(configuration)/.liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4" }
     root = "Src"
@@ -58,8 +58,8 @@ targets = {
     name = "$(patsubst %Service,%,$(target))"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     folder = "Services"
-    buildDir = "Build/$(configuration)/Services/$(name)"
-    output = "Build/$(configuration)/Services/$(name)$(if $(Win32),.exe,)"
+    outputDir = "Build/$(configuration)/Services"
+    output = "$(outputDir)/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src",
       "Ext/libnstd/include"
@@ -67,9 +67,9 @@ targets = {
       "Ext/libmegucoprotocol/include"
     }
     libPaths = {
-      "Build/$(configuration)/libnstd"
-      "Build/$(configuration)/libzlimdbclient"
-      "Build/$(configuration)/liblz4"
+      "Build/$(configuration)/.libnstd"
+      "Build/$(configuration)/.libzlimdbclient"
+      "Build/$(configuration)/.liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4" }
     root = { "Src/Services/$(name)", "Src" }
@@ -90,11 +90,12 @@ targets = {
   }
   
   "$(bots)" = cppApplication + {
+    name = target
     folder = "Bots"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
-    defines += { "BOT_$(upper $(target))" }
-    buildDir = "Build/$(configuration)/Bots/$(target)"
+    defines += { "BOT_$(upper $(name))" }
     outputDir = "Build/$(configuration)/Bots"
+    output = "$(outputDir)/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src/Bots",
       "Src",
@@ -103,9 +104,9 @@ targets = {
       "Ext/libmegucoprotocol/include"
     }
     libPaths = {
-      "Build/$(configuration)/libnstd"
-      "Build/$(configuration)/libzlimdbclient"
-      "Build/$(configuration)/liblz4"
+      "Build/$(configuration)/.libnstd"
+      "Build/$(configuration)/.libzlimdbclient"
+      "Build/$(configuration)/.liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4" }
     root = { "Src/Bots", "Src" }
@@ -139,8 +140,8 @@ targets = {
     folder = "Brokers"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "BROKER_$(upper $(name))" }
-    buildDir = "Build/$(configuration)/Brokers/$(name)"
-    output = "Build/$(configuration)/Brokers/$(name)$(if $(Win32),.exe,)"
+    outputDir = "Build/$(configuration)/Brokers"
+    output = "$(outputDir)/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src/Brokers",
       "Src",
@@ -149,9 +150,9 @@ targets = {
       "Ext/libmegucoprotocol/include"
     }
     libPaths = {
-      "Build/$(configuration)/libnstd"
-      "Build/$(configuration)/libzlimdbclient"
-      "Build/$(configuration)/liblz4"
+      "Build/$(configuration)/.libnstd"
+      "Build/$(configuration)/.libzlimdbclient"
+      "Build/$(configuration)/.liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4", "curl" }
     root = { "Src/Brokers", "Src" }
@@ -197,8 +198,8 @@ targets = {
     folder = "Markets"
     dependencies = { "libnstd", "libzlimdbclient", "liblz4" }
     defines += { "MARKET_$(upper $(name))" }
-    buildDir = "Build/$(configuration)/Markets/$(name)"
-    output = "Build/$(configuration)/Markets/$(name)$(if $(Win32),.exe,)"
+    outputDir = "Build/$(configuration)/Markets"
+    output = "$(outputDir)/$(name)$(if $(Win32),.exe,)"
     includePaths = {
       "Src/Markets",
       "Src",
@@ -207,9 +208,9 @@ targets = {
       "Ext/libmegucoprotocol/include"
     }
     libPaths = {
-      "Build/$(configuration)/libnstd"
-      "Build/$(configuration)/libzlimdbclient"
-      "Build/$(configuration)/liblz4"
+      "Build/$(configuration)/.libnstd"
+      "Build/$(configuration)/.libzlimdbclient"
+      "Build/$(configuration)/.liblz4"
     }
     libs = { "nstd", "zlimdbclient", "lz4", "curl" }
     root = { "Src/Markets", "Src" }
@@ -238,11 +239,11 @@ targets = {
       defines += { "CURL_STATICLIB" }
       includePaths += {
         "Ext/curl/include",
-        "Build/$(configuration)/libcurl/include"
-        "Build/$(configuration)/libcurl/include/curl"
+        "Build/$(configuration)/.libcurl/include"
+        "Build/$(configuration)/.libcurl/include/curl"
       }
       libPaths += {
-        "Build/$(configuration)/libcurl"
+        "Build/$(configuration)/.libcurl"
       }
     }
     if platform == "Linux" {
@@ -272,7 +273,6 @@ targets = {
 
   if tool == "vcxproj" {
     libcurl = cStaticLibrary + {
-      buildDir = "Build/$(configuration)/$(target)"
       folder = "Libraries"
       root = { "Ext/curl/lib", "Ext/curl/include" }
       defines += { "$(if $(Win32),WIN32 _WINDOWS)", "_USRDLL", "BUILDING_LIBCURL", "CURL_STATICLIB", "HTTP_ONLY", "USE_WINDOWS_SSPI", "USE_SCHANNEL" /*"USE_SSLEAY", "USE_OPENSSL"*/ }
