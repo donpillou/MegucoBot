@@ -13,6 +13,9 @@ int_t main(int_t argc, char_t* argv[])
 {
   String binaryDir = File::dirname(File::dirname(String(argv[0], String::length(argv[0]))));
 
+  //bool stop = true;
+  //while(stop);
+
   Log::setFormat("%P> %m");
 
   // initialize connection handler
@@ -466,7 +469,6 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
           return;
       }
     }
-
     else if(tableName.endsWith("/user"))
     {
       if(!connection.listen(tableId))

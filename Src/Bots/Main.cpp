@@ -23,20 +23,16 @@ int_t main(int_t argc, char_t* argv[])
 
   Log::setFormat("%P> %m");
 
-  //for(;;)
-  //{
-  //  bool stop = true;
-  //  if(!stop)
-  //    break;
-  //}
+  //bool stop = true;
+  //while(stop);
 
   Main main;
   for(;; Thread::sleep(10 * 1000))
   {
     if(!main.connect(userName, sessionId))
     {
-      Console::errorf("error: Could not connect to zlimdb server: %s\n", (const tchar_t*)main.getErrorString());
-      return -1;
+      Log::errorf("error: Could not connect to zlimdb server: %s", (const tchar_t*)main.getErrorString());
+      continue;
     }
     Log::infof("Connected to zlimdb server.");
 
