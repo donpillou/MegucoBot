@@ -15,9 +15,9 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
     broker.warning("Executing bot test...");
 
     // test buy and sell
-    if(!broker.buy(300, 0.02, 0., 30 * 1000))
+    if(!broker.buy(100, 0.02, 0., 30 * 1000))
       broker.warning("buy returned false.");
-    if(!broker.sell(1000, 0.01, 0., 25 * 1000))
+    if(!broker.sell(2000, 0.01, 0., 25 * 1000))
       broker.warning("sell returned false.");
     if(broker.getOpenBuyOrderCount() != 1)
       broker.warning("buy order count is not 1.");
@@ -48,8 +48,8 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
         meguco_user_session_asset_entity asset = *assets.begin();
         double newBalanceBase = asset.balance_base / 2.;
         asset.balance_base = newBalanceBase;
-        broker.updateAsset(asset);
         size_t assetCount = assets.size();
+        broker.updateAsset(asset);
         const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
         if(assets.size() != assetCount)
           broker.warning("asset count changed after update.");
@@ -74,7 +74,7 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
       broker.warning("property has incorrect value.");
     if(broker.getProperty("prop2", "hallo") != "sda")
       broker.warning("property has incorrect value.");
-    if(broker.getProperty("prop3", 123.) == 123.)
+    if(broker.getProperty("prop3notexistent", 123.) == 123.)
       broker.warning("property has incorrect value.");
 
     broker.warning("finished test.");

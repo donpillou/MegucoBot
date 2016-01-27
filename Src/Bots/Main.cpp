@@ -81,7 +81,6 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     return false;
   bool_t simulation = true;
   uint32_t brokerId = 0;
-  uint64_t brokerTypeId = 0;
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   while(connection.getResponse(buffer))
   {
@@ -94,7 +93,6 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
       if(userBrokerEntity->mode == meguco_user_session_live)
         simulation = false;
       brokerId = userBrokerEntity->broker_id;
-      brokerTypeId = userBrokerEntity->bot_type_id;
     }
   }
   if(connection.getErrno() != 0)
@@ -114,6 +112,15 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   if(!connection.createTable(tablePrefix + "/markers", markersTableId))
     return false;
 
+  // get broker
+  String brokerTablePrefix = String("users/") + userName + "/brokers/" + String::fromUInt64(brokerId);
+  if(!connection.findTable(brokerTablePrefix + "/broker", brokerTableId))
+    return false;
+  if(!connection.queryEntity(brokerTableId, 1, *(zlimdb_entity*)buffer, sizeof(meguco_user_broker_entity), ZLIMDB_MAX_ENTITY_SIZE))
+    return false;
+  const meguco_user_broker_entity* brokerEntity = (const meguco_user_broker_entity*)buffer;
+  uint64_t brokerTypeId = brokerEntity->broker_type_id;
+
   // get broker type info
   uint32_t brokersTableId;
   if(!connection.findTable("brokers", brokersTableId))
@@ -125,14 +132,10 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   if(!ZlimdbConnection::getString(brokerType->entity, sizeof(meguco_broker_type_entity), brokerType->name_size, marketName))
     return false;
   size_t pos = 0;
+  marketName.detach();
   marketName.token('/', pos);
   String currencyComm = marketName.token('/', pos);
   String currencyBase = marketName.token('/', pos);
-
-  // get broker table ids
-  String brokerTablePrefix = String("users/") + userName + "/brokers/" + String::fromUInt64(brokerId);
-  if(!connection.findTable(brokerTablePrefix + "/broker", brokerTableId))
-    return false;
 
   // create local broker interface
   BotFactory botFactory;
@@ -213,7 +216,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
 
   // get trade history
   uint32_t marketTableId;
-  if(!connection.findTable(String("markets/") + marketName, marketTableId))
+  if(!connection.findTable(String("markets/") + marketName + "/trades", marketTableId))
     return false;
   int64_t serverTime, tableTime;
   if(!connection.sync(marketTableId, serverTime, tableTime))
