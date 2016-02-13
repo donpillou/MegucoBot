@@ -570,13 +570,12 @@ void_t Main::removedProcess(uint64_t entityId)
             String logTableName = tablePrefix + "/log";
             String markersTableName = tablePrefix + "/markers";
             String propertiesTableName = tablePrefix + "/properties";
-            uint32_t newTableId;
-            connection.moveTable(transactionsTableName + ".backup", transactionsTableName, session->getTransactionsTableId(), newTableId, true);
-            connection.moveTable(assetsTableName + ".backup", assetsTableName, session->getAssetsTableId(), newTableId, true);
-            connection.moveTable(ordersTableName + ".backup", ordersTableName, session->getOrdersTableId(), newTableId, true);
-            connection.moveTable(logTableName + ".backup", logTableName, session->getLogTableId(), newTableId, true);
-            connection.moveTable(markersTableName + ".backup", markersTableName, session->getMarkersTableId(), newTableId, true);
-            connection.moveTable(propertiesTableName + ".backup", propertiesTableName, session->getPropertiesTableId(), newTableId, true);
+            connection.moveTable(transactionsTableName + ".backup", session->getTransactionsTableId(), true);
+            connection.moveTable(assetsTableName + ".backup", session->getAssetsTableId(), true);
+            connection.moveTable(ordersTableName + ".backup", session->getOrdersTableId(), true);
+            connection.moveTable(logTableName + ".backup", session->getLogTableId(), true);
+            connection.moveTable(markersTableName + ".backup", session->getMarkersTableId(), true);
+            connection.moveTable(propertiesTableName + ".backup", session->getPropertiesTableId(), true);
           }
         }
       }
@@ -811,18 +810,18 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
         String logTableName = tablePrefix + "/log";
         String propertiesTableName = tablePrefix + "/properties";
         String markersTableName = tablePrefix + "/markers";
-        uint32_t newTableId;
         if(session->getMode() == meguco_user_session_live)
         { // try to restore backups (in case something fucked up for some reason)
-          connection.moveTable(ordersTableName, ordersTableName + ".backup", session->getOrdersTableId(), newTableId, true);
-          connection.moveTable(transactionsTableName, transactionsTableName + ".backup", session->getTransactionsTableId(), newTableId, true);
-          connection.moveTable(assetsTableName, assetsTableName + ".backup", session->getAssetsTableId(), newTableId, true);
-          connection.moveTable(logTableName, logTableName + ".backup", session->getLogTableId(), newTableId, true);
-          connection.moveTable(propertiesTableName, propertiesTableName + ".backup", session->getPropertiesTableId(), newTableId, true);
-          connection.moveTable(markersTableName, markersTableName + ".backup", session->getMarkersTableId(), newTableId, true);
+          connection.moveTable(ordersTableName + ".backup", session->getOrdersTableId(), true);
+          connection.moveTable(transactionsTableName + ".backup", session->getTransactionsTableId(), true);
+          connection.moveTable(assetsTableName + ".backup", session->getAssetsTableId(), true);
+          connection.moveTable(logTableName + ".backup", session->getLogTableId(), true);
+          connection.moveTable(propertiesTableName + ".backup", session->getPropertiesTableId(), true);
+          connection.moveTable(markersTableName + ".backup", session->getMarkersTableId(), true);
         }
         else
         { // create table backups if they do not exist
+          uint32_t newTableId;
           connection.copyTable(session->getOrdersTableId(), ordersTableName + ".backup", newTableId, false);
           connection.copyTable(session->getTransactionsTableId(), transactionsTableName + ".backup", newTableId, false);
           connection.copyTable(session->getAssetsTableId(), assetsTableName + ".backup", newTableId, false);

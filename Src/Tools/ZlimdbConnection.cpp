@@ -129,32 +129,29 @@ bool_t ZlimdbConnection::findTable(const String& name, uint32_t& tableId)
 
 bool_t ZlimdbConnection::copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists)
 {
-  if(zlimdb_copy_table(zdb, sourceTableId, name, &tableId) != 0)
+  if(succeedIfExists)
   {
-    if (succeedIfExists && zlimdb_errno() == zlimdb_error_table_already_exists)
+    uint32_t destinationTableId;
+    if(zlimdb_find_table(zdb, name, &destinationTableId) == 0)
       return true;
-    return false;
+    if(zlimdb_errno() != zlimdb_error_table_not_found)
+      return false;
   }
+  if(zlimdb_copy_table(zdb, sourceTableId, name, &tableId) != 0)
+    return false;
   return true;
 }
 
-bool_t ZlimdbConnection::moveTable(const String& sourceName, const String& destName, uint32_t destTableId, uint32_t& newDestTableId, bool succeedIfNotExist)
+bool_t ZlimdbConnection::moveTable(const String& sourceName, uint32_t destTableId, bool succeedIfNotExist)
 {
   uint32_t sourceTableId;
   if(zlimdb_find_table(zdb, sourceName, &sourceTableId) != 0)
   {
     if(succeedIfNotExist && zlimdb_errno() == zlimdb_error_table_not_found)
-    {
-      newDestTableId = destTableId;
       return true;
-    }
     return false;
   }
-  if(destTableId != 0 && zlimdb_remove_table(zdb, destTableId) != 0)
-    return false;
-  if(zlimdb_copy_table(zdb, sourceTableId, destName, &newDestTableId) != 0)
-    return false;
-  if(zlimdb_remove_table(zdb, sourceTableId) != 0)
+  if(zlimdb_rename_table_replace(zdb, sourceTableId, destTableId) != 0)
     return false;
   return true;
 }

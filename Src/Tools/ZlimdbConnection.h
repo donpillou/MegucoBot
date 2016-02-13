@@ -35,7 +35,7 @@ public:
   bool_t createTable(const String& name, uint32_t& tableId);
   bool_t findTable(const String& name, uint32_t& tableId);
   bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists = false);
-  bool_t moveTable(const String& sourceName, const String& destName, uint32_t destTableId, uint32_t& newDestTableId, bool succeedIfNotExist = false);
+  bool_t moveTable(const String& sourceName, uint32_t destTableId, bool succeedIfNotExist = false);
   bool_t clearTable(uint32_t tableId);
   bool_t add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id, bool_t succeedIfExists = false);
   bool_t update(uint32_t tableId, const zlimdb_entity& entity);
