@@ -71,11 +71,11 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
       broker.warning("property has incorrect value.");
     broker.setProperty("prop1", 43.);
     if(broker.getProperty("prop1", 23.) != 43.)
-      broker.warning("property has incorrect value.");
+      broker.warning("prop1 has incorrect value.");
     if(broker.getProperty("prop2", "hallo") != "sda")
-      broker.warning("property has incorrect value.");
-    if(broker.getProperty("prop3notexistent", 123.) == 123.)
-      broker.warning("property has incorrect value.");
+      broker.warning("prop2 has incorrect value.");
+    if(broker.getProperty("prop3notexistent", 123.) != 123.)
+      broker.warning("prop3notexistent has incorrect value.");
 
     broker.warning("finished test.");
   }
