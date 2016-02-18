@@ -19,6 +19,7 @@ private:
   meguco_user_broker_balance_entity balance;
   bool_t balanceLoaded;
   HashMap<uint64_t, meguco_user_broker_order_entity> orders;
+  bool_t ordersLoaded;
 
   String error;
 
@@ -26,7 +27,6 @@ private:
 
   int64_t lastRequestTime;
   uint64_t lastNonce;
-  int64_t lastLiveTradeUpdateTime;
 
   //HashMap<uint32_t, String> entityIds;
   //HashMap<String, uint32_t> entityIdsById;
@@ -42,6 +42,7 @@ private:
   double getMaxBuyAmout(double price) const;
 
   bool_t loadBalanceAndFee();
+  bool_t loadOrders();
 
 private: // Market
   virtual const String& getLastError() const {return error;}

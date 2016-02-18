@@ -12,14 +12,24 @@
 
 BitstampBtcUsd::BitstampBtcUsd(const String& clientId, const String& key, const String& secret) :
   clientId(clientId), key(key), secret(secret),
-  balanceLoaded(false), lastRequestTime(0), lastNonce(0), lastLiveTradeUpdateTime(0)/*, nextEntityId(1)*/ {}
+  balanceLoaded(false), ordersLoaded(false), lastRequestTime(0), lastNonce(0) {}
 
 bool_t BitstampBtcUsd::loadBalanceAndFee()
 {
   if(balanceLoaded)
     return true;
-  //meguco_user_broker_balance_entity balance;
+  meguco_user_broker_balance_entity balance;
   if(!loadBalance(balance))
+    return false;
+  return true;
+}
+
+bool_t BitstampBtcUsd::loadOrders()
+{
+  if(ordersLoaded)
+    return true;
+  List<meguco_user_broker_order_entity> orders;
+  if(!loadOrders(orders))
     return false;
   return true;
 }
@@ -147,6 +157,11 @@ bool_t BitstampBtcUsd::getOrder(uint32_t entityId, BotProtocol::Order& order)
 */
 bool_t BitstampBtcUsd::cancelOrder(uint64_t id)
 {
+  if(!loadBalanceAndFee())
+    return false;
+  if(!loadOrders())
+    return false;
+
   HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders.find(id);
   if(it == orders.end())
   {
@@ -225,6 +240,7 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_broker_order_entity>& orders)
     this->orders.append(order.raw_id, order);
     orders.append(order);
   }
+  ordersLoaded = true;
   return true;
 }
 
