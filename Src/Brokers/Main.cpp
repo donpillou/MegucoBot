@@ -271,7 +271,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
     {
       const meguco_user_broker_order_entity& args = *(const meguco_user_broker_order_entity*)data;
       meguco_user_broker_order_entity newOrder;
-      if(!broker->createOrder(0, (meguco_user_broker_order_type)args.type, args.price, args.amount, args.total, newOrder))
+      if(!broker->createOrder((meguco_user_broker_order_type)args.type, args.price, args.amount, args.total, newOrder))
       {
         addLogMessage(meguco_log_error, broker->getLastError());
         return (void_t)connection.sendControlResponse(requestId, 0);
@@ -300,7 +300,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       // cancel order
       if(order.state == meguco_user_broker_order_open)
       {
-        if(!broker->cancelOrder(order.entity.id))
+        if(!broker->cancelOrder(order.raw_id))
         {
           addLogMessage(meguco_log_error, broker->getLastError());
           return (void_t)connection.sendControlResponse(requestId, 0);
@@ -336,7 +336,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       const meguco_user_broker_order_control_update_params& params = *(const meguco_user_broker_order_control_update_params*)data;
 
       // cancel order
-      if(!broker->cancelOrder(order.entity.id))
+      if(!broker->cancelOrder(order.raw_id))
       {
         addLogMessage(meguco_log_error, broker->getLastError());
         return (void_t)connection.sendControlResponse(requestId, 0);
@@ -344,13 +344,14 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
 
       // create new order with same id
       meguco_user_broker_order_entity newOrder;
-      if(!broker->createOrder(order.entity.id, (meguco_user_broker_order_type)order.type, params.price, params.amount, params.total, newOrder))
+      if(!broker->createOrder((meguco_user_broker_order_type)order.type, params.price, params.amount, params.total, newOrder))
       {
         addLogMessage(meguco_log_error, broker->getLastError());
         order.state = meguco_user_broker_order_error;
       }
       else
       {
+        newOrder.entity.id = order.entity.id;
         newOrder.timeout = order.timeout;
         order = newOrder;
         order.state = meguco_user_broker_order_open;

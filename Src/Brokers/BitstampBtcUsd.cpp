@@ -24,7 +24,7 @@ bool_t BitstampBtcUsd::loadBalanceAndFee()
   return true;
 }
 
-bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_broker_order_type type, double price, double amount, double total, meguco_user_broker_order_entity& order)
+bool_t BitstampBtcUsd::createOrder(meguco_user_broker_order_type type, double price, double amount, double total, meguco_user_broker_order_entity& order)
 {
   if(!loadBalanceAndFee())
     return false;
@@ -111,7 +111,7 @@ bool_t BitstampBtcUsd::createOrder(uint64_t id, meguco_user_broker_order_type ty
     error = "Received invalid order date.";
     return false;
   }
-  order.entity.id = id;
+  order.entity.id = 0;
   order.entity.time = time.toTimestamp();
 
   order.price = orderData.find("price")->toDouble();

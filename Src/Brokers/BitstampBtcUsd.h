@@ -48,7 +48,7 @@ private: // Market
   virtual bool_t loadOrders(List<meguco_user_broker_order_entity>& orders);
   virtual bool_t loadBalance(meguco_user_broker_balance_entity& balance);
   virtual bool_t loadTransactions(List<meguco_user_broker_transaction_entity>& transactions);
-  virtual bool_t createOrder(uint64_t id, meguco_user_broker_order_type type, double price, double amount, double total, meguco_user_broker_order_entity& order);
+  virtual bool_t createOrder(meguco_user_broker_order_type type, double price, double amount, double total, meguco_user_broker_order_entity& order);
   //virtual bool_t getOrder(uint64_t id, meguco_user_market_order_entity& order);
-  virtual bool_t cancelOrder(uint64_t id);
+  virtual bool_t cancelOrder(uint64_t rawId);
 };
