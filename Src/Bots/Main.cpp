@@ -235,54 +235,6 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
 
   return true;
 }
-/*
-
-void_t Main::handleCreateSessionAsset(uint32_t requestId, BotProtocol::SessionAsset& sessionAsset)
-{
-  if(!broker->createAsset(sessionAsset))
-    handlerConnection.sendErrorResponse(BotProtocol::createEntity, requestId, &sessionAsset, broker->getLastError());
-  else
-    handlerConnection.sendMessage(BotProtocol::createEntityResponse, requestId, &sessionAsset, sizeof(sessionAsset));
-}
-
-void_t Main::handleRemoveSessionAsset(uint32_t requestId, const BotProtocol::Entity& entity)
-{
-  const BotProtocol::SessionAsset* asset = broker->getAsset(entity.entityId);
-  if(!asset)
-    handlerConnection.sendErrorResponse(BotProtocol::removeEntity, requestId, &entity, "Could not find session item.");
-  else
-  {
-    BotProtocol::SessionAsset removedAsset = *asset;
-
-    broker->removeAsset(entity.entityId);
-    handlerConnection.sendMessage(BotProtocol::removeEntityResponse, requestId, &entity, sizeof(entity));
-
-    botSession->handleAssetRemoval(removedAsset);
-  }
-}
-
-void_t Main::handleUpdateSessionProperty(uint32_t requestId, BotProtocol::SessionProperty& sessionProperty)
-{
-  const BotProtocol::SessionProperty* property = broker->getProperty(sessionProperty.entityId);
-  if(!property)
-    handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionProperty, "Could not find session property.");
-  else
-  {
-    if(property->flags & BotProtocol::SessionProperty::readOnly)
-    {
-      handlerConnection.sendErrorResponse(BotProtocol::updateEntity, requestId, &sessionProperty, "Property is not editable.");
-      return;
-    }
-
-    BotProtocol::SessionProperty updatedProperty = *property;
-    BotProtocol::setString(updatedProperty.value, BotProtocol::getString(sessionProperty.value));
-    broker->updateProperty(updatedProperty);
-    handlerConnection.sendMessage(BotProtocol::updateEntityResponse, requestId, &updatedProperty, sizeof(BotProtocol::Entity));
-
-    botSession->handlePropertyUpdate(updatedProperty);
-  }
-}
-*/
 
 bool_t Main::getBrokerBalance(meguco_user_broker_balance_entity& balance)
 {
