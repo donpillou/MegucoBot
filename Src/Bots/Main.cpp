@@ -411,6 +411,7 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       if(!asset)
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       meguco_user_session_asset_entity newAsset = *asset;
+      newAsset.state = asset->type == meguco_user_session_asset_buy ? meguco_user_session_asset_wait_buy : meguco_user_session_asset_wait_sell;
       if(!connection.add(assetsTableId, newAsset.entity, newAsset.entity.id))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
       broker->registerAsset(newAsset);
