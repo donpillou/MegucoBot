@@ -564,18 +564,12 @@ void_t Main::removedProcess(uint64_t entityId)
             String sessionIdStr = String::fromUInt64(session->getSessionId());
 
             String tablePrefix = String("users/") + userName + "/sessions/" + sessionIdStr;
-            String transactionsTableName = tablePrefix + "/transactions";
-            String assetsTableName = tablePrefix + "/assets";
-            String ordersTableName = tablePrefix + "/orders";
-            String logTableName = tablePrefix + "/log";
-            String markersTableName = tablePrefix + "/markers";
-            String propertiesTableName = tablePrefix + "/properties";
-            connection.moveTable(transactionsTableName + ".backup", session->getTransactionsTableId(), true);
-            connection.moveTable(assetsTableName + ".backup", session->getAssetsTableId(), true);
-            connection.moveTable(ordersTableName + ".backup", session->getOrdersTableId(), true);
-            connection.moveTable(logTableName + ".backup", session->getLogTableId(), true);
-            connection.moveTable(markersTableName + ".backup", session->getMarkersTableId(), true);
-            connection.moveTable(propertiesTableName + ".backup", session->getPropertiesTableId(), true);
+            connection.moveTable(tablePrefix + "/transactions.backup", session->getTransactionsTableId(), true);
+            connection.moveTable(tablePrefix + "/assets.backup", session->getAssetsTableId(), true);
+            connection.moveTable(tablePrefix + "/orders.backup", session->getOrdersTableId(), true);
+            connection.moveTable(tablePrefix + "/log.backup", session->getLogTableId(), true);
+            connection.moveTable(tablePrefix + "/markers.backup", session->getMarkersTableId(), true);
+            connection.moveTable(tablePrefix + "/properties.backup", session->getPropertiesTableId(), true);
           }
         }
       }
@@ -804,30 +798,24 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
 
         // prepare tables
         String tablePrefix = String("users/") + session->getUser().getName() + "/sessions/" + String::fromUInt64(session->getSessionId());
-        String ordersTableName = tablePrefix + "/orders";
-        String transactionsTableName = tablePrefix + "/transactions";
-        String assetsTableName = tablePrefix + "/assets";
-        String logTableName = tablePrefix + "/log";
-        String propertiesTableName = tablePrefix + "/properties";
-        String markersTableName = tablePrefix + "/markers";
         if(session->getMode() == meguco_user_session_live)
         { // try to restore backups (in case something fucked up for some reason)
-          connection.moveTable(ordersTableName + ".backup", session->getOrdersTableId(), true);
-          connection.moveTable(transactionsTableName + ".backup", session->getTransactionsTableId(), true);
-          connection.moveTable(assetsTableName + ".backup", session->getAssetsTableId(), true);
-          connection.moveTable(logTableName + ".backup", session->getLogTableId(), true);
-          connection.moveTable(propertiesTableName + ".backup", session->getPropertiesTableId(), true);
-          connection.moveTable(markersTableName + ".backup", session->getMarkersTableId(), true);
+          connection.moveTable(tablePrefix + "/orders.backup", session->getOrdersTableId(), true);
+          connection.moveTable(tablePrefix + "/transactions.backup", session->getTransactionsTableId(), true);
+          connection.moveTable(tablePrefix + "/assets.backup", session->getAssetsTableId(), true);
+          connection.moveTable(tablePrefix + "/log.backup", session->getLogTableId(), true);
+          connection.moveTable(tablePrefix + "/properties.backup", session->getPropertiesTableId(), true);
+          connection.moveTable(tablePrefix + "/markers.backup", session->getMarkersTableId(), true);
         }
         else
         { // create table backups if they do not exist
           uint32_t newTableId;
-          connection.copyTable(session->getOrdersTableId(), ordersTableName + ".backup", newTableId, false);
-          connection.copyTable(session->getTransactionsTableId(), transactionsTableName + ".backup", newTableId, false);
-          connection.copyTable(session->getAssetsTableId(), assetsTableName + ".backup", newTableId, false);
-          connection.copyTable(session->getLogTableId(), logTableName + ".backup", newTableId, false);
-          connection.copyTable(session->getPropertiesTableId(), propertiesTableName + ".backup", newTableId, false);
-          connection.copyTable(session->getMarkersTableId(), markersTableName + ".backup", newTableId, false);
+          connection.copyTable(session->getOrdersTableId(), tablePrefix + "/orders.backup", newTableId, false);
+          connection.copyTable(session->getTransactionsTableId(), tablePrefix + "/transactions.backup", newTableId, false);
+          connection.copyTable(session->getAssetsTableId(), tablePrefix + "/assets.backup", newTableId, false);
+          connection.copyTable(session->getLogTableId(), tablePrefix + "/log.backup", newTableId, false);
+          connection.copyTable(session->getPropertiesTableId(), tablePrefix + "/properties.backup", newTableId, false);
+          connection.copyTable(session->getMarkersTableId(), tablePrefix + "/markers.backup", newTableId, false);
         }
 
         // start process
