@@ -27,6 +27,7 @@ public:
   Session* findSession(uint64_t sessionId) {return *sessions.find(sessionId);}
   Session* createSession(uint64_t sessionId);
   void_t deleteSession(Session& session);
+  const HashMap<uint64_t, Session*>& getSessions() const {return sessions;}
 
 private:
   const String name;

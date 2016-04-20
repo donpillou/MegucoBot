@@ -65,7 +65,7 @@ private:
   HashMap<String, BotType> botTypesByName;
   HashMap<uint64_t, BrokerType*> brokerTypes;
   HashMap<uint64_t, BotType*> botTypes;
-  HashMap<String, User *> users;
+  HashMap<String, User*> users;
   uint32_t processesTableId;
   HashMap<uint64_t, Process> processes;
   HashMap<String, Process*> processesByCommand;
@@ -79,7 +79,8 @@ private:
   void_t addedProcess(uint64_t entityId, const String& command);
   void_t removedProcess(uint64_t entityId);
 
-  void_t controlUser(User & user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
+  void_t controlUser(User& user, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
+  void_t controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);
 
 private: // ZlimdbConnection::Callback
   virtual void_t addedEntity(uint32_t tableId, const zlimdb_entity& entity);

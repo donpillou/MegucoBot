@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <nstd/HashSet.h>
+
 #include "Tools/ZlimdbConnection.h"
 #include "Tools/Bot.h"
 
@@ -37,6 +39,7 @@ public:
 private:
   ZlimdbConnection connection;
   int64_t maxTradeAge;
+  bool_t simulation;
   Broker* broker;
   Bot::Session* botSession;
   uint64_t lastReceivedTradeId;
@@ -49,6 +52,9 @@ private:
   uint32_t propertiesTableId;
   uint32_t markersTableId;
   uint32_t brokerTableId;
+
+  uint32_t livePropertiesTableId;
+  HashSet<String> liveProperties;
 
 private:
   void_t controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size);

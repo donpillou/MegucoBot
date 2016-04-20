@@ -259,6 +259,34 @@ bool_t Main::connect()
     if(connection.getErrno() != 0)
       return error = connection.getErrorString(), false;
   }
+
+  // create offline responders for sessions
+  for(HashMap<String, User*>::Iterator i = users.begin(), end = users.end(); i != end; ++i)
+  {
+    User* user = *i;
+    const HashMap<uint64_t, Session*>& sessions = user->getSessions();
+    for(HashMap<uint64_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
+    {
+      Session* session = *i;
+      if(session->getState() == meguco_user_broker_stopped)
+      {
+          String tablePrefix = String("users/") + user->getName() + "/sessions/" + String::fromUInt64(session->getSessionId());
+          if(!connection.moveTable(tablePrefix + "/transactions.backup", session->getTransactionsTableId(), true) ||
+             !connection.moveTable(tablePrefix + "/assets.backup", session->getAssetsTableId(), true) ||
+             !connection.moveTable(tablePrefix + "/orders.backup", session->getOrdersTableId(), true) ||
+             !connection.moveTable(tablePrefix + "/log.backup", session->getLogTableId(), true) ||
+             !connection.moveTable(tablePrefix + "/markers.backup", session->getMarkersTableId(), true) ||
+             !connection.moveTable(tablePrefix + "/properties.backup", session->getPropertiesTableId(), true))
+          return error = connection.getErrorString(), false;
+        if(!connection.subscribe(session->getSessionTableId(), zlimdb_query_type_since_next, 0, zlimdb_subscribe_flag_responder))
+          return error = connection.getErrorString(), false;
+        TableInfo tableInfoData = {Main::userSession};
+        TableInfo& tableInfo = this->tableInfo.append(session->getSessionTableId(), tableInfoData);
+        tableInfo.object = session;
+      }
+    }
+  }
+
   return true;
 }
 
@@ -315,7 +343,9 @@ void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entity
   switch(tableInfo.type)
   {
   case user:
-    return controlUser(*(User *)tableInfo.object, requestId, entityId, controlCode, data, size);
+    return controlUser(*(User*)tableInfo.object, requestId, entityId, controlCode, data, size);
+  case userSession:
+    return controlUserSession(*(Session*)tableInfo.object, requestId, entityId, controlCode, data, size);
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }
@@ -458,7 +488,7 @@ void_t Main::addedTable(uint32_t tableId, const String& tableName)
             meguco_user_session_state state = meguco_user_session_stopped;
             if(it != processesByCommand.end() && (*it)->type == Main::userSession)
               state = meguco_user_session_running;
-            if (state != session->getState())
+            if(state != session->getState())
             {
               session->setState(state);
               connection.update(tableId, session->getEntity());
@@ -571,6 +601,12 @@ void_t Main::removedProcess(uint64_t entityId)
             connection.moveTable(tablePrefix + "/markers.backup", session->getMarkersTableId(), true);
             connection.moveTable(tablePrefix + "/properties.backup", session->getPropertiesTableId(), true);
           }
+
+          // create offline responder
+          connection.subscribe(session->getSessionTableId(), zlimdb_query_type_since_next, 0, zlimdb_subscribe_flag_responder);
+          TableInfo tableInfoData = {Main::userSession};
+          TableInfo& tableInfo = this->tableInfo.append(session->getSessionTableId(), tableInfoData);
+          tableInfo.object = session;
         }
       }
       break;
@@ -612,12 +648,14 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
 
       // get new brokerId;
       uint64_t brokerId = user.getNewBrokerId();
+      Broker* broker = user.createBroker(brokerId);
 
       // create broker table
       uint32_t brokerTableId;
       String tablePrefix = String("users/") + user.getName() + "/brokers/" + String::fromUInt64(brokerId);
       if(!connection.createTable(tablePrefix + "/broker", brokerTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      broker->setBrokerTableId(brokerTableId);
 
       // add broker entity
       uint64_t id;
@@ -628,12 +666,16 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
       uint32_t newTableId;
       if(!connection.createTable(tablePrefix + "/balance", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      broker->setBalanceTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/orders", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      broker->setOrdersTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/transactions", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      broker->setTransactionsTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/log", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      broker->setLogTableId(newTableId);
 
       // send answer
       return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&brokerId, sizeof(brokerId));
@@ -699,12 +741,14 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
 
       // get new sessionId;
       uint64_t sessionId = user.getNewSessionId();
+      Session* session = user.createSession(sessionId);
 
       // create session table
       uint32_t sessionTableId;
       String tablePrefix = String("users/") + user.getName() + "/sessions/" + String::fromUInt64(sessionId);
       if(!connection.createTable(tablePrefix + "/session", sessionTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setSessionTableId(sessionTableId);
 
       // add session entity
       uint64_t id;
@@ -715,16 +759,29 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
       uint32_t newTableId;
       if(!connection.createTable(tablePrefix + "/orders", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setOrdersTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/transactions", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setTransactionsTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/assets", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setAssetsTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/log", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setLogTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/properties", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setPropertiesTableId(newTableId);
       if(!connection.createTable(tablePrefix + "/markers", newTableId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      session->setMarkersTableId(newTableId);
+
+      // create offline responder
+      if(!connection.subscribe(sessionTableId, zlimdb_query_type_since_next, 0, zlimdb_subscribe_flag_responder))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      TableInfo tableInfoData = {Main::userSession};
+      TableInfo& tableInfo = this->tableInfo.append(sessionTableId, tableInfoData);
+      tableInfo.object = session;
 
       // send answer
       return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&sessionId, sizeof(sessionId));
@@ -796,26 +853,23 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
             return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
         }
 
+        // remove offline responder
+        if(!connection.unsubscribe(session->getSessionTableId()))
+            return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+        tableInfo.remove(session->getSessionTableId());
+
         // prepare tables
         String tablePrefix = String("users/") + session->getUser().getName() + "/sessions/" + String::fromUInt64(session->getSessionId());
-        if(session->getMode() == meguco_user_session_live)
-        { // try to restore backups (in case something fucked up for some reason)
-          connection.moveTable(tablePrefix + "/orders.backup", session->getOrdersTableId(), true);
-          connection.moveTable(tablePrefix + "/transactions.backup", session->getTransactionsTableId(), true);
-          connection.moveTable(tablePrefix + "/assets.backup", session->getAssetsTableId(), true);
-          connection.moveTable(tablePrefix + "/log.backup", session->getLogTableId(), true);
-          connection.moveTable(tablePrefix + "/properties.backup", session->getPropertiesTableId(), true);
-          connection.moveTable(tablePrefix + "/markers.backup", session->getMarkersTableId(), true);
-        }
-        else
-        { // create table backups if they do not exist
+        if(session->getMode() != meguco_user_session_live)
+        { // create table backups
           uint32_t newTableId;
-          connection.copyTable(session->getOrdersTableId(), tablePrefix + "/orders.backup", newTableId, false);
-          connection.copyTable(session->getTransactionsTableId(), tablePrefix + "/transactions.backup", newTableId, false);
-          connection.copyTable(session->getAssetsTableId(), tablePrefix + "/assets.backup", newTableId, false);
-          connection.copyTable(session->getLogTableId(), tablePrefix + "/log.backup", newTableId, false);
-          connection.copyTable(session->getPropertiesTableId(), tablePrefix + "/properties.backup", newTableId, false);
-          connection.copyTable(session->getMarkersTableId(), tablePrefix + "/markers.backup", newTableId, false);
+          if(!connection.copyTable(session->getOrdersTableId(), tablePrefix + "/orders.backup", newTableId) ||
+             !connection.copyTable(session->getTransactionsTableId(), tablePrefix + "/transactions.backup", newTableId) ||
+             !connection.copyTable(session->getAssetsTableId(), tablePrefix + "/assets.backup", newTableId) ||
+             !connection.copyTable(session->getLogTableId(), tablePrefix + "/log.backup", newTableId) ||
+             !connection.copyTable(session->getPropertiesTableId(), tablePrefix + "/properties.backup", newTableId) ||
+             !connection.copyTable(session->getMarkersTableId(), tablePrefix + "/markers.backup", newTableId))
+            return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
         }
 
         // start process
@@ -860,7 +914,86 @@ void_t Main::controlUser(User & user, uint32_t requestId, uint64_t entityId, uin
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
 
+  default:
+    return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+  }
+}
 
+void_t Main::controlUserSession(Session& session, uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
+{
+  switch(controlCode)
+  {
+  case meguco_user_session_control_create_asset:
+    {
+      const meguco_user_session_asset_entity* asset = (const meguco_user_session_asset_entity*)zlimdb_data_get_first_entity(data, size, sizeof(meguco_user_session_asset_entity));
+      if(!asset)
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+      meguco_user_session_asset_entity newAsset = *asset;
+      if(newAsset.state == meguco_user_session_asset_submitting)
+        newAsset.state = asset->type == meguco_user_session_asset_buy ? meguco_user_session_asset_wait_buy : meguco_user_session_asset_wait_sell;
+      if(!connection.add(session.getAssetsTableId(), newAsset.entity, newAsset.entity.id))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&newAsset.entity.id, sizeof(uint64_t));
+    }
+  case meguco_user_session_control_remove_asset:
+    {
+      if(!connection.remove(session.getAssetsTableId(), entityId))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      return (void_t)connection.sendControlResponse(requestId, 0, 0);
+    }
+  case meguco_user_session_control_update_asset:
+    {
+      if(size < sizeof(meguco_user_session_control_update_asset_params))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+      const meguco_user_session_control_update_asset_params* args = (const meguco_user_session_control_update_asset_params*)data;
+      meguco_user_session_asset_entity asset;
+      if(!connection.queryEntity(session.getAssetsTableId(), entityId, asset.entity, sizeof(meguco_user_session_asset_entity), sizeof(meguco_user_session_asset_entity)))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      meguco_user_session_asset_entity updatedAsset = asset;
+      updatedAsset.flip_price = args->flip_price;
+      if(!connection.update(session.getAssetsTableId(), updatedAsset.entity))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      return (void_t)connection.sendControlResponse(requestId, 0, 0);
+    }
+  case meguco_user_session_control_update_property:
+    {
+      // get args
+      if(size < sizeof(meguco_user_session_control_update_property_params))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+      const meguco_user_session_control_update_property_params* args = (const meguco_user_session_control_update_property_params*)data;
+      String newValue;
+      if(!ZlimdbConnection::getString(args, size, sizeof(meguco_user_session_control_update_property_params), args->value_size, newValue))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+
+      // find property
+      byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
+      if(!connection.queryEntity(session.getPropertiesTableId(), entityId, ((meguco_user_session_property_entity*)buffer)->entity, sizeof(meguco_user_session_property_entity), ZLIMDB_MAX_ENTITY_SIZE))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      const meguco_user_session_property_entity* property = (const meguco_user_session_property_entity*)buffer;
+      if(property->flags & meguco_user_session_property_read_only)
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+      String name, oldValue, unit;
+      size_t offset = sizeof(meguco_user_session_property_entity);
+      if(!ZlimdbConnection::getString(property->entity, property->name_size, name, offset) ||
+        !ZlimdbConnection::getString(property->entity, property->value_size, name, offset) ||
+        !ZlimdbConnection::getString(property->entity, property->unit_size, name, offset))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+
+      // create new property entity
+      byte_t newBuffer[ZLIMDB_MAX_ENTITY_SIZE];
+      meguco_user_session_property_entity* updatedProperty = (meguco_user_session_property_entity*)newBuffer;
+      *updatedProperty = *property;
+      updatedProperty->entity.size = sizeof(meguco_user_session_property_entity);
+      if(!ZlimdbConnection::copyString(name, updatedProperty->entity, updatedProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+        !ZlimdbConnection::copyString(newValue, updatedProperty->entity, updatedProperty->value_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+        !ZlimdbConnection::copyString(unit, updatedProperty->entity, updatedProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
+        return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+
+      // update property
+      if(!connection.update(session.getPropertiesTableId(), updatedProperty->entity))
+        return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
+      return (void_t)connection.sendControlResponse(requestId, 0, 0);
+    }
   default:
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
   }

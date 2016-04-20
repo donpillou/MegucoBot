@@ -79,7 +79,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     return false;
   if(!connection.subscribe(sessionTableId, zlimdb_subscribe_flag_responder))
     return false;
-  bool_t simulation = true;
+  simulation = true;
   uint32_t brokerId = 0;
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   while(connection.getResponse(buffer))
@@ -197,6 +197,30 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   }
   if(connection.getErrno() != 0)
     return false;
+
+  // get live properties table
+  if(simulation)
+  {
+    if(!connection.findTable(tablePrefix + "/properties.backup", livePropertiesTableId))
+      return false;
+    if(!connection.query(livePropertiesTableId))
+      return false;
+    while(connection.getResponse(buffer))
+    {
+      String name, value, unit;
+      for(const meguco_user_session_property_entity* property = (const meguco_user_session_property_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_property_entity));
+        property;
+        property = (const meguco_user_session_property_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_property_entity), &property->entity))
+      {
+        size_t offset = sizeof(meguco_user_session_property_entity);
+        if(!ZlimdbConnection::getString(property->entity, property->name_size, name, offset))
+          continue;
+        liveProperties.append(name);
+      }
+    }
+    if(connection.getErrno() != 0)
+      return false;
+  }
 
   // get session assets
   if(!connection.query(assetsTableId))
@@ -356,6 +380,17 @@ bool_t Main::createSessionProperty(meguco_user_session_property_entity& property
     return false;
   if(!connection.add(propertiesTableId, newProperty->entity, property.entity.id))
     return false;
+
+  if(simulation)
+  {
+    if(!liveProperties.contains(name))
+    {
+      uint64_t id;
+      if(!connection.add(livePropertiesTableId, newProperty->entity, id))
+        return false;
+    }
+  }
+
   return true;
 }
 

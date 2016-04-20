@@ -27,6 +27,7 @@ public:
 
   bool_t subscribe(uint32_t tableId, uint8_t flags);
   bool_t subscribe(uint32_t tableId, zlimdb_query_type type, uint64_t param, uint8_t flags);
+  bool_t unsubscribe(uint32_t tableId);
   bool_t listen(uint32_t tableId);
   bool_t sync(uint32_t tableId, int64_t& serverTime, int64_t& tableTime);
   bool_t query(uint32_t tableId);
@@ -34,7 +35,7 @@ public:
   bool_t queryEntity(uint32_t tableId, uint64_t entityId, zlimdb_entity& entity, size_t minSize, size_t maxSize);
   bool_t createTable(const String& name, uint32_t& tableId);
   bool_t findTable(const String& name, uint32_t& tableId);
-  bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists = false);
+  bool_t copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId);
   bool_t moveTable(const String& sourceName, uint32_t destTableId, bool succeedIfNotExist = false);
   bool_t clearTable(uint32_t tableId);
   bool_t add(uint32_t tableId, const zlimdb_entity& entity, uint64_t& id, bool_t succeedIfExists = false);

@@ -61,6 +61,13 @@ bool_t ZlimdbConnection::subscribe(uint32_t tableId, zlimdb_query_type type, uin
   return true;
 }
 
+bool_t ZlimdbConnection::unsubscribe(uint32_t tableId)
+{
+  if(zlimdb_unsubscribe(zdb, tableId) != 0)
+    return false;
+  return true;
+}
+
 bool_t ZlimdbConnection::listen(uint32_t tableId)
 {
   if(zlimdb_subscribe(zdb, tableId, zlimdb_query_type_since_next, 0, zlimdb_subscribe_flag_responder) != 0)
@@ -127,16 +134,8 @@ bool_t ZlimdbConnection::findTable(const String& name, uint32_t& tableId)
   return true;
 }
 
-bool_t ZlimdbConnection::copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId, bool succeedIfExists)
+bool_t ZlimdbConnection::copyTable(uint32_t sourceTableId, const String& name, uint32_t& tableId)
 {
-  if(succeedIfExists)
-  {
-    uint32_t destinationTableId;
-    if(zlimdb_find_table(zdb, name, &destinationTableId) == 0)
-      return true;
-    if(zlimdb_errno() != zlimdb_error_table_not_found)
-      return false;
-  }
   if(zlimdb_copy_table(zdb, sourceTableId, name, &tableId) != 0)
     return false;
   return true;
