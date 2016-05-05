@@ -113,7 +113,7 @@ bool_t SimBroker::buy(double price, double amount, double total, int64_t timeout
     error = main.getErrorString();
     return false;
   }
-  ASSERT(order.timeout == orderTimeout);
+  ASSERT(order.timeout == (uint64_t)orderTimeout);
   if(id)
     *id = order.entity.id;
   if(orderedAmount)
@@ -155,7 +155,7 @@ bool_t SimBroker::sell(double price, double amount, double total, int64_t timeou
     error = main.getErrorString();
     return false;
   }
-  ASSERT(order.timeout == orderTimeout);
+  ASSERT(order.timeout == (uint64_t)orderTimeout);
   if(id)
     *id = order.entity.id;
   if(orderedAmount)

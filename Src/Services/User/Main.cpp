@@ -268,7 +268,7 @@ bool_t Main::connect()
     for(HashMap<uint64_t, Session*>::Iterator i = sessions.begin(), end = sessions.end(); i != end; ++i)
     {
       Session* session = *i;
-      if(session->getState() == meguco_user_broker_stopped)
+      if(session->getState() == meguco_user_session_stopped)
       {
           String tablePrefix = String("users/") + user->getName() + "/sessions/" + String::fromUInt64(session->getSessionId());
           if(!connection.moveTable(tablePrefix + "/transactions.backup", session->getTransactionsTableId(), true) ||
