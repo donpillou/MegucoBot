@@ -975,8 +975,8 @@ void_t Main::controlUserSession(Session& session, uint32_t requestId, uint64_t e
       String name, oldValue, unit;
       size_t offset = sizeof(meguco_user_session_property_entity);
       if(!ZlimdbConnection::getString(property->entity, property->name_size, name, offset) ||
-        !ZlimdbConnection::getString(property->entity, property->value_size, name, offset) ||
-        !ZlimdbConnection::getString(property->entity, property->unit_size, name, offset))
+        !ZlimdbConnection::getString(property->entity, property->value_size, oldValue, offset) ||
+        !ZlimdbConnection::getString(property->entity, property->unit_size, unit, offset))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 
       // create new property entity
