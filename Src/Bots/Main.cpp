@@ -2,6 +2,7 @@
 #include <nstd/Console.h>
 #include <nstd/Log.h>
 #include <nstd/Thread.h>
+#include <nstd/Time.h>
 #include <zlimdbprotocol.h>
 #include <megucoprotocol.h>
 
@@ -245,7 +246,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   int64_t serverTime, tableTime;
   if(!connection.sync(marketTableId, serverTime, tableTime))
     return false;
-  if(!connection.subscribe(marketTableId, zlimdb_query_type_since_time, tableTime - (simulation ? (6ULL * 31ULL * 24ULL * 60ULL * 60ULL * 1000ULL) : (maxTradeAge + 10 * 60 * 1000)), zlimdb_subscribe_flag_none))
+  if(!connection.subscribe(marketTableId, zlimdb_query_type_since_time, tableTime - (simulation ? (7ULL * 24ULL * 60ULL * 60ULL * 1000ULL) : (maxTradeAge + 10 * 60 * 1000)), zlimdb_subscribe_flag_none))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -256,6 +257,9 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   }
   if(connection.getErrno() != 0)
     return false;
+
+  if(simulation)
+    addLogMessage(Time::time(), "synced");
 
   return true;
 }
