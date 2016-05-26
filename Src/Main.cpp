@@ -116,7 +116,6 @@ bool_t Main::connect()
   String command;
   while(connection.getResponse(buffer))
   {
-    void* data = (byte_t*)buffer;
     for(const meguco_process_entity* process = (const meguco_process_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_process_entity));
         process;
         process = (const meguco_process_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_process_entity), &process->entity))
