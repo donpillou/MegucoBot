@@ -31,23 +31,19 @@ int_t main(int_t argc, char_t* argv[])
       while(dir.read(path, isDir))
         if(File::isExecutable(binaryDir + "/Brokers/" + path))
         {
-          const char_t* prevUpper = 0, * lastUpper = 0, * end;
+          path = File::basename(path, "exe");
+          const char_t* prevUpper = 0, * lastUpper = 0;
           for(const char_t* p = path; *p; ++p)
             if(String::isUpper(*p))
             {
               prevUpper = lastUpper;
               lastUpper = p;
             }
-            else if(*p == '.')
-            {
-              end = p;
-              break;
-            }
-          if(prevUpper && lastUpper && end)
+          if(prevUpper && lastUpper)
           {
             String name = path.substr(0, prevUpper - (const char_t*)path);
             String comm = path.substr(name.length(), lastUpper - prevUpper).toUpperCase();
-            String base = path.substr(name.length() + comm.length(), end - lastUpper).toUpperCase();
+            String base = path.substr(name.length() + comm.length()).toUpperCase();
             main.addBrokerType(name + "/" + comm + "/" + base, String("Brokers/") + path);
           }
         }
