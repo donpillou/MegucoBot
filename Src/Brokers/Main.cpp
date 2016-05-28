@@ -325,7 +325,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
   case meguco_user_broker_control_update_order:
-    if(size < sizeof(meguco_user_broker_order_control_update_params))
+    if(size < sizeof(meguco_user_broker_control_update_order_params))
       return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
     {
       HashMap<uint64_t, meguco_user_broker_order_entity>::Iterator it = orders2.find(entityId);
@@ -333,7 +333,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
       meguco_user_broker_order_entity& order = *it;
 
-      const meguco_user_broker_order_control_update_params& params = *(const meguco_user_broker_order_control_update_params*)data;
+      const meguco_user_broker_control_update_order_params& params = *(const meguco_user_broker_control_update_order_params*)data;
 
       // cancel order
       if(!broker->cancelOrder(order.raw_id))

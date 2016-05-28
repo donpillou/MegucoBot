@@ -124,9 +124,11 @@ bool_t BitstampBtcUsd::createOrder(meguco_user_broker_order_type type, double pr
   order.entity.id = 0;
   order.entity.time = time.toTimestamp();
 
-  order.price = orderData.find("price")->toDouble();
-  order.amount = Math::abs(orderData.find("amount")->toDouble());
-  order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
+  price = orderData.find("price")->toDouble();
+  amount = Math::abs(orderData.find("amount")->toDouble());
+  order.total = Math::abs(getOrderCharge(buy ? amount : -amount, price));
+  order.price = price;
+  order.amount = amount;
   this->orders.append(order.raw_id, order);
 
   // update balance
@@ -231,11 +233,13 @@ bool_t BitstampBtcUsd::loadOrders(List<meguco_user_broker_order_entity>& orders)
       continue;
     order.entity.time = time.toTimestamp();
 
-    order.price = orderData.find("price")->toDouble();
-    order.amount = Math::abs(orderData.find("amount")->toDouble());
-    order.total = Math::abs(getOrderCharge(buy ? order.amount : -order.amount, order.price));
+    double price = orderData.find("price")->toDouble();
+    double amount = Math::abs(orderData.find("amount")->toDouble());
+    order.total = Math::abs(getOrderCharge(buy ? amount : -amount, price));
     order.timeout = 0;
     order.state = meguco_user_broker_order_open;
+    order.amount = amount;
+    order.price = price;
 
     this->orders.append(order.raw_id, order);
     orders.append(order);
@@ -292,9 +296,10 @@ bool_t BitstampBtcUsd::loadTransactions(List<meguco_user_broker_transaction_enti
     double value = transactionData.find("usd")->toDouble();
     bool buy = value < 0.;
     transaction.type = buy ? meguco_user_broker_transaction_buy : meguco_user_broker_transaction_sell;
-    transaction.amount = Math::abs(transactionData.find("btc")->toDouble());
+    double amount = Math::abs(transactionData.find("btc")->toDouble());
     transaction.total = buy ? (Math::abs(value) + fee) : (Math::abs(value) - fee);
-    transaction.price = Math::abs(value) / Math::abs(transaction.amount);
+    transaction.price = Math::abs(value) / Math::abs(amount);
+    transaction.amount = amount;
 
     transactions.append(transaction);
   }
