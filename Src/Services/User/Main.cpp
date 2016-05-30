@@ -26,14 +26,14 @@ int_t main(int_t argc, char_t* argv[])
     Directory dir;
     if(dir.open(binaryDir + "/Brokers", String(), false))
     {
-      String path;
+      String path, basename;
       bool_t isDir;
       while(dir.read(path, isDir))
         if(File::isExecutable(binaryDir + "/Brokers/" + path))
         {
-          path = File::basename(path, "exe");
+          basename = File::basename(path, "exe");
           const char_t* prevUpper = 0, * lastUpper = 0;
-          for(const char_t* p = path; *p; ++p)
+          for(const char_t* p = basename; *p; ++p)
             if(String::isUpper(*p))
             {
               prevUpper = lastUpper;
@@ -41,9 +41,9 @@ int_t main(int_t argc, char_t* argv[])
             }
           if(prevUpper && lastUpper)
           {
-            String name = path.substr(0, prevUpper - (const char_t*)path);
-            String comm = path.substr(name.length(), lastUpper - prevUpper).toUpperCase();
-            String base = path.substr(name.length() + comm.length()).toUpperCase();
+            String name = basename.substr(0, prevUpper - (const char_t*)basename);
+            String comm = basename.substr(name.length(), lastUpper - prevUpper).toUpperCase();
+            String base = basename.substr(name.length() + comm.length()).toUpperCase();
             main.addBrokerType(name + "/" + comm + "/" + base, String("Brokers/") + path);
           }
         }
