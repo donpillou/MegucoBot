@@ -164,23 +164,6 @@ bool_t LiveBroker::buy(double price, double amount, double total, int64_t timeou
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-//#ifdef BOT_TESTBOT
-//  List<meguco_user_broker_order_entity> marketOrders;
-//  connectionHandler.getMarketOrders(marketOrders);
-//  for(List<meguco_user_broker_order_entity>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
-//  {
-//    if(i->entityId == order.entityId)
-//    {
-//      ASSERT(i->type == BotProtocol::Order::buy);
-//      ASSERT(i->amount == order.amount);
-//      ASSERT(i->price == order.price);
-//      goto testok;
-//    }
-//  }
-//  ASSERT(false);
-//testok:
-//#endif
-
   main.createSessionOrder(order);
 
   meguco_user_session_marker_entity marker;
@@ -212,23 +195,6 @@ bool_t LiveBroker::sell(double price, double amount, double total, int64_t timeo
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-//#ifdef BOT_TESTBOT
-//  List<meguco_user_broker_order_entity> marketOrders;
-//  connectionHandler.getMarketOrders(marketOrders);
-//  for(List<BotProtocol::Order>::Iterator i = marketOrders.begin(), end = marketOrders.end(); i != end; ++i)
-//  {
-//    if(i->entityId == order.entityId)
-//    {
-//      ASSERT(i->type == BotProtocol::Order::sell);
-//      ASSERT(i->amount == order.amount);
-//      ASSERT(i->price == order.price);
-//      goto testok;
-//    }
-//  }
-//  ASSERT(false);
-//testok:
-//#endif
-  
   main.createSessionOrder(order);
 
   meguco_user_session_marker_entity marker;
@@ -323,24 +289,6 @@ void_t LiveBroker::updateAsset(const meguco_user_session_asset_entity& asset)
   destAsset.entity.id = asset.entity.id;
   main.updateSessionAsset(destAsset);
 }
-
-//const BotProtocol::SessionProperty* LiveBroker::getProperty(uint32_t id) const
-//{
-//  for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-//    if(i->entityId == id)
-//      return &*i;
-//  return 0;
-//}
-//
-//void_t LiveBroker::updateProperty(const BotProtocol::SessionProperty& property)
-//{
-//  for(HashMap<String, BotProtocol::SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-//    if(i->entityId == property.entityId)
-//    {
-//      connectionHandler.updateSessionProperty(property);
-//      *i = property;
-//    }
-//}
 
 double LiveBroker::getProperty(const String& name, double defaultValue) const
 {

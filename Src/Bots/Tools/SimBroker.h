@@ -64,9 +64,6 @@ private: // Bot::Broker
   virtual void_t removeAsset(uint64_t id);
   virtual void_t updateAsset(const meguco_user_session_asset_entity& asset);
 
-  //virtual const HashMap<String, SessionProperty>& getProperties() const {return properties;}
-  //virtual const SessionProperty* getProperty(uint64_t id) const;
-  //virtual void_t updateProperty(const SessionProperty& property);
   virtual double getProperty(const String& name, double defaultValue) const;
   virtual String getProperty(const String& name, const String& defaultValue) const;
   virtual void_t registerProperty(const String& name, double value, uint32_t flags = meguco_user_session_property_none, const String& unit = String());

@@ -12,15 +12,6 @@ class Bot
 public:
   class Broker
   {
-  //public:
-  //  struct SessionProperty
-  //  {
-  //    meguco_user_session_property_entity property;
-  //    String name;
-  //    String value;
-  //    String unit;
-  //  };
-
   public:
     virtual ~Broker() {}
 
@@ -45,9 +36,6 @@ public:
     virtual void_t removeAsset(uint64_t id) = 0;
     virtual void_t updateAsset(const meguco_user_session_asset_entity& asset) = 0;
 
-    //virtual const HashMap<String, SessionProperty>& getProperties() const = 0;
-    //virtual const SessionProperty* getProperty(uint64_t id) const = 0;
-    //virtual void_t updateProperty(const meguco_user_session_property_entity& property) = 0;
     virtual double getProperty(const String& name, double defaultValue) const = 0;
     virtual String getProperty(const String& name, const String& defaultValue) const = 0;
     virtual void_t registerProperty(const String& name, double value, uint32_t flags = meguco_user_session_property_none, const String& unit = String()) = 0;

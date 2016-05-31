@@ -253,24 +253,6 @@ void_t SimBroker::updateAsset(const meguco_user_session_asset_entity& asset)
   main.updateSessionAsset(destAsset);
 }
 
-//const Bot::Broker::SessionProperty* SimBroker::getProperty(uint64_t id) const
-//{
-//  for(HashMap<String, SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-//    if(i->entity.id == id)
-//      return &*i;
-//  return 0;
-//}
-
-//void_t SimBroker::updateProperty(const SessionProperty& property)
-//{
-//  for(HashMap<String, SessionProperty>::Iterator i = properties.begin(), end = properties.end(); i != end; ++i)
-//    if(i->property.entity.id == property.property.entity.id)
-//    {
-//      connectionHandler.updateSessionProperty(property.property, property.name, property.value, property.unit);
-//      *i = property;
-//    }
-//}
-
 double SimBroker::getProperty(const String& name, double defaultValue) const
 {
   HashMap<String, Property*>::Iterator it = propertiesByName.find(name);
