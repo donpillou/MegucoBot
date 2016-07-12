@@ -72,7 +72,7 @@ void FlipBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_tran
       updatedAsset.profitable_price = transaction2.price * (1. + fee * 2.);
       double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
       updatedAsset.flip_price = transaction2.price * (1. + fee * (1. + sellProfitGain) * 2.);
-      updatedAsset.time = transaction2.entity.time;
+      updatedAsset.lastTransactionTime = transaction2.entity.time;
 
       broker.updateAsset(updatedAsset);
       updateBalance();
@@ -104,7 +104,7 @@ void FlipBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_tra
       updatedAsset.profitable_price = transaction2.price / (1. + fee * 2.);
       double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
       updatedAsset.flip_price = transaction2.price / (1. + fee * (1. + buyProfitGain) * 2.);
-      updatedAsset.time = transaction2.entity.time;
+      updatedAsset.lastTransactionTime = transaction2.entity.time;
 
       broker.updateAsset(updatedAsset);
       updateBalance();

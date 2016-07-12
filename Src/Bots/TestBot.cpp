@@ -28,7 +28,7 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
     meguco_user_session_asset_entity asset;
     asset.type = meguco_user_session_asset_buy;
     asset.state = meguco_user_session_asset_wait_sell;
-    asset.time = 89;
+    asset.lastTransactionTime = 89;
     asset.price = 300;
     asset.invest_comm = 0.;
     asset.invest_base = 0.;

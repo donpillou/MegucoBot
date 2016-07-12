@@ -135,7 +135,7 @@ void BetBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_trans
     meguco_user_session_asset_entity sessionAsset;
     sessionAsset.type = meguco_user_session_asset_buy;
     sessionAsset.state = meguco_user_session_asset_wait_sell;
-    sessionAsset.time = transaction.entity.time;
+    sessionAsset.lastTransactionTime = transaction.entity.time;
     sessionAsset.price = transaction.price;
     sessionAsset.invest_comm = 0.;
     sessionAsset.invest_base = transaction.total;
@@ -266,7 +266,7 @@ void BetBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_tran
     meguco_user_session_asset_entity sessionAsset;
     sessionAsset.type = meguco_user_session_asset_sell;
     sessionAsset.state = meguco_user_session_asset_wait_buy;
-    sessionAsset.time = transaction.entity.time;
+    sessionAsset.lastTransactionTime = transaction.entity.time;
     sessionAsset.price = transaction.price;
     sessionAsset.invest_comm = transaction.amount;
     sessionAsset.invest_base = 0.;
