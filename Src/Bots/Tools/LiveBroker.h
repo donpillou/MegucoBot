@@ -14,28 +14,19 @@ public:
   LiveBroker(Main& main, const String& currencyBase, const String& currencyComm);
 
 private:
-  struct Property
-  {
-    meguco_user_session_property_entity property;
-    String name;
-    String value;
-    String unit;
-  };
-
-private:
   Main& main;
   String currencyBase;
   String currencyComm;
   String error;
-  HashMap<uint64_t, meguco_user_broker_order_entity> openOrders;
+  HashMap<uint64_t, Bot::Order> openOrders;
   int64_t time;
   int64_t lastBuyTime;
   int64_t lastSellTime;
   int64_t lastOrderRefreshTime;
-  HashMap<uint64_t, meguco_user_broker_transaction_entity> transactions;
-  HashMap<uint64_t, meguco_user_session_asset_entity> assets;
-  HashMap<uint64_t, Property> properties;
-  HashMap<String, Property*> propertiesByName;
+  HashMap<uint64_t, Bot::Transaction> transactions;
+  HashMap<uint64_t, Bot::Asset> assets;
+  HashMap<uint64_t, Bot::Property> properties;
+  HashMap<String, Bot::Property*> propertiesByName;
 
 private:
   void_t refreshOrders(Bot::Session& botSession);
@@ -51,18 +42,18 @@ private: // Bot::Broker
   virtual bool_t buy(double price, double amount, double total, int64_t timeout, uint64_t* id, double* orderedAmount);
   virtual bool_t sell(double price, double amount, double total, int64_t timeout, uint64_t* id, double* orderedAmount);
   virtual bool_t cancelOder(uint64_t id);
-  virtual const HashMap<uint64_t, meguco_user_broker_order_entity> getOrders() const {return openOrders;}
-  virtual const meguco_user_broker_order_entity* getOrder(uint64_t id) const;
+  virtual const HashMap<uint64_t, Bot::Order> getOrders() const {return openOrders;}
+  virtual const Bot::Order* getOrder(uint64_t id) const;
   virtual size_t getOpenBuyOrderCount() const;
   virtual size_t getOpenSellOrderCount() const;
   virtual int64_t getTimeSinceLastBuy() const{return time - lastBuyTime;}
   virtual int64_t getTimeSinceLastSell() const {return time - lastSellTime;}
 
-  virtual const HashMap<uint64_t, meguco_user_session_asset_entity>& getAssets() const {return assets;}
-  virtual const meguco_user_session_asset_entity* getAsset(uint64_t id) const;
-  virtual bool_t createAsset(meguco_user_session_asset_entity& asset);
+  virtual const HashMap<uint64_t, Bot::Asset>& getAssets() const {return assets;}
+  virtual const Bot::Asset* getAsset(uint64_t id) const;
+  virtual bool_t createAsset2(Bot::Asset& asset);
   virtual void_t removeAsset(uint64_t id);
-  virtual void_t updateAsset(const meguco_user_session_asset_entity& asset);
+  virtual void_t updateAsset2(const Bot::Asset& asset);
 
   virtual double getProperty(const String& name, double defaultValue) const;
   virtual String getProperty(const String& name, const String& defaultValue) const;
@@ -75,15 +66,15 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
-  virtual void_t registerTransaction(const meguco_user_broker_transaction_entity& transaction);
-  virtual void_t registerOrder(const meguco_user_broker_order_entity& order);
-  virtual void_t registerAsset(const meguco_user_session_asset_entity& asset);
+  virtual void_t registerTransaction2(const Bot::Transaction& transaction);
+  virtual void_t registerOrder2(const Bot::Order& order);
+  virtual void_t registerAsset2(const Bot::Asset& asset);
   virtual void_t unregisterAsset(uint64_t id);
-  virtual void_t registerProperty(const meguco_user_session_property_entity& property, const String& name, const String& value, const String& unit);
+  virtual void_t registerProperty2(const Bot::Property& property);
 
-  virtual const meguco_user_session_property_entity* getProperty(uint64_t id, String& name, String& value, String& unit);
+  virtual const Bot::Property* getProperty(uint64_t id);
 
   virtual const String& getLastError() const {return error;}
-  virtual void_t handleTrade(Bot::Session& session, const meguco_trade_entity& trade, bool_t replayed);
+  virtual void_t handleTrade2(Bot::Session& session, const Bot::Trade& trade, bool_t replayed);
 };
 

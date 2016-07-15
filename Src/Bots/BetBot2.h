@@ -51,11 +51,11 @@ private:
 
     //virtual ~Session() {}
 
-    void_t checkBuyIn(const meguco_trade_entity& trade, const TradeHandler::Values& values);
-    void_t checkSellIn(const meguco_trade_entity& trade, const TradeHandler::Values& values);
+    void_t checkBuyIn(const Bot::Trade& trade, const TradeHandler::Values& values);
+    void_t checkSellIn(const Bot::Trade& trade, const TradeHandler::Values& values);
 
-    void_t checkAssetBuy(const meguco_trade_entity& trade);
-    void_t checkAssetSell(const meguco_trade_entity& trade);
+    void_t checkAssetBuy(const Bot::Trade& trade);
+    void_t checkAssetSell(const Bot::Trade& trade);
 
     void_t resetBetOrders();
     void_t updateAvailableBalance();
@@ -65,14 +65,14 @@ private:
     double getSellInComm(double currentPrice, const TradeHandler::Values& values) const;
 
   private: // Bot::Session
-    virtual void_t handleTrade(const meguco_trade_entity& trade, int64_t tradeAge);
-    virtual void_t handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
-    virtual void_t handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction);
+    virtual void_t handleTrade2(const Trade& trade, int64_t tradeAge);
+    virtual void_t handleBuy2(uint64_t orderId, const Transaction& transaction);
+    virtual void_t handleSell2(uint64_t orderId, const Transaction& transaction);
     virtual void_t handleBuyTimeout(uint64_t orderId);
     virtual void_t handleSellTimeout(uint64_t orderId);
-    virtual void_t handlePropertyUpdate(const meguco_user_session_property_entity& property);
-    virtual void_t handleAssetUpdate(const meguco_user_session_asset_entity& asset);
-    virtual void_t handleAssetRemoval(const meguco_user_session_asset_entity& asset);
+    virtual void_t handlePropertyUpdate2(const Property& property);
+    virtual void_t handleAssetUpdate2(const Asset& asset);
+    virtual void_t handleAssetRemoval2(const Asset& asset);
   };
 
 public: // Bot

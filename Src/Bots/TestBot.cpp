@@ -8,7 +8,7 @@ TestBot::Session::Session(Broker& broker) : broker(broker), updateCount(0)
   broker.registerProperty("prop4ro", "edit me", meguco_user_session_property_none, "teel");
 }
 
-void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tradeAge)
+void TestBot::Session::handleTrade2(const Trade& trade, int64_t tradeAge)
 {
   if(updateCount++ == 0)
   {
@@ -25,10 +25,10 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
       broker.warning("sell order count is not 1.");
 
     // test item creating, updating and removing
-    meguco_user_session_asset_entity asset;
+    Bot::Asset asset;
     asset.type = meguco_user_session_asset_buy;
     asset.state = meguco_user_session_asset_wait_sell;
-    asset.lastTransactionTime = 89;
+    asset.last_transaction_time = 89;
     asset.price = 300;
     asset.invest_comm = 0.;
     asset.invest_base = 0.;
@@ -37,27 +37,27 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
     asset.price = 320;
     asset.profitable_price = 330;
     asset.flip_price = 340;
-    if(!broker.createAsset(asset))
+    if(!broker.createAsset2(asset))
       broker.warning("createItem returned false.");
     {
-      const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+      const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
       if(assets.size() == 0)
         broker.warning("items size is 0.");
       else
       {
-        meguco_user_session_asset_entity asset = *assets.begin();
+        Bot::Asset asset = *assets.begin();
         double newBalanceBase = asset.balance_base / 2.;
         asset.balance_base = newBalanceBase;
         size_t assetCount = assets.size();
-        broker.updateAsset(asset);
-        const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
+        broker.updateAsset2(asset);
+        const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
         if(assets.size() != assetCount)
           broker.warning("asset count changed after update.");
-        meguco_user_session_asset_entity& asset2 = *assets.find(asset.entity.id);
+        Bot::Asset& asset2 = *assets.find(asset.id);
         if(asset.balance_base != asset2.balance_base)
           broker.warning("asset update failed.");
-        broker.removeAsset(asset2.entity.id);
-        const HashMap<uint64_t, meguco_user_session_asset_entity>& assets2 = broker.getAssets();
+        broker.removeAsset(asset2.id);
+        const HashMap<uint64_t, Bot::Asset>& assets2 = broker.getAssets();
         if(assets2.size() != assetCount - 1)
           broker.warning("asset remove failed.");
       }
@@ -81,10 +81,10 @@ void TestBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tra
   }
 }
 
-void TestBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction)
+void TestBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& transaction)
 {
 }
 
-void TestBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction)
+void TestBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& transaction)
 {
 }

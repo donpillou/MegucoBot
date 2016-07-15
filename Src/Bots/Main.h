@@ -20,18 +20,18 @@ public:
 
   bool_t getBrokerBalance(meguco_user_broker_balance_entity& balance);
   bool_t getBrokerOrders(List<meguco_user_broker_order_entity>& orders);
-  bool_t createBrokerOrder(meguco_user_broker_order_entity& order);
+  bool_t createBrokerOrder2(Bot::Order& order);
   bool_t removeBrokerOrder(uint64_t id);
 
-  bool_t createSessionTransaction(meguco_user_broker_transaction_entity& transaction);
-  bool_t createSessionOrder(meguco_user_broker_order_entity& order);
+  bool_t createSessionTransaction2(Bot::Transaction& transaction);
+  bool_t createSessionOrder2(Bot::Order& order);
   bool_t removeSessionOrder(uint64_t id);
-  bool_t createSessionAsset(meguco_user_session_asset_entity& asset);
-  bool_t updateSessionAsset(const meguco_user_session_asset_entity& asset);
+  bool_t createSessionAsset2(Bot::Asset& asset);
+  bool_t updateSessionAsset2(const Bot::Asset& asset);
   bool_t removeSessionAsset(uint64_t id);
-  bool_t createSessionMarker(meguco_user_session_marker_entity& marker);
-  bool_t createSessionProperty(meguco_user_session_property_entity& property, const String& name, const String& value, const String& unit);
-  bool_t updateSessionProperty(const meguco_user_session_property_entity& property, const String& name, const String& value, const String& unit);
+  bool_t createSessionMarker2(Bot::Marker& marker);
+  bool_t createSessionProperty(Bot::Property& property);
+  bool_t updateSessionProperty(const Bot::Property& property);
   bool_t removeSessionProperty(uint64_t id);
 
   bool_t addLogMessage(int64_t time, const String& message);

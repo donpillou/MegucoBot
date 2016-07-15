@@ -60,10 +60,10 @@ public:
   static int64_t getMaxTradeAge() {return depths[sizeof(depths) / sizeof(*depths) - 1] * 1000ULL;}
 
 public:
-  void add(const meguco_trade_entity& trade, int64_t tradeAge)
+  void add(const Bot::Trade& trade, int64_t tradeAge)
   {
     uint64_t tradeAgeSecs = tradeAge / 1000ULL;
-    uint64_t timeSecs = trade.entity.time / 1000ULL;
+    uint64_t timeSecs = trade.time / 1000ULL;
 
     for(int i = 0; i < (int)numOfRegressions; ++i)
       averager[i].add(timeSecs, tradeAgeSecs, trade.amount, trade.price, depths[i]);

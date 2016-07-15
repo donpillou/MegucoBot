@@ -160,7 +160,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_user_broker_transaction_entity* transaction = (const meguco_user_broker_transaction_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_transaction_entity));
       transaction;
       transaction = (const meguco_user_broker_transaction_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_transaction_entity), &transaction->entity))
-      broker->registerTransaction(*transaction);
+      broker->registerTransaction2(*transaction);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -173,7 +173,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_user_broker_order_entity* order = (const meguco_user_broker_order_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_order_entity));
       order;
       order = (const meguco_user_broker_order_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_order_entity), &order->entity))
-      broker->registerOrder(*order);
+      broker->registerOrder2(*order);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -181,9 +181,9 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   // get session properties
   if(!connection.query(propertiesTableId))
     return false;
+  String name, value, unit;
   while(connection.getResponse(buffer))
   {
-    String name, value, unit;
     for(const meguco_user_session_property_entity* property = (const meguco_user_session_property_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_property_entity));
       property;
       property = (const meguco_user_session_property_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_property_entity), &property->entity))
@@ -193,7 +193,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
         !ZlimdbConnection::getString(property->entity, property->value_size, value, offset) ||
         !ZlimdbConnection::getString(property->entity, property->unit_size, unit, offset))
         continue;
-      broker->registerProperty(*property, name, value, unit);
+      broker->registerProperty2(Bot::Property(*property, name, value, unit));
     }
   }
   if(connection.getErrno() != 0)
@@ -231,7 +231,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_user_session_asset_entity* asset = (const meguco_user_session_asset_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_asset_entity));
       asset;
       asset = (const meguco_user_session_asset_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_asset_entity), &asset->entity))
-      broker->registerAsset(*asset);
+      broker->registerAsset2(*asset);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -253,7 +253,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_trade_entity* trade = (const meguco_trade_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_trade_entity));
       trade;
       trade = (const meguco_trade_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_trade_entity), &trade->entity))
-      broker->handleTrade(*botSession, *trade, true);
+      broker->handleTrade2(*botSession, *trade, true);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -297,16 +297,16 @@ bool_t Main::getBrokerOrders(List<meguco_user_broker_order_entity>& orders)
   return true;
 }
 
-bool_t Main::createBrokerOrder(meguco_user_broker_order_entity& order)
+bool_t Main::createBrokerOrder2(Bot::Order& order)
 {
-  ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(meguco_user_broker_order_entity));
+  meguco_user_broker_order_entity orderEntity = order;
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.control(brokerTableId, 1, meguco_user_broker_control_create_order, &order, sizeof(meguco_user_broker_order_entity), buffer))
     return false;
   const uint64_t* id = (const uint64_t*)zlimdb_get_response_data((const zlimdb_header*)buffer, sizeof(uint64_t));
   if(!id)
     return false;
-  order.entity.id = *id;
+  order.id = *id;
   return true;
 }
 
@@ -318,18 +318,18 @@ bool_t Main::removeBrokerOrder(uint64_t id)
   return true;
 }
 
-bool_t Main::createSessionTransaction(meguco_user_broker_transaction_entity& transaction)
+bool_t Main::createSessionTransaction2(Bot::Transaction& transaction)
 {
-  ZlimdbConnection::setEntityHeader(transaction.entity, 0, 0, sizeof(meguco_user_broker_transaction_entity));
-  if(!connection.add(transactionsTableId, transaction.entity, transaction.entity.id))
+  meguco_user_broker_transaction_entity transactionEntity = transaction;
+  if(!connection.add(transactionsTableId, transactionEntity.entity, transaction.id))
     return false;
   return true;
 }
 
-bool_t Main::createSessionOrder(meguco_user_broker_order_entity& order)
+bool_t Main::createSessionOrder2(Bot::Order& order)
 {
-  ZlimdbConnection::setEntityHeader(order.entity, 0, 0, sizeof(meguco_user_broker_order_entity));
-  if(!connection.add(ordersTableId, order.entity, order.entity.id))
+  meguco_user_broker_order_entity orderEntity = order;
+  if(!connection.add(ordersTableId, orderEntity.entity, order.id))
     return false;
   return true;
 }
@@ -341,17 +341,18 @@ bool_t Main::removeSessionOrder(uint64_t id)
   return true;
 }
 
-bool_t Main::createSessionAsset(meguco_user_session_asset_entity& asset)
+bool_t Main::createSessionAsset2(Bot::Asset& asset)
 {
-  ZlimdbConnection::setEntityHeader(asset.entity, 0, 0, sizeof(meguco_user_session_asset_entity));
-  if(!connection.add(assetsTableId, asset.entity, asset.entity.id))
+  meguco_user_session_asset_entity newAsset = asset;
+  if(!connection.add(assetsTableId, newAsset.entity, asset.id))
     return false;
   return true;
 }
 
-bool_t Main::updateSessionAsset(const meguco_user_session_asset_entity& asset)
+bool_t Main::updateSessionAsset2(const Bot::Asset& asset)
 {
-  if(!connection.update(assetsTableId, asset.entity))
+  meguco_user_session_asset_entity updatedAsset = asset;
+  if(!connection.update(assetsTableId, updatedAsset.entity))
     return false;
   return true;
 }
@@ -363,52 +364,53 @@ bool_t Main::removeSessionAsset(uint64_t id)
   return true;
 }
 
-bool_t Main::createSessionMarker(meguco_user_session_marker_entity& marker)
+bool_t Main::createSessionMarker2(Bot::Marker& marker)
 {
-  ZlimdbConnection::setEntityHeader(marker.entity, 0, 0, sizeof(meguco_user_session_marker_entity));
-  if(!connection.add(markersTableId, marker.entity, marker.entity.id))
+  meguco_user_session_marker_entity markerEntity = marker;
+  if(!connection.add(markersTableId, markerEntity.entity, marker.id))
     return false;
   return true;
 }
 
-bool_t Main::createSessionProperty(meguco_user_session_property_entity& property, const String& name, const String& value, const String& unit)
+bool_t Main::createSessionProperty(Bot::Property& property)
 {
   byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
   meguco_user_session_property_entity* newProperty = (meguco_user_session_property_entity*)buffer;
   ZlimdbConnection::setEntityHeader(newProperty->entity, 0, 0, sizeof(meguco_user_session_property_entity));
   newProperty->flags = property.flags;
   newProperty->type = property.type;
-  if(!ZlimdbConnection::copyString(name, newProperty->entity, newProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
-    !ZlimdbConnection::copyString(value, newProperty->entity, newProperty->value_size, ZLIMDB_MAX_ENTITY_SIZE) ||
-    !ZlimdbConnection::copyString(unit, newProperty->entity, newProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
+  if(!ZlimdbConnection::copyString(property.name, newProperty->entity, newProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+    !ZlimdbConnection::copyString(property.value, newProperty->entity, newProperty->value_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+    !ZlimdbConnection::copyString(property.unit, newProperty->entity, newProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
     return false;
-  if(!connection.add(propertiesTableId, newProperty->entity, property.entity.id))
+  if(!connection.add(propertiesTableId, newProperty->entity, property.id))
     return false;
 
   if(simulation)
   {
-    if(!liveProperties.contains(name))
+    if(!liveProperties.contains(property.name))
     {
       uint64_t id;
       if(!connection.add(livePropertiesTableId, newProperty->entity, id))
         return false;
+      liveProperties.append(property.name);
     }
   }
 
   return true;
 }
 
-bool_t Main::updateSessionProperty(const meguco_user_session_property_entity& property, const String& name, const String& value, const String& unit)
+bool_t Main::updateSessionProperty(const Bot::Property& property)
 {
   byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
-  meguco_user_session_property_entity* newProperty = (meguco_user_session_property_entity*)buffer;
-  *newProperty = property;
-  newProperty->entity.size = sizeof(meguco_user_session_property_entity);
-  if(!ZlimdbConnection::copyString(name, newProperty->entity, newProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
-    !ZlimdbConnection::copyString(value, newProperty->entity, newProperty->value_size, ZLIMDB_MAX_ENTITY_SIZE) ||
-    !ZlimdbConnection::copyString(unit, newProperty->entity, newProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
+  meguco_user_session_property_entity* updatedProperty = (meguco_user_session_property_entity*)buffer;
+  *updatedProperty = property;
+  updatedProperty->entity.size = sizeof(meguco_user_session_property_entity);
+  if(!ZlimdbConnection::copyString(property.name, updatedProperty->entity, updatedProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+    !ZlimdbConnection::copyString(property.value, updatedProperty->entity, updatedProperty->value_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+    !ZlimdbConnection::copyString(property.unit, updatedProperty->entity, updatedProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
     return false;
-  if(!connection.update(propertiesTableId, newProperty->entity))
+  if(!connection.update(propertiesTableId, updatedProperty->entity))
     return false;
   return true;
 }
@@ -454,21 +456,21 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
         newAsset.state = asset->type == meguco_user_session_asset_buy ? meguco_user_session_asset_wait_buy : meguco_user_session_asset_wait_sell;
       if(!connection.add(assetsTableId, newAsset.entity, newAsset.entity.id))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
-      broker->registerAsset(newAsset);
-      botSession->handleAssetUpdate(newAsset);
+      Bot::Asset asset2 = newAsset;
+      broker->registerAsset2(asset2);
+      botSession->handleAssetUpdate2(asset2);
       return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&newAsset.entity.id, sizeof(uint64_t));
     }
 
   case meguco_user_session_control_remove_asset:
     {
-      const meguco_user_session_asset_entity* asset = broker->getAsset(entityId);
+      const Bot::Asset* asset = broker->getAsset(entityId);
       if(!asset)
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
       if(!connection.remove(assetsTableId, entityId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
-      meguco_user_session_asset_entity removedAsset = *asset;
       broker->unregisterAsset(entityId);
-      botSession->handleAssetRemoval(removedAsset);
+      botSession->handleAssetRemoval2(*asset);
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
 
@@ -477,15 +479,16 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       if(size < sizeof(meguco_user_session_control_update_asset_params))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       const meguco_user_session_control_update_asset_params* args = (const meguco_user_session_control_update_asset_params*)data;
-      const meguco_user_session_asset_entity* asset = broker->getAsset(entityId);
+      const Bot::Asset* asset = broker->getAsset(entityId);
       if(!asset)
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_entity_not_found);
       meguco_user_session_asset_entity updatedAsset = *asset;
       updatedAsset.flip_price = args->flip_price;
       if(!connection.update(assetsTableId, updatedAsset.entity))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
-      broker->registerAsset(updatedAsset);
-      botSession->handleAssetUpdate(updatedAsset);
+      Bot::Asset updatedAsset2 = updatedAsset;
+      broker->registerAsset2(updatedAsset2);
+      botSession->handleAssetUpdate2(updatedAsset2);
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
 
@@ -500,8 +503,7 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 
       // find property
-      String name, oldValue, unit;
-      const meguco_user_session_property_entity* property = broker->getProperty(entityId, name, oldValue, unit);
+      const Bot::Property* property = broker->getProperty(entityId);
       if(!property)
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
       if(property->flags & meguco_user_session_property_read_only)
@@ -512,16 +514,17 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       meguco_user_session_property_entity* updatedProperty = (meguco_user_session_property_entity*)buffer;
       *updatedProperty = *property;
       updatedProperty->entity.size = sizeof(meguco_user_session_property_entity);
-      if(!ZlimdbConnection::copyString(name, updatedProperty->entity, updatedProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
+      if(!ZlimdbConnection::copyString(property->name, updatedProperty->entity, updatedProperty->name_size, ZLIMDB_MAX_ENTITY_SIZE) ||
         !ZlimdbConnection::copyString(newValue, updatedProperty->entity, updatedProperty->value_size, ZLIMDB_MAX_ENTITY_SIZE) ||
-        !ZlimdbConnection::copyString(unit, updatedProperty->entity, updatedProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
+        !ZlimdbConnection::copyString(property->unit, updatedProperty->entity, updatedProperty->unit_size, ZLIMDB_MAX_ENTITY_SIZE))
         return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
 
       // update property
       if(!connection.update(propertiesTableId, updatedProperty->entity))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
-      broker->registerProperty(*updatedProperty, name, newValue, unit);
-      botSession->handlePropertyUpdate(*updatedProperty);
+      Bot::Property updatedProperty2(*updatedProperty, property->name, newValue, property->unit);
+      broker->registerProperty2(updatedProperty2);
+      botSession->handlePropertyUpdate2(updatedProperty2);
 
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }

@@ -32,10 +32,10 @@ void_t FlipBot::Session::updateBalance()
 {
   double balanceBase = 0.;
   double balanceComm = 0.;
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     balanceComm += asset.balance_comm;
     balanceBase += asset.balance_base;
   }
@@ -43,25 +43,25 @@ void_t FlipBot::Session::updateBalance()
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm);
 }
 
-void FlipBot::Session::handleTrade(const meguco_trade_entity& trade, int64_t tradeAge)
+void FlipBot::Session::handleTrade2(const Bot::Trade& trade, int64_t tradeAge)
 {
   checkBuy(trade);
   checkSell(trade);
 }
 
-void FlipBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction2)
+void FlipBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& transaction2)
 {
   String message;
   message.printf("Bought %.08f @ %.02f", transaction2.amount, transaction2.price);
   broker.warning(message);
 
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     if(asset.state == meguco_user_session_asset_buying && asset.order_id == orderId)
     {
-      meguco_user_session_asset_entity updatedAsset = asset;
+      Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_wait_sell;
       updatedAsset.order_id = 0;
       updatedAsset.price = transaction2.price;
@@ -72,28 +72,28 @@ void FlipBot::Session::handleBuy(uint64_t orderId, const meguco_user_broker_tran
       updatedAsset.profitable_price = transaction2.price * (1. + fee * 2.);
       double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
       updatedAsset.flip_price = transaction2.price * (1. + fee * (1. + sellProfitGain) * 2.);
-      updatedAsset.lastTransactionTime = transaction2.entity.time;
+      updatedAsset.last_transaction_time = transaction2.time;
 
-      broker.updateAsset(updatedAsset);
+      broker.updateAsset2(updatedAsset);
       updateBalance();
       break;
     }
   }
 }
 
-void FlipBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_transaction_entity& transaction2)
+void FlipBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& transaction2)
 {
   String message;
   message.printf("Sold %.08f @ %.02f", transaction2.amount, transaction2.price);
   broker.warning(message);
 
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     if(asset.state == meguco_user_session_asset_selling && asset.order_id == orderId)
     {
-      meguco_user_session_asset_entity updatedAsset = asset;
+      Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_wait_buy;
       updatedAsset.order_id = 0;
       updatedAsset.price = transaction2.price;
@@ -104,9 +104,9 @@ void FlipBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_tra
       updatedAsset.profitable_price = transaction2.price / (1. + fee * 2.);
       double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
       updatedAsset.flip_price = transaction2.price / (1. + fee * (1. + buyProfitGain) * 2.);
-      updatedAsset.lastTransactionTime = transaction2.entity.time;
+      updatedAsset.last_transaction_time = transaction2.time;
 
-      broker.updateAsset(updatedAsset);
+      broker.updateAsset2(updatedAsset);
       updateBalance();
       break;
     }
@@ -115,16 +115,16 @@ void FlipBot::Session::handleSell(uint64_t orderId, const meguco_user_broker_tra
 
 void_t FlipBot::Session::handleBuyTimeout(uint64_t orderId)
 {
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     if(asset.state == meguco_user_session_asset_buying && asset.order_id == orderId)
     {
-      meguco_user_session_asset_entity updatedAsset = asset;
+      Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_wait_buy;
       updatedAsset.order_id = 0;
-      broker.updateAsset(updatedAsset);
+      broker.updateAsset2(updatedAsset);
       break;
     }
   }
@@ -132,32 +132,32 @@ void_t FlipBot::Session::handleBuyTimeout(uint64_t orderId)
 
 void_t FlipBot::Session::handleSellTimeout(uint64_t orderId)
 {
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     if(asset.state == meguco_user_session_asset_selling && asset.order_id == orderId)
     {
-      meguco_user_session_asset_entity updatedAsset = asset;
+      Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_wait_sell;
       updatedAsset.order_id = 0;
-      broker.updateAsset(updatedAsset);
+      broker.updateAsset2(updatedAsset);
       break;
     }
   }
 }
 
-void_t FlipBot::Session::handleAssetUpdate(const meguco_user_session_asset_entity& asset)
+void_t FlipBot::Session::handleAssetUpdate2(const Bot::Asset& asset)
 {
   updateBalance();
 }
 
-void_t FlipBot::Session::handleAssetRemoval(const meguco_user_session_asset_entity& asset)
+void_t FlipBot::Session::handleAssetRemoval2(const Bot::Asset& asset)
 {
   updateBalance();
 }
 
-void FlipBot::Session::checkBuy(const meguco_trade_entity& trade)
+void FlipBot::Session::checkBuy(const Bot::Trade& trade)
 {
   if(broker.getOpenBuyOrderCount() > 0)
     return; // there is already an open buy order
@@ -166,30 +166,30 @@ void FlipBot::Session::checkBuy(const meguco_trade_entity& trade)
     return; // do not buy too often
 
   double tradePrice = trade.price;
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     if(asset.state == meguco_user_session_asset_wait_buy && tradePrice <= asset.flip_price)
     {
-      meguco_user_session_asset_entity updatedAsset = asset;
+      Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_buying;
-      broker.updateAsset(updatedAsset);
+      broker.updateAsset2(updatedAsset);
 
       int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
       if(broker.buy(tradePrice, 0., asset.balance_base, buyTimeout * 1000, &updatedAsset.order_id, 0))
-        broker.updateAsset(updatedAsset);
+        broker.updateAsset2(updatedAsset);
       else
       {
         updatedAsset.state = meguco_user_session_asset_wait_buy;
-        broker.updateAsset(updatedAsset);
+        broker.updateAsset2(updatedAsset);
       }
       break;
     }
   }
 }
 
-void FlipBot::Session::checkSell(const meguco_trade_entity& trade)
+void FlipBot::Session::checkSell(const Bot::Trade& trade)
 {
   if(broker.getOpenSellOrderCount() > 0)
     return; // there is already an open sell order
@@ -198,23 +198,23 @@ void FlipBot::Session::checkSell(const meguco_trade_entity& trade)
     return; // do not sell too often
 
   double tradePrice = trade.price;
-  const HashMap<uint64_t, meguco_user_session_asset_entity>& assets = broker.getAssets();
-  for(HashMap<uint64_t, meguco_user_session_asset_entity>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
+  const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
+  for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
   {
-    const meguco_user_session_asset_entity& asset = *i;
+    const Bot::Asset& asset = *i;
     if(asset.state == meguco_user_session_asset_wait_sell && tradePrice >= asset.flip_price)
     {
-      meguco_user_session_asset_entity updatedAsset = asset;
+      Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_selling;
-      broker.updateAsset(updatedAsset);
+      broker.updateAsset2(updatedAsset);
 
       int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
       if(broker.sell(tradePrice, asset.balance_comm, 0., sellTimeout * 1000, &updatedAsset.order_id, 0))
-        broker.updateAsset(updatedAsset);
+        broker.updateAsset2(updatedAsset);
       else
       {
         updatedAsset.state = meguco_user_session_asset_wait_sell;
-        broker.updateAsset(updatedAsset);
+        broker.updateAsset2(updatedAsset);
       }
       break;
     }
