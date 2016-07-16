@@ -287,7 +287,7 @@ void_t Main::controlUserBroker(uint32_t requestId, uint64_t entityId, uint32_t c
       orders2.append(id, newOrder);
 
       // return entity id
-      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&id, sizeof(uint64_t));
+      return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&newOrder, sizeof(meguco_user_broker_order_entity));
     }
   case meguco_user_broker_control_cancel_order:
   case meguco_user_broker_control_remove_order:

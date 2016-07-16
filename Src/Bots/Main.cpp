@@ -303,10 +303,10 @@ bool_t Main::createBrokerOrder2(Bot::Order& order)
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.control(brokerTableId, 1, meguco_user_broker_control_create_order, &orderEntity, sizeof(meguco_user_broker_order_entity), buffer))
     return false;
-  const uint64_t* id = (const uint64_t*)zlimdb_get_response_data((const zlimdb_header*)buffer, sizeof(uint64_t));
-  if(!id)
+  const meguco_user_broker_order_entity* response = (const meguco_user_broker_order_entity*)zlimdb_get_response_data((const zlimdb_header*)buffer, sizeof(meguco_user_broker_order_entity));
+  if(!response)
     return false;
-  order.id = *id;
+  order = *response;
   return true;
 }
 
