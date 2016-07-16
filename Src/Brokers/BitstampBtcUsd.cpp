@@ -41,6 +41,9 @@ bool_t BitstampBtcUsd::createOrder(meguco_user_broker_order_type type, double pr
 
   bool buy = type == meguco_user_broker_order_buy;
 
+  total = Math::abs(total);
+  price = Math::abs(price);
+
   if(amount == 0.)
   { // compute amount based on total
     if(buy)
@@ -81,12 +84,16 @@ bool_t BitstampBtcUsd::createOrder(meguco_user_broker_order_type type, double pr
   }
 
   double maxAmount = Math::abs(buy ? getMaxBuyAmout(price) : getMaxSellAmout());
-  if(Math::abs(amount) > maxAmount)
+  if(amount > maxAmount)
     amount = maxAmount;
+  double minAmount = 5. / price;
+  minAmount = Math::ceil(minAmount * 100000000.) / 100000000.;
+  if(amount < minAmount)
+    amount = minAmount;
 
   String priceStr, amountStr;
   priceStr.printf("%.2f", price);
-  amountStr.printf("%.8f", Math::abs(amount));
+  amountStr.printf("%.8f", amount);
 
   HashMap<String, Variant> args;
   args.append("amount", amountStr);
@@ -132,7 +139,7 @@ bool_t BitstampBtcUsd::createOrder(meguco_user_broker_order_type type, double pr
   this->orders.append(order.raw_id, order);
 
   // update balance
-  if(order.amount > 0) // buy order
+  if(buy) // buy order
   {
     balance.available_usd -= order.total;
     balance.reserved_usd += order.total;
