@@ -181,11 +181,11 @@ targets = {
       defines += { "CURL_STATICLIB" }
       includePaths += {
         "Ext/curl/include",
-        "Build/$(configuration)/libcurl/include"
-        "Build/$(configuration)/libcurl/include/curl"
+        "Build/$(configuration)/.libcurl/include"
+        "Build/$(configuration)/.libcurl/include/curl"
       }
       libPaths += {
-        "Build/$(configuration)/libcurl"
+        "Build/$(configuration)/.libcurl"
       }
     }
     if platform == "Linux" {
