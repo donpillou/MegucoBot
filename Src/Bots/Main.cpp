@@ -160,7 +160,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_user_broker_order_entity* order = (const meguco_user_broker_order_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_order_entity));
       order;
       order = (const meguco_user_broker_order_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_order_entity), &order->entity))
-      broker->registerOrder2(*order);
+      broker->registerOrder(*order);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -180,7 +180,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
         !ZlimdbConnection::getString(property->entity, property->value_size, value, offset) ||
         !ZlimdbConnection::getString(property->entity, property->unit_size, unit, offset))
         continue;
-      broker->registerProperty2(Bot::Property(*property, name, value, unit));
+      broker->registerProperty(Bot::Property(*property, name, value, unit));
     }
   }
   if(connection.getErrno() != 0)
@@ -218,7 +218,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_user_session_asset_entity* asset = (const meguco_user_session_asset_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_asset_entity));
       asset;
       asset = (const meguco_user_session_asset_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_session_asset_entity), &asset->entity))
-      broker->registerAsset2(*asset);
+      broker->registerAsset(*asset);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -240,7 +240,7 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
     for(const meguco_trade_entity* trade = (const meguco_trade_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_trade_entity));
       trade;
       trade = (const meguco_trade_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_trade_entity), &trade->entity))
-      broker->handleTrade2(*botSession, *trade, true);
+      broker->handleTrade(*botSession, *trade, true);
   }
   if(connection.getErrno() != 0)
     return false;
@@ -305,7 +305,7 @@ bool_t Main::removeBrokerOrder(uint64_t id)
   return true;
 }
 
-bool_t Main::createSessionTransaction2(Bot::Transaction& transaction)
+bool_t Main::createSessionTransaction(Bot::Transaction& transaction)
 {
   meguco_user_broker_transaction_entity transactionEntity = transaction;
   if(!connection.add(transactionsTableId, transactionEntity.entity, transaction.id))
@@ -313,7 +313,7 @@ bool_t Main::createSessionTransaction2(Bot::Transaction& transaction)
   return true;
 }
 
-bool_t Main::createSessionOrder2(Bot::Order& order)
+bool_t Main::createSessionOrder(Bot::Order& order)
 {
   meguco_user_broker_order_entity orderEntity = order;
   if(!connection.add(ordersTableId, orderEntity.entity, order.id))
@@ -328,7 +328,7 @@ bool_t Main::removeSessionOrder(uint64_t id)
   return true;
 }
 
-bool_t Main::createSessionAsset2(Bot::Asset& asset)
+bool_t Main::createSessionAsset(Bot::Asset& asset)
 {
   meguco_user_session_asset_entity newAsset = asset;
   if(!connection.add(assetsTableId, newAsset.entity, asset.id))
@@ -336,7 +336,7 @@ bool_t Main::createSessionAsset2(Bot::Asset& asset)
   return true;
 }
 
-bool_t Main::updateSessionAsset2(const Bot::Asset& asset)
+bool_t Main::updateSessionAsset(const Bot::Asset& asset)
 {
   meguco_user_session_asset_entity updatedAsset = asset;
   if(!connection.update(assetsTableId, updatedAsset.entity))
@@ -351,7 +351,7 @@ bool_t Main::removeSessionAsset(uint64_t id)
   return true;
 }
 
-bool_t Main::createSessionMarker2(Bot::Marker& marker)
+bool_t Main::createSessionMarker(Bot::Marker& marker)
 {
   meguco_user_session_marker_entity markerEntity = marker;
   if(!connection.add(markersTableId, markerEntity.entity, marker.id))
@@ -444,8 +444,8 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       if(!connection.add(assetsTableId, newAsset.entity, newAsset.entity.id))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
       Bot::Asset asset2 = newAsset;
-      broker->registerAsset2(asset2);
-      botSession->handleAssetUpdate2(asset2);
+      broker->registerAsset(asset2);
+      botSession->handleAssetUpdate(asset2);
       return (void_t)connection.sendControlResponse(requestId, (const byte_t*)&newAsset.entity.id, sizeof(uint64_t));
     }
 
@@ -457,7 +457,7 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       if(!connection.remove(assetsTableId, entityId))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
       broker->unregisterAsset(entityId);
-      botSession->handleAssetRemoval2(*asset);
+      botSession->handleAssetRemoval(*asset);
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
 
@@ -474,8 +474,8 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       if(!connection.update(assetsTableId, updatedAsset.entity))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
       Bot::Asset updatedAsset2 = updatedAsset;
-      broker->registerAsset2(updatedAsset2);
-      botSession->handleAssetUpdate2(updatedAsset2);
+      broker->registerAsset(updatedAsset2);
+      botSession->handleAssetUpdate(updatedAsset2);
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }
 
@@ -510,8 +510,8 @@ void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t 
       if(!connection.update(propertiesTableId, updatedProperty->entity))
         return (void_t)connection.sendControlResponse(requestId, (uint16_t)connection.getErrno());
       Bot::Property updatedProperty2(*updatedProperty, property->name, newValue, property->unit);
-      broker->registerProperty2(updatedProperty2);
-      botSession->handlePropertyUpdate2(updatedProperty2);
+      broker->registerProperty(updatedProperty2);
+      botSession->handlePropertyUpdate(updatedProperty2);
 
       return (void_t)connection.sendControlResponse(requestId, 0, 0);
     }

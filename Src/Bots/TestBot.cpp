@@ -8,7 +8,7 @@ TestBot::Session::Session(Broker& broker) : broker(broker), updateCount(0)
   broker.registerProperty("prop4ro", "edit me", meguco_user_session_property_none, "teel");
 }
 
-void TestBot::Session::handleTrade2(const Trade& trade, int64_t tradeAge)
+void TestBot::Session::handleTrade(const Trade& trade, int64_t tradeAge)
 {
   if(updateCount++ == 0)
   {
@@ -37,7 +37,7 @@ void TestBot::Session::handleTrade2(const Trade& trade, int64_t tradeAge)
     asset.price = 320;
     asset.profitable_price = 330;
     asset.flip_price = 340;
-    if(!broker.createAsset2(asset))
+    if(!broker.createAsset(asset))
       broker.warning("createItem returned false.");
     {
       const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
@@ -49,7 +49,7 @@ void TestBot::Session::handleTrade2(const Trade& trade, int64_t tradeAge)
         double newBalanceBase = asset.balance_base / 2.;
         asset.balance_base = newBalanceBase;
         size_t assetCount = assets.size();
-        broker.updateAsset2(asset);
+        broker.updateAsset(asset);
         const HashMap<uint64_t, Bot::Asset>& assets = broker.getAssets();
         if(assets.size() != assetCount)
           broker.warning("asset count changed after update.");
@@ -81,10 +81,10 @@ void TestBot::Session::handleTrade2(const Trade& trade, int64_t tradeAge)
   }
 }
 
-void TestBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& transaction)
+void TestBot::Session::handleBuy(uint64_t orderId, const Bot::Transaction& transaction)
 {
 }
 
-void TestBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& transaction)
+void TestBot::Session::handleSell(uint64_t orderId, const Bot::Transaction& transaction)
 {
 }

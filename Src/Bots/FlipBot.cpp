@@ -43,13 +43,13 @@ void_t FlipBot::Session::updateBalance()
   broker.setProperty(String("Balance ") + broker.getCurrencyComm(), balanceComm);
 }
 
-void FlipBot::Session::handleTrade2(const Bot::Trade& trade, int64_t tradeAge)
+void FlipBot::Session::handleTrade(const Bot::Trade& trade, int64_t tradeAge)
 {
   checkBuy(trade);
   checkSell(trade);
 }
 
-void FlipBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& transaction2)
+void FlipBot::Session::handleBuy(uint64_t orderId, const Bot::Transaction& transaction2)
 {
   String message;
   message.printf("Bought %.08f @ %.02f", transaction2.amount, transaction2.price);
@@ -74,14 +74,14 @@ void FlipBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& tran
       updatedAsset.flip_price = transaction2.price * (1. + fee * (1. + sellProfitGain) * 2.);
       updatedAsset.last_transaction_time = transaction2.time;
 
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
       updateBalance();
       break;
     }
   }
 }
 
-void FlipBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& transaction2)
+void FlipBot::Session::handleSell(uint64_t orderId, const Bot::Transaction& transaction2)
 {
   String message;
   message.printf("Sold %.08f @ %.02f", transaction2.amount, transaction2.price);
@@ -106,7 +106,7 @@ void FlipBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& tra
       updatedAsset.flip_price = transaction2.price / (1. + fee * (1. + buyProfitGain) * 2.);
       updatedAsset.last_transaction_time = transaction2.time;
 
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
       updateBalance();
       break;
     }
@@ -124,7 +124,7 @@ void_t FlipBot::Session::handleBuyTimeout(uint64_t orderId)
       Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_wait_buy;
       updatedAsset.order_id = 0;
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
       break;
     }
   }
@@ -141,18 +141,18 @@ void_t FlipBot::Session::handleSellTimeout(uint64_t orderId)
       Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_wait_sell;
       updatedAsset.order_id = 0;
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
       break;
     }
   }
 }
 
-void_t FlipBot::Session::handleAssetUpdate2(const Bot::Asset& asset)
+void_t FlipBot::Session::handleAssetUpdate(const Bot::Asset& asset)
 {
   updateBalance();
 }
 
-void_t FlipBot::Session::handleAssetRemoval2(const Bot::Asset& asset)
+void_t FlipBot::Session::handleAssetRemoval(const Bot::Asset& asset)
 {
   updateBalance();
 }
@@ -174,15 +174,15 @@ void FlipBot::Session::checkBuy(const Bot::Trade& trade)
     {
       Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_buying;
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
 
       int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
       if(broker.buy(tradePrice, 0., asset.balance_base, buyTimeout * 1000, &updatedAsset.order_id, 0))
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       else
       {
         updatedAsset.state = meguco_user_session_asset_wait_buy;
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       }
       break;
     }
@@ -206,15 +206,15 @@ void FlipBot::Session::checkSell(const Bot::Trade& trade)
     {
       Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_selling;
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
 
       int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
       if(broker.sell(tradePrice, asset.balance_comm, 0., sellTimeout * 1000, &updatedAsset.order_id, 0))
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       else
       {
         updatedAsset.state = meguco_user_session_asset_wait_sell;
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       }
       break;
     }

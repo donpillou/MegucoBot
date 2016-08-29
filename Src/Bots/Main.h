@@ -23,13 +23,13 @@ public:
   bool_t createBrokerOrder2(Bot::Order& order);
   bool_t removeBrokerOrder(uint64_t id);
 
-  bool_t createSessionTransaction2(Bot::Transaction& transaction);
-  bool_t createSessionOrder2(Bot::Order& order);
+  bool_t createSessionTransaction(Bot::Transaction& transaction);
+  bool_t createSessionOrder(Bot::Order& order);
   bool_t removeSessionOrder(uint64_t id);
-  bool_t createSessionAsset2(Bot::Asset& asset);
-  bool_t updateSessionAsset2(const Bot::Asset& asset);
+  bool_t createSessionAsset(Bot::Asset& asset);
+  bool_t updateSessionAsset(const Bot::Asset& asset);
   bool_t removeSessionAsset(uint64_t id);
-  bool_t createSessionMarker2(Bot::Marker& marker);
+  bool_t createSessionMarker(Bot::Marker& marker);
   bool_t createSessionProperty(Bot::Property& property);
   bool_t updateSessionProperty(const Bot::Property& property);
   bool_t removeSessionProperty(uint64_t id);

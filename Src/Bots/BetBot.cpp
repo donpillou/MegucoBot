@@ -106,7 +106,7 @@ double BetBot::Session::getSellInComm(double currentPrice, const TradeHandler::V
   return comm;
 }
 
-void BetBot::Session::handleTrade2(const Bot::Trade& trade, int64_t tradeAge)
+void BetBot::Session::handleTrade(const Bot::Trade& trade, int64_t tradeAge)
 {
   tradeHandler.add(trade, tradeAge);
   if(!tradeHandler.isComplete())
@@ -119,7 +119,7 @@ void BetBot::Session::handleTrade2(const Bot::Trade& trade, int64_t tradeAge)
   checkSellIn(trade, values);
 }
 
-void BetBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& transaction)
+void BetBot::Session::handleBuy(uint64_t orderId, const Bot::Transaction& transaction)
 {
   applyBalanceUpdate(-transaction.total, transaction.amount);
 
@@ -146,7 +146,7 @@ void BetBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& trans
     double sellProfitGain = broker.getProperty("Sell Profit Gain", DEFAULT_SELL_PROFIT_GAIN);
     sessionAsset.flip_price = transaction.price * (1. + fee * (1. + sellProfitGain) * 2.);
     sessionAsset.order_id = 0;
-    broker.createAsset2(sessionAsset);
+    broker.createAsset(sessionAsset);
 
     buyInOrderId = 0;
     resetBetOrders();
@@ -211,7 +211,7 @@ void BetBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& trans
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
           lowestSellAsset.profitable_price = (lowestSellAsset.balance_comm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balance_base * (1. + fee)) / lowestSellAsset.balance_comm;
 
-          broker.updateAsset2(lowestSellAsset);
+          broker.updateAsset(lowestSellAsset);
         }
         if(!sortedBuyAssets.isEmpty())
         {
@@ -238,7 +238,7 @@ void BetBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& trans
           // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
           highestBuyAsset.profitable_price = highestBuyAsset.balance_base / (highestBuyAsset.balance_base / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balance_comm * (1. + fee));
 
-          broker.updateAsset2(highestBuyAsset);
+          broker.updateAsset(highestBuyAsset);
         }
 
         broker.removeAsset(asset.entity.id);
@@ -250,7 +250,7 @@ void BetBot::Session::handleBuy2(uint64_t orderId, const Bot::Transaction& trans
   }
 }
 
-void BetBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& transaction)
+void BetBot::Session::handleSell(uint64_t orderId, const Bot::Transaction& transaction)
 {
   applyBalanceUpdate(transaction.total, -transaction.amount);
 
@@ -277,7 +277,7 @@ void BetBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& tran
     double buyProfitGain = broker.getProperty("Buy Profit Gain", DEFAULT_BUY_PROFIT_GAIN);
     sessionAsset.flip_price = transaction.price / (1. + fee * (1. + buyProfitGain) * 2.);
     sessionAsset.order_id = 0;
-    broker.createAsset2(sessionAsset);
+    broker.createAsset(sessionAsset);
 
     sellInOrderId = 0;
     resetBetOrders();
@@ -343,7 +343,7 @@ void BetBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& tran
           // highestBuyAsset.balanceBase = (highestBuyAsset.balanceBase / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balanceComm * (1. + fee)) * highestBuyAsset.profitablePrice;
           highestBuyAsset.profitable_price = highestBuyAsset.balance_base / (highestBuyAsset.balance_base / highestBuyAsset.price * (1. + 2. * fee) - highestBuyAsset.balance_comm * (1. + fee));
 
-          broker.updateAsset2(highestBuyAsset);
+          broker.updateAsset(highestBuyAsset);
         }
         if(!sortedSellAssets.isEmpty())
         {
@@ -369,7 +369,7 @@ void BetBot::Session::handleSell2(uint64_t orderId, const Bot::Transaction& tran
           // lowestSellAsset.balanceComm * lowestSellAsset.profitablePrice = lowestSellAsset.balanceComm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balanceBase * (1. + fee);
           lowestSellAsset.profitable_price = (lowestSellAsset.balance_comm * lowestSellAsset.price * (1. + 2. * fee) - lowestSellAsset.balance_base * (1. + fee)) / lowestSellAsset.balance_comm;
 
-          broker.updateAsset2(lowestSellAsset);
+          broker.updateAsset(lowestSellAsset);
         }
 
         broker.removeAsset(asset.id);
@@ -396,7 +396,7 @@ void_t BetBot::Session::handleBuyTimeout(uint64_t orderId)
         Bot::Asset updatedAsset = asset;
         updatedAsset.state = meguco_user_session_asset_wait_buy;
         updatedAsset.order_id = 0;
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
         break;
       }
     }
@@ -419,7 +419,7 @@ void_t BetBot::Session::handleSellTimeout(uint64_t orderId)
         meguco_user_session_asset_entity updatedAsset = asset;
         updatedAsset.state = meguco_user_session_asset_wait_sell;
         updatedAsset.order_id = 0;
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
         break;
       }
     }
@@ -579,7 +579,7 @@ void BetBot::Session::checkAssetBuy(const Bot::Trade& trade)
     {
       Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_buying;
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
 
       bool waitingForSell = false;
       for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
@@ -601,11 +601,11 @@ void BetBot::Session::checkAssetBuy(const Bot::Trade& trade)
 
       int64_t buyTimeout = (int64_t)broker.getProperty("Buy Timeout", DEFAULT_BUY_TIMEOUT);
       if(broker.buy(tradePrice, buyAmountComm, buyAmountBase, buyTimeout * 1000, &updatedAsset.order_id, 0))
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       else
       {
         updatedAsset.state = meguco_user_session_asset_wait_buy;
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       }
       break;
     }
@@ -627,7 +627,7 @@ void BetBot::Session::checkAssetSell(const Bot::Trade& trade)
     {
       Bot::Asset updatedAsset = asset;
       updatedAsset.state = meguco_user_session_asset_selling;
-      broker.updateAsset2(updatedAsset);
+      broker.updateAsset(updatedAsset);
 
       bool waitingForBuy = false;
       for(HashMap<uint64_t, Bot::Asset>::Iterator i = assets.begin(), end = assets.end(); i != end; ++i)
@@ -649,18 +649,18 @@ void BetBot::Session::checkAssetSell(const Bot::Trade& trade)
 
       int64_t sellTimeout = (int64_t)broker.getProperty("Sell Timeout", DEFAULT_SELL_TIMEOUT);
       if(broker.sell(tradePrice, buyAmountComm, buyAmountBase, sellTimeout * 1000, &updatedAsset.order_id, 0))
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       else
       {
         updatedAsset.state = meguco_user_session_asset_wait_sell;
-        broker.updateAsset2(updatedAsset);
+        broker.updateAsset(updatedAsset);
       }
       break;
     }
   }
 }
 
-void_t BetBot::Session::handlePropertyUpdate2(const Bot::Property& property)
+void_t BetBot::Session::handlePropertyUpdate(const Bot::Property& property)
 {
   balanceBase = broker.getProperty(String("Balance ") + broker.getCurrencyBase(), 0);
   balanceComm = broker.getProperty(String("Balance ") + broker.getCurrencyComm(), 0);
@@ -668,12 +668,12 @@ void_t BetBot::Session::handlePropertyUpdate2(const Bot::Property& property)
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleAssetUpdate2(const Bot::Asset& asset)
+void_t BetBot::Session::handleAssetUpdate(const Bot::Asset& asset)
 {
   updateAvailableBalance();
 }
 
-void_t BetBot::Session::handleAssetRemoval2(const Bot::Asset& asset)
+void_t BetBot::Session::handleAssetRemoval(const Bot::Asset& asset)
 {
   updateAvailableBalance();
 }

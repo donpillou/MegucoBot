@@ -50,9 +50,9 @@ private: // Bot::Broker
 
   virtual const HashMap<uint64_t, Bot::Asset>& getAssets() const {return assets;}
   virtual const Bot::Asset* getAsset(uint64_t id) const;
-  virtual bool_t createAsset2(Bot::Asset& asset);
+  virtual bool_t createAsset(Bot::Asset& asset);
   virtual void_t removeAsset(uint64_t id);
-  virtual void_t updateAsset2(const Bot::Asset& asset);
+  virtual void_t updateAsset(const Bot::Asset& asset);
 
   virtual double getProperty(const String& name, double defaultValue) const;
   virtual String getProperty(const String& name, const String& defaultValue) const;
@@ -65,14 +65,14 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
-  virtual void_t registerOrder2(const Bot::Order& order);
-  virtual void_t registerAsset2(const Bot::Asset& asset);
+  virtual void_t registerOrder(const Bot::Order& order);
+  virtual void_t registerAsset(const Bot::Asset& asset);
   virtual void_t unregisterAsset(uint64_t id);
-  virtual void_t registerProperty2(const Bot::Property& property);
+  virtual void_t registerProperty(const Bot::Property& property);
 
   virtual const Bot::Property* getProperty(uint64_t id);
 
   virtual const String& getLastError() const {return error;}
-  virtual void_t handleTrade2(Bot::Session& session, const Bot::Trade& trade, bool_t replayed);
+  virtual void_t handleTrade(Bot::Session& session, const Bot::Trade& trade, bool_t replayed);
 };
 

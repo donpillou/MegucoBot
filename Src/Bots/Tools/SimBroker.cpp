@@ -10,13 +10,13 @@ SimBroker::SimBroker(Main& main, const String& currencyBase, const String& curre
   main(main), currencyBase(currencyBase), currencyComm(currencyComm),
   time(0), lastBuyTime(0), lastSellTime(0), tradeFee(tradeFee), startTime(0), maxTradeAge(maxTradeAge) {}
 
-void_t SimBroker::handleTrade2(Bot::Session& botSession, const Bot::Trade& trade, bool_t replayed)
+void_t SimBroker::handleTrade(Bot::Session& botSession, const Bot::Trade& trade, bool_t replayed)
 {
   if(startTime == 0)
     startTime = trade.time;
   if((int64_t)(trade.time - startTime) <= maxTradeAge)
   {
-    botSession.handleTrade2(trade, startTime + maxTradeAge - trade.time);
+    botSession.handleTrade(trade, startTime + maxTradeAge - trade.time);
     return; 
   }
 
@@ -52,7 +52,7 @@ void_t SimBroker::handleTrade2(Bot::Session& botSession, const Bot::Trade& trade
       transaction.price = order.price;
       transaction.amount = order.amount;
       transaction.total = order.total;
-      main.createSessionTransaction2(transaction);
+      main.createSessionTransaction(transaction);
 
       if(order.type == meguco_user_broker_order_buy)
         lastBuyTime = time;
@@ -65,14 +65,14 @@ void_t SimBroker::handleTrade2(Bot::Session& botSession, const Bot::Trade& trade
       if(order.type == meguco_user_broker_order_buy)
       {
         marker.type = meguco_user_session_marker_buy;
-        botSession.handleBuy2(order.id, transaction);
+        botSession.handleBuy(order.id, transaction);
       }
       else
       {
         marker.type = meguco_user_session_marker_sell;
-        botSession.handleSell2(order.id, transaction);
+        botSession.handleSell(order.id, transaction);
       }
-      main.createSessionMarker2(marker);
+      main.createSessionMarker(marker);
 
       next = i; // update next since order list may have changed in bot session handler
       ++next;
@@ -80,7 +80,7 @@ void_t SimBroker::handleTrade2(Bot::Session& botSession, const Bot::Trade& trade
     }
   }
 
-  botSession.handleTrade2(trade, 0);
+  botSession.handleTrade(trade, 0);
 }
 
 bool_t SimBroker::buy(double price, double amount, double total, int64_t timeout, uint64_t* id, double* orderedAmount)
@@ -104,7 +104,7 @@ bool_t SimBroker::buy(double price, double amount, double total, int64_t timeout
   order.total = total;
   int64_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
-  if(!main.createSessionOrder2(order))
+  if(!main.createSessionOrder(order))
   {
     error = main.getErrorString();
     return false;
@@ -117,7 +117,7 @@ bool_t SimBroker::buy(double price, double amount, double total, int64_t timeout
 
   Bot::Marker marker;
   marker.type = meguco_user_session_marker_buy_attempt;
-  main.createSessionMarker2(marker);
+  main.createSessionMarker(marker);
 
   openOrders.append(order.id, order);
   return true;
@@ -144,7 +144,7 @@ bool_t SimBroker::sell(double price, double amount, double total, int64_t timeou
   order.total = Math::floor(price * amount * (1 - tradeFee) * 100.) / 100.;
   int64_t orderTimeout = timeout > 0 ? time + timeout : 0;
   order.timeout = orderTimeout;
-  if(!main.createSessionOrder2(order))
+  if(!main.createSessionOrder(order))
   {
     error = main.getErrorString();
     return false;
@@ -157,7 +157,7 @@ bool_t SimBroker::sell(double price, double amount, double total, int64_t timeou
 
   Bot::Marker marker;
   marker.type = meguco_user_session_marker_sell_attempt;
-  main.createSessionMarker2(marker);
+  main.createSessionMarker(marker);
 
   openOrders.append(order.id, order);
   return true;
@@ -214,9 +214,9 @@ const Bot::Asset* SimBroker::getAsset(uint64_t id) const
   return &*it;
 }
 
-bool_t SimBroker::createAsset2(Bot::Asset& asset)
+bool_t SimBroker::createAsset(Bot::Asset& asset)
 {
-  if(!main.createSessionAsset2(asset))
+  if(!main.createSessionAsset(asset))
   {
     error = main.getErrorString();
     return false;
@@ -235,14 +235,14 @@ void_t SimBroker::removeAsset(uint64_t id)
   assets.remove(it);
 }
 
-void_t SimBroker::updateAsset2(const Bot::Asset& asset)
+void_t SimBroker::updateAsset(const Bot::Asset& asset)
 {
   HashMap<uint64_t, Bot::Asset>::Iterator it = assets.find(asset.id);
   if(it == assets.end())
     return;
   Bot::Asset& destAsset = *it;
   destAsset = asset;
-  main.updateSessionAsset2(asset);
+  main.updateSessionAsset(asset);
 }
 
 double SimBroker::getProperty(const String& name, double defaultValue) const
@@ -318,7 +318,7 @@ void_t SimBroker::addMarker(meguco_user_session_marker_type markerType)
 {
   Bot::Marker marker;
   marker.type = markerType;
-  main.createSessionMarker2(marker);
+  main.createSessionMarker(marker);
 }
 
 void_t SimBroker::warning(const String& message)
@@ -326,12 +326,12 @@ void_t SimBroker::warning(const String& message)
   main.addLogMessage(time, message);
 }
 
-void_t SimBroker::registerOrder2(const Bot::Order& order)
+void_t SimBroker::registerOrder(const Bot::Order& order)
 {
   openOrders.append(order.id, order);
 }
 
-void_t SimBroker::registerAsset2(const Bot::Asset& asset)
+void_t SimBroker::registerAsset(const Bot::Asset& asset)
 {
   assets.append(asset.id, asset);
 }
@@ -341,7 +341,7 @@ void_t SimBroker::unregisterAsset(uint64_t id)
   assets.remove(id);
 }
 
-void_t SimBroker::registerProperty2(const Bot::Property& property)
+void_t SimBroker::registerProperty(const Bot::Property& property)
 {
   Bot::Property& newProperty = properties.append(property.id, property);
   propertiesByName.append(property.name, &newProperty);

@@ -12,14 +12,14 @@ LiveBroker::LiveBroker(Main& main, const String& currencyBase, const String& cur
   main(main), currencyBase(currencyBase), currencyComm(currencyComm),
   time(0), lastBuyTime(0), lastSellTime(0), lastOrderRefreshTime(0) {}
 
-void_t LiveBroker::handleTrade2(Bot::Session& botSession, const Bot::Trade& trade, bool_t replayed)
+void_t LiveBroker::handleTrade(Bot::Session& botSession, const Bot::Trade& trade, bool_t replayed)
 {
   if(replayed)
   {
     int64_t tradeAge = Time::time() - trade.time;
     if(tradeAge <= 0LL)
       tradeAge = 1LL;
-    botSession.handleTrade2(trade, tradeAge);
+    botSession.handleTrade(trade, tradeAge);
     return;
   }
 
@@ -48,7 +48,7 @@ doneRefreshing:
 
   cancelTimedOutOrders(botSession);
 
-  botSession.handleTrade2(trade, 0);
+  botSession.handleTrade(trade, 0);
 }
 
 void_t LiveBroker::refreshOrders(Bot::Session& botSession)
@@ -75,7 +75,7 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
       transaction.price = order.price;
       transaction.amount = order.amount;
       transaction.total = order.total;
-      main.createSessionTransaction2(transaction);
+      main.createSessionTransaction(transaction);
       transactions.append(transaction.id, transaction);
 
       if(order.type == meguco_user_broker_order_buy)
@@ -89,14 +89,14 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
       if(order.type == meguco_user_broker_order_buy)
       {
         marker.type = meguco_user_session_marker_buy;
-        botSession.handleBuy2(order.id, transaction);
+        botSession.handleBuy(order.id, transaction);
       }
       else
       {
         marker.type = meguco_user_session_marker_sell;
-        botSession.handleSell2(order.id, transaction);
+        botSession.handleSell(order.id, transaction);
       }
-      main.createSessionMarker2(marker);
+      main.createSessionMarker(marker);
 
       next = i; // update next since order list may have changed in bot session handler
       ++next;
@@ -161,11 +161,11 @@ bool_t LiveBroker::buy(double price, double amount, double total, int64_t timeou
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-  main.createSessionOrder2(order);
+  main.createSessionOrder(order);
 
   Bot::Marker marker;
   marker.type = meguco_user_session_marker_buy_attempt;
-  main.createSessionMarker2(marker);
+  main.createSessionMarker(marker);
 
   openOrders.append(order.id, order);
   return true;
@@ -190,11 +190,11 @@ bool_t LiveBroker::sell(double price, double amount, double total, int64_t timeo
   if(orderedAmount)
     *orderedAmount = order.amount;
 
-  main.createSessionOrder2(order);
+  main.createSessionOrder(order);
 
   Bot::Marker marker;
   marker.type = meguco_user_session_marker_sell_attempt;
-  main.createSessionMarker2(marker);
+  main.createSessionMarker(marker);
 
   openOrders.append(order.id, order);
   return true;
@@ -252,9 +252,9 @@ const Bot::Asset* LiveBroker::getAsset(uint64_t id) const
   return &*it;
 }
 
-bool_t LiveBroker::createAsset2(Bot::Asset& asset)
+bool_t LiveBroker::createAsset(Bot::Asset& asset)
 {
-  if(!main.createSessionAsset2(asset))
+  if(!main.createSessionAsset(asset))
   {
     error = main.getErrorString();
     return false;
@@ -273,14 +273,14 @@ void_t LiveBroker::removeAsset(uint64_t id)
   assets.remove(it);
 }
 
-void_t LiveBroker::updateAsset2(const Bot::Asset& asset)
+void_t LiveBroker::updateAsset(const Bot::Asset& asset)
 {
   HashMap<uint64_t, Bot::Asset>::Iterator it = assets.find(asset.id);
   if(it == assets.end())
     return;
   Bot::Asset& destAsset = *it;
   destAsset = asset;
-  main.updateSessionAsset2(asset);
+  main.updateSessionAsset(asset);
 }
 
 double LiveBroker::getProperty(const String& name, double defaultValue) const
@@ -356,7 +356,7 @@ void_t LiveBroker::addMarker(meguco_user_session_marker_type markerType)
 {
   Bot::Marker marker;
   marker.type = markerType;
-  main.createSessionMarker2(marker);
+  main.createSessionMarker(marker);
 }
 
 void_t LiveBroker::warning(const String& message)
@@ -364,12 +364,12 @@ void_t LiveBroker::warning(const String& message)
   main.addLogMessage(Time::time(), message);
 }
 
-void_t LiveBroker::registerOrder2(const Bot::Order& order)
+void_t LiveBroker::registerOrder(const Bot::Order& order)
 {
   openOrders.append(order.id, order);
 }
 
-void_t LiveBroker::registerAsset2(const Bot::Asset& asset)
+void_t LiveBroker::registerAsset(const Bot::Asset& asset)
 {
   assets.append(asset.id, asset);
 }
@@ -379,7 +379,7 @@ void_t LiveBroker::unregisterAsset(uint64_t id)
   assets.remove(id);
 }
 
-void_t LiveBroker::registerProperty2(const Bot::Property& property)
+void_t LiveBroker::registerProperty(const Bot::Property& property)
 {
   Bot::Property& newProperty = properties.append(property.id, property);
   propertiesByName.append(property.name, &newProperty);

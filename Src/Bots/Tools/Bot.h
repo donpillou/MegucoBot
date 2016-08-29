@@ -134,9 +134,9 @@ public:
 
     virtual const HashMap<uint64_t, Asset>& getAssets() const = 0;
     virtual const Asset* getAsset(uint64_t id) const = 0;
-    virtual bool_t createAsset2(Asset& asset) = 0;
+    virtual bool_t createAsset(Asset& asset) = 0;
     virtual void_t removeAsset(uint64_t id) = 0;
-    virtual void_t updateAsset2(const Asset& asset) = 0;
+    virtual void_t updateAsset(const Asset& asset) = 0;
 
     virtual double getProperty(const String& name, double defaultValue) const = 0;
     virtual String getProperty(const String& name, const String& defaultValue) const = 0;
@@ -153,14 +153,14 @@ public:
   {
   public:
     virtual ~Session() {};
-    virtual void_t handleTrade2(const Trade& trade, int64_t tradeAge) = 0;
-    virtual void_t handleBuy2(uint64_t orderId, const Transaction& transaction) = 0;
-    virtual void_t handleSell2(uint64_t orderId, const Transaction& transaction) = 0;
+    virtual void_t handleTrade(const Trade& trade, int64_t tradeAge) = 0;
+    virtual void_t handleBuy(uint64_t orderId, const Transaction& transaction) = 0;
+    virtual void_t handleSell(uint64_t orderId, const Transaction& transaction) = 0;
     virtual void_t handleBuyTimeout(uint64_t orderId) = 0;
     virtual void_t handleSellTimeout(uint64_t orderId) = 0;
-    virtual void_t handlePropertyUpdate2(const Property& property) = 0;
-    virtual void_t handleAssetUpdate2(const Asset& asset) = 0;
-    virtual void_t handleAssetRemoval2(const Asset& asset) = 0;
+    virtual void_t handlePropertyUpdate(const Property& property) = 0;
+    virtual void_t handleAssetUpdate(const Asset& asset) = 0;
+    virtual void_t handleAssetRemoval(const Asset& asset) = 0;
   };
   
   virtual ~Bot() {}
