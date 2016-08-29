@@ -6,7 +6,6 @@
 class Broker : public Bot::Broker
 {
 public:
-  virtual void_t registerTransaction2(const Bot::Transaction& transaction) = 0;
   virtual void_t registerOrder2(const Bot::Order& order) = 0;
   virtual void_t registerAsset2(const Bot::Asset& asset) = 0;
   virtual void_t unregisterAsset(uint64_t id) = 0;

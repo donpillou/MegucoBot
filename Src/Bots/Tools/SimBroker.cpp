@@ -53,7 +53,6 @@ void_t SimBroker::handleTrade2(Bot::Session& botSession, const Bot::Trade& trade
       transaction.amount = order.amount;
       transaction.total = order.total;
       main.createSessionTransaction2(transaction);
-      transactions.append(transaction.id, transaction);
 
       if(order.type == meguco_user_broker_order_buy)
         lastBuyTime = time;
@@ -325,11 +324,6 @@ void_t SimBroker::addMarker(meguco_user_session_marker_type markerType)
 void_t SimBroker::warning(const String& message)
 {
   main.addLogMessage(time, message);
-}
-
-void_t SimBroker::registerTransaction2(const Bot::Transaction& transaction)
-{
-  transactions.append(transaction.id, transaction);
 }
 
 void_t SimBroker::registerOrder2(const Bot::Order& order)

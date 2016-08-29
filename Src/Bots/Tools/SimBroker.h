@@ -23,7 +23,6 @@ private:
   int64_t lastBuyTime;
   int64_t lastSellTime;
   double tradeFee;
-  HashMap<uint64_t, Bot::Transaction> transactions;
   HashMap<uint64_t, Bot::Asset> assets;
   HashMap<uint64_t, Bot::Property> properties;
   HashMap<String, Bot::Property*> propertiesByName;
@@ -66,7 +65,6 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
-  virtual void_t registerTransaction2(const Bot::Transaction& transaction);
   virtual void_t registerOrder2(const Bot::Order& order);
   virtual void_t registerAsset2(const Bot::Asset& asset);
   virtual void_t unregisterAsset(uint64_t id);

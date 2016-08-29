@@ -66,7 +66,6 @@ private: // Bot::Broker
   virtual void_t warning(const String& message);
 
 public: // Broker
-  virtual void_t registerTransaction2(const Bot::Transaction& transaction);
   virtual void_t registerOrder2(const Bot::Order& order);
   virtual void_t registerAsset2(const Bot::Asset& asset);
   virtual void_t unregisterAsset(uint64_t id);

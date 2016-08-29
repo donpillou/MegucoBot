@@ -152,19 +152,6 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   else
     broker = new LiveBroker(*this, currencyBase, currencyComm);
 
-  // get session transactions ?? why? todo
-  if(!connection.query(transactionsTableId))
-    return false;
-  while(connection.getResponse(buffer))
-  {
-    for(const meguco_user_broker_transaction_entity* transaction = (const meguco_user_broker_transaction_entity*)zlimdb_get_first_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_transaction_entity));
-      transaction;
-      transaction = (const meguco_user_broker_transaction_entity*)zlimdb_get_next_entity((const zlimdb_header*)buffer, sizeof(meguco_user_broker_transaction_entity), &transaction->entity))
-      broker->registerTransaction2(*transaction);
-  }
-  if(connection.getErrno() != 0)
-    return false;
-
   // get session orders
   if(!connection.query(ordersTableId))
     return false;

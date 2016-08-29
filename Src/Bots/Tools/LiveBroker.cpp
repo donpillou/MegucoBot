@@ -364,11 +364,6 @@ void_t LiveBroker::warning(const String& message)
   main.addLogMessage(Time::time(), message);
 }
 
-void_t LiveBroker::registerTransaction2(const Bot::Transaction& transaction)
-{
-  transactions.append(transaction.id, transaction);
-}
-
 void_t LiveBroker::registerOrder2(const Bot::Order& order)
 {
   openOrders.append(order.id, order);
