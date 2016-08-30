@@ -3,6 +3,7 @@
 #include <nstd/Thread.h>
 #include <nstd/Log.h>
 #include <nstd/Map.h>
+#include <nstd/Time.h>
 #include <megucoprotocol.h>
 
 #include "Main.h"
@@ -378,6 +379,7 @@ void_t Main::addLogMessage(meguco_log_type type, const String& message)
   meguco_log_entity* logEntity = (meguco_log_entity*)buffer;
   ZlimdbConnection::setEntityHeader(logEntity->entity, 0, 0, sizeof(meguco_log_entity));
   logEntity->type = type;
+  logEntity->time = Time::time();
   if(!ZlimdbConnection::copyString(message, logEntity->entity, logEntity->message_size, ZLIMDB_MAX_ENTITY_SIZE))
     return;
   uint64_t id;

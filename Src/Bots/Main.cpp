@@ -413,7 +413,9 @@ bool_t Main::addLogMessage(int64_t time, const String& message)
 {
   byte_t buffer[ZLIMDB_MAX_ENTITY_SIZE];
   meguco_log_entity* log = (meguco_log_entity*)buffer;
-  ZlimdbConnection::setEntityHeader(log->entity, 0, time, sizeof(meguco_log_entity));
+  ZlimdbConnection::setEntityHeader(log->entity, 0, 0, sizeof(meguco_log_entity));
+  log->type = meguco_log_info;
+  log->time = time;
   if(!ZlimdbConnection::copyString(message, log->entity, log->message_size, ZLIMDB_MAX_ENTITY_SIZE))
     return false;
   if(!connection.add(logTableId, log->entity, log->entity.id))
