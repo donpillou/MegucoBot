@@ -227,13 +227,12 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   botSession = botFactory.createSession(*broker);
 
   // get trade history
-  uint32_t marketTableId;
-  if(!connection.findTable(String("markets/") + marketName + "/trades", marketTableId))
+  if(!connection.findTable(String("markets/") + marketName + "/trades", tradesTableId))
     return false;
   int64_t serverTime, tableTime;
-  if(!connection.sync(marketTableId, serverTime, tableTime))
+  if(!connection.sync(tradesTableId, serverTime, tableTime))
     return false;
-  if(!connection.subscribe(marketTableId, zlimdb_query_type_since_time, tableTime - (simulation ? (7ULL * 24ULL * 60ULL * 60ULL * 1000ULL) : (maxTradeAge + 10 * 60 * 1000)), zlimdb_subscribe_flag_none))
+  if(!connection.subscribe(tradesTableId, zlimdb_query_type_since_time, tableTime - (simulation ? (7ULL * 24ULL * 60ULL * 60ULL * 1000ULL) : (maxTradeAge + 10 * 60 * 1000)), zlimdb_subscribe_flag_none))
     return false;
   while(connection.getResponse(buffer))
   {
@@ -429,6 +428,17 @@ void_t Main::controlEntity(uint32_t tableId, uint32_t requestId, uint64_t entity
     return controlUserSession(requestId, entityId, controlCode, data, size);
   else
     return (void_t)connection.sendControlResponse(requestId, zlimdb_error_invalid_request);
+}
+
+void_t Main::addedEntity(uint32_t tableId, const zlimdb_entity& entity)
+{
+  if(tableId == tradesTableId)
+  {
+    if(entity.size < sizeof(meguco_trade_entity))
+      return;
+    const meguco_trade_entity* trade = (const meguco_trade_entity*)&entity;
+    broker->handleTrade(*botSession, *trade, false);
+  }
 }
 
 void_t Main::controlUserSession(uint32_t requestId, uint64_t entityId, uint32_t controlCode, const byte_t* data, size_t size)
