@@ -68,7 +68,7 @@ void_t LiveBroker::refreshOrders(Bot::Session& botSession)
     ++next;
 
     const Bot::Order& order = *i;
-    if(!openOrderIds.contains(order.id))
+    if(!openOrderIds.contains(order.raw_id))
     {
       Bot::Transaction transaction;
       transaction.type = order.type == meguco_user_broker_order_buy ? meguco_user_broker_transaction_buy : meguco_user_broker_transaction_sell;
@@ -156,12 +156,13 @@ bool_t LiveBroker::buy(double price, double amount, double total, int64_t timeou
   }
   lastOrderRefreshTime = Time::time();
   order.timeout = timeout > 0 ? time + timeout : 0;
-  if(id)
-    *id = order.id;
   if(orderedAmount)
     *orderedAmount = order.amount;
 
+  order.raw_id = order.id;;
   main.createSessionOrder(order);
+  if(id)
+    *id = order.id;
 
   Bot::Marker marker;
   marker.type = meguco_user_session_marker_buy_attempt;
@@ -185,12 +186,13 @@ bool_t LiveBroker::sell(double price, double amount, double total, int64_t timeo
   }
   lastOrderRefreshTime = Time::time();
   order.timeout = timeout > 0 ? time + timeout : 0;
-  if(id)
-    *id = order.id;
   if(orderedAmount)
     *orderedAmount = order.amount;
 
+  order.raw_id = order.id;;
   main.createSessionOrder(order);
+  if(id)
+    *id = order.id;
 
   Bot::Marker marker;
   marker.type = meguco_user_session_marker_sell_attempt;

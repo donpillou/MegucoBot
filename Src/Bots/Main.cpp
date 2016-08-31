@@ -138,6 +138,10 @@ bool_t Main::connect(const String& userName, uint64_t sessionId)
   String currencyComm = marketName.token('/', pos);
   String currencyBase = marketName.token('/', pos);
 
+  // get broker orders table id
+  if(!connection.findTable(brokerTablePrefix + "/orders", brokerOrdersTableId))
+    return false;
+
   // create local broker interface
   BotFactory botFactory;
   maxTradeAge = botFactory.getMaxTradeAge();
@@ -270,7 +274,7 @@ bool_t Main::getBrokerOrders(List<meguco_user_broker_order_entity>& orders)
   byte_t buffer[ZLIMDB_MAX_MESSAGE_SIZE];
   if(!connection.control(brokerTableId, 1, meguco_user_broker_control_refresh_orders, 0, 0, buffer))
     return false;
-  if(!connection.query(ordersTableId))
+  if(!connection.query(brokerOrdersTableId))
     return false;
   orders.clear();
   while(connection.getResponse(buffer))

@@ -52,7 +52,7 @@ private:
   uint32_t propertiesTableId;
   uint32_t markersTableId;
   uint32_t brokerTableId;
-
+  uint32_t brokerOrdersTableId;
   uint32_t tradesTableId;
 
   uint32_t livePropertiesTableId;
