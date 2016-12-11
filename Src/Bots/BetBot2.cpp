@@ -162,7 +162,7 @@ void BetBot2::Session::handleBuy(uint64_t orderId, const Bot::Transaction& trans
 
     Bot::Asset sessionAsset;
     sessionAsset.type = meguco_user_session_asset_buy;
-    sessionAsset.state = meguco_user_session_asset_sell;
+    sessionAsset.state = meguco_user_session_asset_wait_sell;
     sessionAsset.last_transaction_time = transaction.time;
     sessionAsset.price = transaction.price;
     sessionAsset.invest_comm = 0.;
